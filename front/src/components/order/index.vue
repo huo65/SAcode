@@ -100,6 +100,12 @@
               </template>
               {{ item.orderInfo.expectedDeliveryTime || "-" }}
             </el-descriptions-item>
+            <el-descriptions-item label-align="center">
+              <template #label>
+                <div>Refund Reason</div>
+              </template>
+              {{ item.orderInfo.refundReason || "-" }}
+            </el-descriptions-item>
           </el-descriptions>
         </div>
       </div>
@@ -119,10 +125,28 @@
             item.orderInfo.state == stateEnum.toDeliver &&
             userInfo.type === 'mer'
           "
-          @click="updateOrder(item, 3)"
-          >Send to Driver</el-button
+          @click="updateOrder(item, 4)"
+          >Accept Order</el-button
+        >
+        <el-button
+          type="danger"
+          v-if="
+            item.orderInfo.state == stateEnum.toDeliver &&
+            userInfo.type === 'mer'
+          "
+          @click="rejectPaidOrder(item)"
+          >Reject Order</el-button
         >
         <!--木吱吱-->
+        <el-button
+          type="warning"
+          v-if="
+            item.orderInfo.state == stateEnum.preparing &&
+            userInfo.type === 'mer'
+          "
+          @click="updateOrder(item, 3)"
+          >Ready for Driver</el-button
+        >
         <el-button
           type="primary"
           v-if="
@@ -175,7 +199,7 @@ import { ref, reactive, onMounted } from "vue";
 import { Order } from "@/api/apis.js";
 import fetch from "@/api/fetch.js";
 import $store, { userInfo } from "@/store";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import Detail from "../goods/detail.vue";
 
 const orderList = ref([]);
@@ -198,6 +222,7 @@ const stateEnum = {
   returning: -2,
   toPay: -1,
   toDeliver: 0,
+  preparing: 4,
   delivering: 1,
   received: 2,
   missOrder:3,
@@ -220,6 +245,10 @@ const stateOptions = [
     value: 0,
   },
   {
+    label: "preparing",
+    value: 4,
+  },
+  {
     label: "waiting driver",
     value: 3,
   },
@@ -238,6 +267,7 @@ const stateType = {
   [stateEnum.returning]: "danger",
   [stateEnum.toPay]: "primary",
   [stateEnum.toDeliver]: "primary",
+  [stateEnum.preparing]: "warning",
   [stateEnum.missOrder]: "warning",
   [stateEnum.delivering]: "primary",
   [stateEnum.received]: "success",
@@ -278,7 +308,7 @@ const getOrderList = () => {
   });
 };
 
-const updateOrder = (order, wantedState) => {
+const updateOrder = (order, wantedState, extraPayload = {}) => {
   curOrder.value = order.orderInfo;
   console.log("curOrder", curOrder.value, "wantedState", wantedState);
   console.log(
@@ -295,11 +325,35 @@ const updateOrder = (order, wantedState) => {
   fetch(Order.updateOrder, {
     id: curOrder.value.id,
     targetState: wantedState,
+    ...extraPayload,
   }).then((data) => {
     console.log("after update order", data.order_info);
     getOrderList();
     ElMessage.success("Update Order Successfully");
   });
+};
+
+const rejectPaidOrder = async (order) => {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      "Please enter a reject reason",
+      "Reject Order",
+      {
+        confirmButtonText: "Confirm",
+        cancelButtonText: "Cancel",
+        inputPlaceholder: "sold out / store closed / unable to deliver...",
+        inputValidator: (input) =>
+          input && input.trim() ? true : "Reject reason is required",
+      }
+    );
+    updateOrder(order, -3, {
+      refundReason: value.trim(),
+    });
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("rejectPaidOrder error", error);
+    }
+  }
 };
 
 const changeTimeOrder = () => {

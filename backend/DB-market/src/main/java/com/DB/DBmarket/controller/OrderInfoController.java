@@ -27,7 +27,7 @@ public class OrderInfoController {
             @RequestParam(required = false) Integer state,
             @RequestParam(required = false) Integer timeOrder
     ) {
-        if (state != null && (state < -3 || state > 3)) {
+        if (state != null && (state < -3 || state > 4)) {
             return Result.error("Invalid value for state parameter");
         }
         if (timeOrder != null && (timeOrder != 0 && timeOrder != 1)) {
@@ -52,7 +52,7 @@ public class OrderInfoController {
         if (complainReason == null) complainReason = (String) request.get("complainReason");
         String refundReason = (String) request.get("refund_reason");
         if (refundReason == null) refundReason = (String) request.get("refundReason");
-        if (state < -3 || state > 3) {
+        if (state < -3 || state > 4) {
             return Result.error("Invalid order state!");
         }
         try {
@@ -72,7 +72,7 @@ public class OrderInfoController {
     public Result listByOrderState(@RequestParam(required = false) Integer state) {
         List<OrderInfo> orders;
         if (state != null) {
-            if (state >= -3 && state <= 3) {
+            if (state >= -3 && state <= 4) {
                 orders = orderInfoService.getOrdersByState(state);
                 return Result.success(orders, "Orders retrieved successfully based on order state!");
             } else {

@@ -229,9 +229,13 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         int currentState = first.getState();
         String driverId = null;
 
-        if (targetState == 3) {
+        if (targetState == 4) {
             if (!currentUser.isMerchant() || !currentUser.getId().equals(first.getMer()) || currentState != 0) {
-                throw new IllegalArgumentException("Only the merchant can send a paid order to delivery.");
+                throw new IllegalArgumentException("Only the merchant can accept a paid order for preparation.");
+            }
+        } else if (targetState == 3) {
+            if (!currentUser.isMerchant() || !currentUser.getId().equals(first.getMer()) || currentState != 4) {
+                throw new IllegalArgumentException("Only the merchant can send a preparing order to drivers.");
             }
         } else if (targetState == 1) {
             if (!currentUser.isDriver() || currentState != 3) {
@@ -250,17 +254,13 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             if (!(currentUser.isMerchant() && currentUser.getId().equals(first.getMer())) && !currentUser.isAdmin()) {
                 throw new IllegalArgumentException("Only merchant or admin can confirm refund.");
             }
-            if (currentState != -2) {
-                throw new IllegalArgumentException("Only refunding orders can be refunded.");
+            if (currentState != -2 && currentState != 0) {
+                throw new IllegalArgumentException("Only paid or refunding orders can be refunded.");
             }
-            if (first.getCus() != null) {
-                double balance = userMapper.getBalance(first.getCus());
-                userMapper.refundOrPay(first.getCus(), balance + orderInfoMapper.getOrderAccount(orderId));
+            if (currentState == 0 && (refundReason == null || refundReason.trim().isEmpty())) {
+                throw new IllegalArgumentException("Rejecting a paid order requires a refund reason.");
             }
-            // Restore stock for all items in this order
-            for (OrderInfo orderItem : rows) {
-                productMapper.incrementStock(orderItem.getProd(), orderItem.getProdNum());
-            }
+            refundAndRestoreOrder(orderId, rows, first);
         } else if (targetState == -1 || targetState == 0) {
             throw new IllegalArgumentException("Use order creation or payment endpoint for this state.");
         } else {
@@ -271,6 +271,17 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         int affected = orderInfoMapper.updateOrderState(orderId, targetState, now, driverId, null, complain, complainReason, refundReason);
         if (affected <= 0) return null;
         return orderInfoMapper.getOrdersById(orderId).get(0);
+    }
+
+    private void refundAndRestoreOrder(String orderId, List<OrderInfo> rows, OrderInfo first) {
+        if (first.getCus() != null) {
+            double balance = userMapper.getBalance(first.getCus());
+            userMapper.refundOrPay(first.getCus(), balance + orderInfoMapper.getOrderAccount(orderId));
+        }
+        // Restore stock for all items in this order
+        for (OrderInfo orderItem : rows) {
+            productMapper.incrementStock(orderItem.getProd(), orderItem.getProdNum());
+        }
     }
 
     @Override

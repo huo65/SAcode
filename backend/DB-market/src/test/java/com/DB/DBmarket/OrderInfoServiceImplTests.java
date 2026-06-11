@@ -100,13 +100,31 @@ class OrderInfoServiceImplTests {
     }
 
     @Test
-    void merchantCanSendPaidOrderToDriverPool() {
+    void merchantCanAcceptPaidOrderForPreparation() {
         CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
         OrderInfo paidOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 0, 1, 30);
-        OrderInfo updatedOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 3, 1, 30);
+        OrderInfo updatedOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 4, 1, 30);
 
         when(orderInfoMapper.getOrdersById("order-1"))
                 .thenReturn(Collections.singletonList(paidOrder))
+                .thenReturn(Collections.singletonList(updatedOrder));
+        when(orderInfoMapper.updateOrderState(eq("order-1"), eq(4), anyString(), isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(1);
+
+        OrderInfo result = orderInfoService.transitionOrder(merchant, "order-1", 4, null, null, null);
+
+        assertNotNull(result);
+        assertEquals(Integer.valueOf(4), result.getState());
+    }
+
+    @Test
+    void merchantCanSendPreparingOrderToDriverPool() {
+        CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
+        OrderInfo preparingOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 4, 1, 30);
+        OrderInfo updatedOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 3, 1, 30);
+
+        when(orderInfoMapper.getOrdersById("order-1"))
+                .thenReturn(Collections.singletonList(preparingOrder))
                 .thenReturn(Collections.singletonList(updatedOrder));
         when(orderInfoMapper.updateOrderState(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull(), isNull()))
                 .thenReturn(1);
@@ -180,18 +198,56 @@ class OrderInfoServiceImplTests {
     }
 
     @Test
+    void merchantCanRejectPaidOrderAndRefundImmediately() {
+        CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
+        OrderInfo paidA = buildOrder("order-1", "cus001", "mer001", "prod001", 0, 2, 60);
+        OrderInfo paidB = buildOrder("order-1", "cus001", "mer001", "prod002", 0, 1, 40);
+        OrderInfo refunded = buildOrder("order-1", "cus001", "mer001", "prod001", -3, 2, 60);
+
+        when(orderInfoMapper.getOrdersById("order-1"))
+                .thenReturn(Arrays.asList(paidA, paidB))
+                .thenReturn(Collections.singletonList(refunded));
+        when(userMapper.getBalance("cus001")).thenReturn(50.0);
+        when(orderInfoMapper.getOrderAccount("order-1")).thenReturn(100);
+        when(orderInfoMapper.updateOrderState(eq("order-1"), eq(-3), anyString(), isNull(), isNull(), isNull(), isNull(), eq("merchant rejected")))
+                .thenReturn(1);
+
+        OrderInfo result = orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, "merchant rejected");
+
+        assertNotNull(result);
+        assertEquals(Integer.valueOf(-3), result.getState());
+        verify(userMapper).refundOrPay("cus001", 150.0);
+        verify(productMapper).incrementStock("prod001", 2);
+        verify(productMapper).incrementStock("prod002", 1);
+    }
+
+    @Test
     void refundConfirmationRejectsWrongCurrentState() {
+        CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
+        OrderInfo unpaidOrder = buildOrder("order-1", "cus001", "mer001", "prod001", -1, 1, 30);
+
+        when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(unpaidOrder));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, "bad food"));
+
+        assertEquals("Only paid or refunding orders can be refunded.", ex.getMessage());
+        verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
+        verify(productMapper, never()).incrementStock(anyString(), eq(1));
+    }
+
+    @Test
+    void paidOrderRejectRequiresRefundReason() {
         CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
         OrderInfo paidOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 0, 1, 30);
 
         when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(paidOrder));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, "bad food"));
+                () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, " "));
 
-        assertEquals("Only refunding orders can be refunded.", ex.getMessage());
+        assertEquals("Rejecting a paid order requires a refund reason.", ex.getMessage());
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
-        verify(productMapper, never()).incrementStock(anyString(), eq(1));
     }
 
     @Test
@@ -216,9 +272,23 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(paidOrder));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> orderInfoService.transitionOrder(wrongMerchant, "order-1", 3, null, null, null));
+                () -> orderInfoService.transitionOrder(wrongMerchant, "order-1", 4, null, null, null));
 
-        assertEquals("Only the merchant can send a paid order to delivery.", ex.getMessage());
+        assertEquals("Only the merchant can accept a paid order for preparation.", ex.getMessage());
+        verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(4), anyString(), isNull(), isNull(), isNull(), isNull(), isNull());
+    }
+
+    @Test
+    void merchantCannotSendPaidOrderDirectlyToDriverPool() {
+        CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
+        OrderInfo paidOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 0, 1, 30);
+
+        when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(paidOrder));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(merchant, "order-1", 3, null, null, null));
+
+        assertEquals("Only the merchant can send a preparing order to drivers.", ex.getMessage());
         verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull(), isNull());
     }
 

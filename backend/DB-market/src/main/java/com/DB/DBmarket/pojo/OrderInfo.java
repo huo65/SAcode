@@ -31,7 +31,7 @@ public class OrderInfo {
     //收货地址id
     @JsonProperty("rec_addr")
     private  String recAddr;
-    //订单状态   -3 已退货/退款  -2退货中 -1下单未支付 0已支付 1已发货 2已收货
+    //订单状态   -3 已退货/退款  -2退货中 -1下单未支付 0已支付 4备餐中 3待骑手接单 1配送中 2已收货
     private Integer state;
     //订单金额
     private Integer account;
