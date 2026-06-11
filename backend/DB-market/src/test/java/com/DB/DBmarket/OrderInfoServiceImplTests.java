@@ -222,6 +222,30 @@ class OrderInfoServiceImplTests {
     }
 
     @Test
+    void merchantCanCancelPreparingOrderAndRefundImmediately() {
+        CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
+        OrderInfo preparingA = buildOrder("order-1", "cus001", "mer001", "prod001", 4, 2, 60);
+        OrderInfo preparingB = buildOrder("order-1", "cus001", "mer001", "prod002", 4, 1, 40);
+        OrderInfo refunded = buildOrder("order-1", "cus001", "mer001", "prod001", -3, 2, 60);
+
+        when(orderInfoMapper.getOrdersById("order-1"))
+                .thenReturn(Arrays.asList(preparingA, preparingB))
+                .thenReturn(Collections.singletonList(refunded));
+        when(userMapper.getBalance("cus001")).thenReturn(50.0);
+        when(orderInfoMapper.getOrderAccount("order-1")).thenReturn(100);
+        when(orderInfoMapper.updateOrderState(eq("order-1"), eq(-3), anyString(), isNull(), isNull(), isNull(), isNull(), eq("kitchen issue")))
+                .thenReturn(1);
+
+        OrderInfo result = orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, "kitchen issue");
+
+        assertNotNull(result);
+        assertEquals(Integer.valueOf(-3), result.getState());
+        verify(userMapper).refundOrPay("cus001", 150.0);
+        verify(productMapper).incrementStock("prod001", 2);
+        verify(productMapper).incrementStock("prod002", 1);
+    }
+
+    @Test
     void refundConfirmationRejectsWrongCurrentState() {
         CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
         OrderInfo unpaidOrder = buildOrder("order-1", "cus001", "mer001", "prod001", -1, 1, 30);
@@ -231,7 +255,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, "bad food"));
 
-        assertEquals("Only paid or refunding orders can be refunded.", ex.getMessage());
+        assertEquals("Only paid, preparing or refunding orders can be refunded.", ex.getMessage());
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
         verify(productMapper, never()).incrementStock(anyString(), eq(1));
     }
@@ -246,7 +270,21 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, " "));
 
-        assertEquals("Rejecting a paid order requires a refund reason.", ex.getMessage());
+        assertEquals("Merchant cancellation requires a refund reason.", ex.getMessage());
+        verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
+    }
+
+    @Test
+    void preparingOrderCancelRequiresRefundReason() {
+        CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
+        OrderInfo preparingOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 4, 1, 30);
+
+        when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(preparingOrder));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, ""));
+
+        assertEquals("Merchant cancellation requires a refund reason.", ex.getMessage());
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
     }
 

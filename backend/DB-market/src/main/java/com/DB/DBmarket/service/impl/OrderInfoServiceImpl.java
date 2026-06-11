@@ -254,11 +254,11 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             if (!(currentUser.isMerchant() && currentUser.getId().equals(first.getMer())) && !currentUser.isAdmin()) {
                 throw new IllegalArgumentException("Only merchant or admin can confirm refund.");
             }
-            if (currentState != -2 && currentState != 0) {
-                throw new IllegalArgumentException("Only paid or refunding orders can be refunded.");
+            if (currentState != -2 && currentState != 0 && currentState != 4) {
+                throw new IllegalArgumentException("Only paid, preparing or refunding orders can be refunded.");
             }
-            if (currentState == 0 && (refundReason == null || refundReason.trim().isEmpty())) {
-                throw new IllegalArgumentException("Rejecting a paid order requires a refund reason.");
+            if ((currentState == 0 || currentState == 4) && (refundReason == null || refundReason.trim().isEmpty())) {
+                throw new IllegalArgumentException("Merchant cancellation requires a refund reason.");
             }
             refundAndRestoreOrder(orderId, rows, first);
         } else if (targetState == -1 || targetState == 0) {

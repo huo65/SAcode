@@ -148,6 +148,15 @@
           >Ready for Driver</el-button
         >
         <el-button
+          type="danger"
+          v-if="
+            item.orderInfo.state == stateEnum.preparing &&
+            userInfo.type === 'mer'
+          "
+          @click="cancelPreparingOrder(item)"
+          >Cancel Order</el-button
+        >
+        <el-button
           type="primary"
           v-if="
             item.orderInfo.state == stateEnum.missOrder &&
@@ -352,6 +361,29 @@ const rejectPaidOrder = async (order) => {
   } catch (error) {
     if (error !== "cancel") {
       console.error("rejectPaidOrder error", error);
+    }
+  }
+};
+
+const cancelPreparingOrder = async (order) => {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      "Please enter a cancel reason",
+      "Cancel Preparing Order",
+      {
+        confirmButtonText: "Confirm",
+        cancelButtonText: "Cancel",
+        inputPlaceholder: "ingredients unavailable / kitchen issue / store closed...",
+        inputValidator: (input) =>
+          input && input.trim() ? true : "Cancel reason is required",
+      }
+    );
+    updateOrder(order, -3, {
+      refundReason: value.trim(),
+    });
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("cancelPreparingOrder error", error);
     }
   }
 };
