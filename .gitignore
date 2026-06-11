@@ -26,6 +26,7 @@ application-local.yml
 application-local.yaml
 application-dev-local.yml
 application-dev-local.yaml
+backend/DB-market/src/main/resources/application.yml
 
 # IDE / editor files
 .idea/
