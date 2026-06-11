@@ -131,6 +131,8 @@ public class CartServiceImpl implements CartService {
             orderInfo.setRecAddr(orderInfoCart.getRecAddr());
             orderInfo.setState(orderInfoCart.getState());
             orderInfo.setTime(LocalDateTime.now());
+            orderInfo.setRemark(orderInfoCart.getRemark());
+            orderInfo.setExpectedDeliveryTime(orderInfoCart.getExpectedDeliveryTime());
 
             if(merchantMap.containsKey(orderInfoCart.getMer())){
                 //如果下单过该商家的商品,则使用上一次的订单ID

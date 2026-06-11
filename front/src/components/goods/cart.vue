@@ -18,6 +18,20 @@
             :value="item.addrId"
           ></el-option>
         </el-select>
+        <el-date-picker
+          v-model="expectedDeliveryTime"
+          type="datetime"
+          placeholder="expected delivery time"
+          value-format="YYYY-MM-DDTHH:mm:ss"
+        />
+        <el-input
+          v-model="remark"
+          type="textarea"
+          :rows="2"
+          maxlength="200"
+          show-word-limit
+          placeholder="remark for all selected orders"
+        />
       </div>
       <div class="content">
         <div v-for="item in cartList" class="product">
@@ -78,6 +92,8 @@ const props = defineProps({
 });
 const emit = defineEmits(["close", "change"]);
 const paymentVisible = ref(false);
+const remark = ref("");
+const expectedDeliveryTime = ref("");
 
 const close = () => {
   emit("close");
@@ -139,6 +155,8 @@ const generateOrders = () => {
     prod_num: item.numberInCart,
     rec_addr: receiveAddr.value,
     state: -1,
+    remark: remark.value,
+    expected_delivery_time: expectedDeliveryTime.value,
   }));
 
   fetch(Cart.submitOrderList, { orderList }).then((data) => {
@@ -150,6 +168,9 @@ const generateOrders = () => {
       payRejecter = reject;
     }).finally(() => {
       $store.commit("updateCartList", unSelectedList);
+      remark.value = "";
+      expectedDeliveryTime.value = "";
+      receiveAddr.value = "";
       emit("change");
     });
   });
@@ -213,6 +234,9 @@ const toggleSelectAll = () => {
 
   .header {
     margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .content {

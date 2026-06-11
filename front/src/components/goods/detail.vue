@@ -57,6 +57,24 @@
             min="1"
           ></el-input-number>
         </el-form-item>
+        <el-form-item v-if="curStatus === 'customer'" label="remark">
+          <el-input
+            v-model="orderForm.remark"
+            type="textarea"
+            :rows="3"
+            maxlength="200"
+            show-word-limit
+            placeholder="special requests, taste preference, no spicy..."
+          />
+        </el-form-item>
+        <el-form-item v-if="curStatus === 'customer'" label="delivery_time">
+          <el-date-picker
+            v-model="orderForm.expected_delivery_time"
+            type="datetime"
+            placeholder="select expected delivery time"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+          />
+        </el-form-item>
       </el-form>
       <div class="footer">
         <el-button
@@ -168,6 +186,8 @@ const orderFormRef = ref(null);
 const orderForm = reactive({
   prod_num: 1,
   receiveAddr: "",
+  remark: "",
+  expected_delivery_time: "",
 });
 const openEditModal = () => {
   let info = props.productInfo;
@@ -184,6 +204,8 @@ const createOrder = async () => {
     prod_num: orderForm.prod_num, // 暂时先买一件
     rec_addr: orderForm.receiveAddr,
     state: -1,
+    remark: orderForm.remark,
+    expected_delivery_time: orderForm.expected_delivery_time,
   };
 
   fetch(Order.createOrder, params).then((data) => {
@@ -266,6 +288,10 @@ const closeDetail = () => {
       ElMessage.error("fail to pay the bill");
       toPay.value = false;
     }
+    orderForm.prod_num = 1;
+    orderForm.receiveAddr = "";
+    orderForm.remark = "";
+    orderForm.expected_delivery_time = "";
   }, 300);
 };
 

@@ -88,6 +88,18 @@
               <span class="price">{{ item.orderInfo.account }}￥</span>
               <span>for {{ item.productList.reduce((sum, product) => sum + Number(product.prodNum || 0), 0) }} item(s)</span>
             </el-descriptions-item>
+            <el-descriptions-item label-align="center">
+              <template #label>
+                <div>Remark</div>
+              </template>
+              {{ item.orderInfo.remark || "-" }}
+            </el-descriptions-item>
+            <el-descriptions-item label-align="center">
+              <template #label>
+                <div>Expected Delivery</div>
+              </template>
+              {{ item.orderInfo.expectedDeliveryTime || "-" }}
+            </el-descriptions-item>
           </el-descriptions>
         </div>
       </div>

@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,4 +23,7 @@ public class OrderInfoCart {
     private String recAddr;
     private int state;
     private int account;
+    private String remark;
+    @JsonProperty("expected_delivery_time")
+    private LocalDateTime expectedDeliveryTime;
 }
