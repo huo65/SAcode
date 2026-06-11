@@ -55,7 +55,9 @@ public class LoginInterceptor implements HandlerInterceptor {
         return "GET".equals(method) && (
                 "/category".equals(path) ||
                 "/product/search".equals(path) ||
-                "/product/info".equals(path)
+                "/product/info".equals(path) ||
+                "/restaurant/list".equals(path) ||
+                "/restaurant/info".equals(path)
         );
     }
 

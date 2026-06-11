@@ -14,6 +14,7 @@ const store = createStore({
                 // 存放tab切换时要触发的函数，用于自动刷新数据
                 Category: null,
                 Goods: null,
+                Restaurant: null,
                 Order: null,
                 Info: null,
             },

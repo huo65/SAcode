@@ -114,6 +114,18 @@ export const Product = {
     },
 };
 
+export const Restaurant = {
+    list: {
+        method: "get",
+        url: `${host}/restaurant/list`,
+    },
+
+    info: {
+        method: "get",
+        url: `${host}/restaurant/info`,
+    },
+};
+
 // 订单相关接口信息
 export const Order = {
     // 创建订单(单个)
