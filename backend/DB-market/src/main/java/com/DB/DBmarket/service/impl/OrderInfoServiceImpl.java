@@ -352,7 +352,12 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 orderInfoReturn.setImgList(imgList);
                 orderInfoReturn.setCusName(userMapper.getNameById(orderInfo.getCus()));
                 orderInfoReturn.setMerName(userMapper.getNameById(orderInfo.getMer()));
-                orderInfoReturn.setReviewed(orderReviewMapper.getByOrderId(orderInfo.getId()) != null);
+                com.DB.DBmarket.pojo.OrderReview review = orderReviewMapper.getByOrderId(orderInfo.getId());
+                if (review != null) {
+                    review.setCustomerName(userMapper.getNameById(review.getCus()));
+                }
+                orderInfoReturn.setReview(review);
+                orderInfoReturn.setReviewed(review != null);
 
                 orderIdMap.put(orderInfo.getId(),merchantId);
                 returnList.add(orderInfoReturn);

@@ -126,6 +126,8 @@ CREATE TABLE IF NOT EXISTS order_review (
     score INT NOT NULL COMMENT '评分 1-5',
     content TEXT NOT NULL COMMENT '评价内容',
     created_time DATETIME NOT NULL COMMENT '评价时间',
+    reply_content TEXT COMMENT '商家回复内容',
+    reply_time DATETIME COMMENT '商家回复时间',
     INDEX idx_order_review_mer (mer),
     INDEX idx_order_review_cus (cus),
     FOREIGN KEY (cus) REFERENCES user(id) ON DELETE CASCADE,

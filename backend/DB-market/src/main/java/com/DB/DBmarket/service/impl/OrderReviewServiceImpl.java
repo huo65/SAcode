@@ -73,6 +73,38 @@ public class OrderReviewServiceImpl implements OrderReviewService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderReview replyReview(CurrentUser currentUser, String orderId, String replyContent) {
+        if (orderId == null || orderId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Order id is required.");
+        }
+        if (!currentUser.isMerchant()) {
+            throw new IllegalArgumentException("Only merchants can reply reviews.");
+        }
+        if (replyContent == null || replyContent.trim().isEmpty()) {
+            throw new IllegalArgumentException("Reply content is required.");
+        }
+
+        OrderReview review = orderReviewMapper.getByOrderId(orderId);
+        if (review == null) {
+            throw new IllegalArgumentException("Review does not exist.");
+        }
+        if (!currentUser.getId().equals(review.getMer())) {
+            throw new IllegalArgumentException("No permission to reply this review.");
+        }
+        if (review.getReplyContent() != null && !review.getReplyContent().trim().isEmpty()) {
+            throw new IllegalArgumentException("This review has already been replied.");
+        }
+
+        orderReviewMapper.replyReview(orderId, replyContent.trim(), LocalDateTime.now());
+        OrderReview saved = orderReviewMapper.getByOrderId(orderId);
+        if (saved != null) {
+            saved.setCustomerName(userMapper.getNameById(saved.getCus()));
+        }
+        return saved;
+    }
+
+    @Override
     public List<OrderReview> listMerchantReviews(String merchantId) {
         if (merchantId == null || merchantId.trim().isEmpty()) {
             return Collections.emptyList();

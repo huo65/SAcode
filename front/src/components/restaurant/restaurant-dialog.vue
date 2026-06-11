@@ -79,6 +79,11 @@
               <el-rate :model-value="review.score" disabled />
             </div>
             <p class="review-content">{{ review.content }}</p>
+            <div v-if="review.replyContent" class="merchant-reply">
+              <strong>Merchant Reply:</strong>
+              <p>{{ review.replyContent }}</p>
+              <span>{{ formatReviewTime(review.replyTime) }}</span>
+            </div>
             <span class="review-time">{{ formatReviewTime(review.createdTime) }}</span>
           </div>
         </div>
@@ -240,6 +245,14 @@ const formatReviewTime = (value) => {
   .review-time {
     color: #909399;
     font-size: 12px;
+  }
+
+  .merchant-reply {
+    margin: 8px 0;
+    padding: 10px 12px;
+    background: #f5f7fa;
+    border-radius: 8px;
+    color: #606266;
   }
 
   .product-list {

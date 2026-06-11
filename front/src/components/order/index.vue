@@ -106,6 +106,24 @@
               </template>
               {{ item.orderInfo.refundReason || "-" }}
             </el-descriptions-item>
+            <el-descriptions-item
+              v-if="item.reviewed"
+              label-align="center"
+              :span="2"
+            >
+              <template #label>
+                <div>Review</div>
+              </template>
+              <div class="review-block">
+                <div>
+                  <strong>{{ item.review?.score || 0 }}/5</strong>
+                  <span>{{ item.review?.content || "-" }}</span>
+                </div>
+                <div v-if="item.review?.replyContent" class="reply-text">
+                  Reply: {{ item.review.replyContent }}
+                </div>
+              </div>
+            </el-descriptions-item>
           </el-descriptions>
         </div>
       </div>
@@ -184,6 +202,17 @@
           >Review</el-button
         >
         <el-button
+          type="primary"
+          v-if="
+            item.orderInfo.state == stateEnum.received &&
+            userInfo.type === 'mer' &&
+            item.reviewed &&
+            !item.review?.replyContent
+          "
+          @click="openReplyDialog(item)"
+          >Reply Review</el-button
+        >
+        <el-button
           type="danger"
           v-if="
             item.orderInfo.state == stateEnum.delivering ||
@@ -238,6 +267,36 @@
       <template #footer>
         <el-button @click="closeReviewDialog">Cancel</el-button>
         <el-button type="primary" @click="submitReview">Submit Review</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      :model-value="replyVisible"
+      title="Reply Review"
+      width="520px"
+      @close="closeReplyDialog"
+    >
+      <el-form label-width="110px">
+        <el-form-item label="Order">
+          <span>{{ replyForm.orderId || "-" }}</span>
+        </el-form-item>
+        <el-form-item label="Review">
+          <span>{{ replyForm.reviewContent || "-" }}</span>
+        </el-form-item>
+        <el-form-item label="Reply" required>
+          <el-input
+            v-model="replyForm.replyContent"
+            type="textarea"
+            :rows="4"
+            maxlength="300"
+            show-word-limit
+            placeholder="reply to customer feedback"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="closeReplyDialog">Cancel</el-button>
+        <el-button type="primary" @click="submitReply">Submit Reply</el-button>
       </template>
     </el-dialog>
   </div>
@@ -484,6 +543,43 @@ const submitReview = () => {
   });
 };
 
+const replyVisible = ref(false);
+const replyForm = reactive({
+  orderId: "",
+  reviewContent: "",
+  replyContent: "",
+});
+
+const openReplyDialog = (item) => {
+  replyForm.orderId = item.orderInfo.id;
+  replyForm.reviewContent = item.review?.content || "";
+  replyForm.replyContent = "";
+  replyVisible.value = true;
+};
+
+const closeReplyDialog = () => {
+  replyVisible.value = false;
+};
+
+const submitReply = () => {
+  if (!replyForm.orderId) {
+    ElMessage.error("Order is required");
+    return;
+  }
+  if (!replyForm.replyContent.trim()) {
+    ElMessage.error("Reply content is required");
+    return;
+  }
+  fetch(Review.reply, {
+    orderId: replyForm.orderId,
+    replyContent: replyForm.replyContent.trim(),
+  }).then(() => {
+    ElMessage.success("Reply submitted successfully");
+    closeReplyDialog();
+    getOrderList();
+  });
+};
+
 const initOrderData = () => {
   getOrderList();
 };
@@ -544,6 +640,14 @@ onMounted(() => {
       margin: 20px;
       .price {
         color: @price;
+      }
+      .review-block {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .reply-text {
+        color: #606266;
       }
     }
 

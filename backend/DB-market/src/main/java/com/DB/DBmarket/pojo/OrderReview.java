@@ -16,5 +16,7 @@ public class OrderReview {
     private Integer score;
     private String content;
     private LocalDateTime createdTime;
+    private String replyContent;
+    private LocalDateTime replyTime;
     private String customerName;
 }

@@ -33,4 +33,18 @@ public class OrderReviewController {
             return Result.error(e.getMessage());
         }
     }
+
+    @PostMapping("/reply")
+    public Result replyReview(@RequestBody Map<String, Object> request) {
+        try {
+            String orderId = request.get("orderId") == null ? null : String.valueOf(request.get("orderId"));
+            String replyContent = request.get("replyContent") == null ? null : String.valueOf(request.get("replyContent"));
+            OrderReview saved = orderReviewService.replyReview(CurrentUserHolder.require(), orderId, replyContent);
+            Map<String, Object> data = new HashMap<>();
+            data.put("review", saved);
+            return Result.success(data);
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

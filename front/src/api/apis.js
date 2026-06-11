@@ -131,6 +131,10 @@ export const Review = {
         method: "post",
         url: `${host}/review/add`,
     },
+    reply: {
+        method: "post",
+        url: `${host}/review/reply`,
+    },
 };
 
 // 订单相关接口信息

@@ -1,6 +1,7 @@
 package com.DB.DBmarket.pojo.utils;
 
 import com.DB.DBmarket.pojo.OrderInfo;
+import com.DB.DBmarket.pojo.OrderReview;
 import com.DB.DBmarket.pojo.Product;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,4 +26,5 @@ public class OrderInfoReturn {
     //private String img;//商品第一张图片
     private List<String> imgList;//商品第一张图片
     private Boolean reviewed;
+    private OrderReview review;
 }
