@@ -40,8 +40,21 @@ public interface ProductMapper {
     @Select("SELECT * FROM product WHERE id = #{prod}")
     Product getOneProductById(String prod);
 
+    /**
+     * Get product with row-level lock for stock deduction.
+     * Uses SELECT ... FOR UPDATE to prevent concurrent overselling.
+     */
+    @Select("SELECT * FROM product WHERE id = #{prod} FOR UPDATE")
+    Product getOneProductByIdForUpdate(String prod);
+
     @Update("update product set number = number - #{amount} where id = #{id} and number >= #{amount}")
     int decrementStock(@Param("id") String id, @Param("amount") Integer amount);
+
+    /**
+     * Restore stock when order is refunded.
+     */
+    @Update("update product set number = number + #{amount} where id = #{id}")
+    int incrementStock(@Param("id") String id, @Param("amount") Integer amount);
 
     @Select("SELECT * FROM product WHERE id = #{prod}")
     ProductReturn getOneProductReturnById(String prod);

@@ -104,7 +104,8 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 if (order.getState() == null || order.getState() != -1) {
                     throw new IllegalArgumentException("Only unpaid orders can be paid.");
                 }
-                Product product = productMapper.getOneProductById(order.getProd());
+                // Use FOR UPDATE lock to prevent concurrent stock deduction overselling
+                Product product = productMapper.getOneProductByIdForUpdate(order.getProd());
                 if (product == null || product.getNumber() == null || product.getNumber() < order.getProdNum()) {
                     throw new IllegalArgumentException("Insufficient stock for order " + orderId);
                 }
@@ -255,6 +256,10 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             if (first.getCus() != null) {
                 double balance = userMapper.getBalance(first.getCus());
                 userMapper.refundOrPay(first.getCus(), balance + orderInfoMapper.getOrderAccount(orderId));
+            }
+            // Restore stock for all items in this order
+            for (OrderInfo orderItem : rows) {
+                productMapper.incrementStock(orderItem.getProd(), orderItem.getProdNum());
             }
         } else if (targetState == -1 || targetState == 0) {
             throw new IllegalArgumentException("Use order creation or payment endpoint for this state.");
