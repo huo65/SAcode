@@ -36,7 +36,7 @@
           >
         </div>
         <div class="info">
-          <img class="product-img" :src="item.img" />
+          <img class="product-img" :src="item.imgList?.[0]" />
           <el-descriptions class="detail" :column="2" :border="true">
             <el-descriptions-item label-align="center" :span="2">
               <template #label>
@@ -86,7 +86,7 @@
                 <div>Bill</div>
               </template>
               <span class="price">{{ item.orderInfo.account }}￥</span>
-              <span>for {{ item.productNumberList[0] }} item(s)</span>
+              <span>for {{ item.productList.reduce((sum, product) => sum + Number(product.prodNum || 0), 0) }} item(s)</span>
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -108,7 +108,7 @@
             userInfo.type === 'mer'
           "
           @click="updateOrder(item, 3)"
-          >Deliver</el-button
+          >Send to Driver</el-button
         >
         <!--木吱吱-->
         <el-button
@@ -208,6 +208,10 @@ const stateOptions = [
     value: 0,
   },
   {
+    label: "waiting driver",
+    value: 3,
+  },
+  {
     label: "delivering",
     value: 1,
   },
@@ -222,6 +226,7 @@ const stateType = {
   [stateEnum.returning]: "danger",
   [stateEnum.toPay]: "primary",
   [stateEnum.toDeliver]: "primary",
+  [stateEnum.missOrder]: "warning",
   [stateEnum.delivering]: "primary",
   [stateEnum.received]: "success",
 };
@@ -253,6 +258,8 @@ const getOrderList = () => {
     let key = userInfo.value.type;
     if (userInfo.value.type === "admin") {
       key = "allOrder";
+    } else if (userInfo.value.type === "driver") {
+      key = "driver";
     }
     orderList.value = data[key + "List"];
     console.log(`orderList ${key}List`, data[key + "List"]);
@@ -275,8 +282,7 @@ const updateOrder = (order, wantedState) => {
 
   fetch(Order.updateOrder, {
     id: curOrder.value.id,
-    state: wantedState,
-    merId: curOrder.value.mer,
+    targetState: wantedState,
   }).then((data) => {
     console.log("after update order", data.order_info);
     getOrderList();

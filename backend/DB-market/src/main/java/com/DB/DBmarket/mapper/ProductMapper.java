@@ -11,7 +11,7 @@ import java.util.List;
 @Mapper
 public interface ProductMapper {
     @Insert("insert into product(id,name,description,price,mer,cat_name,number,state) values(#{id},#{name},#{description},#{price},#{mer},#{cat_name},#{number},#{state})")
-    void insertProduct(String id, String name, String description, Integer price, String mer, String cat_name, Integer number, Integer state);
+    void insertProduct(@Param("id") String id, @Param("name") String name, @Param("description") String description, @Param("price") Integer price, @Param("mer") String mer, @Param("cat_name") String cat_name, @Param("number") Integer number, @Param("state") Integer state);
 
     @Delete("delete from product where id=#{id}")
     void deleteProduct(String id);
@@ -39,6 +39,9 @@ public interface ProductMapper {
     List<String> getFirstImg(String prod);
     @Select("SELECT * FROM product WHERE id = #{prod}")
     Product getOneProductById(String prod);
+
+    @Update("update product set number = number - #{amount} where id = #{id} and number >= #{amount}")
+    int decrementStock(@Param("id") String id, @Param("amount") Integer amount);
 
     @Select("SELECT * FROM product WHERE id = #{prod}")
     ProductReturn getOneProductReturnById(String prod);

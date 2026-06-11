@@ -24,4 +24,6 @@ public class User {
     private  Integer balance;
     //描述
     private String description;
+    //账号状态：0正常，1禁用
+    private Integer disabled;
 }

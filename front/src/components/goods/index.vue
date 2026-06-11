@@ -4,7 +4,7 @@
     <div class="search">
       <el-form :inline="true">
         <!-- 基于商品分类查询 -->
-        <el-form-item label="goods category:">
+        <el-form-item :label="t('goods.goodsCategory')">
           <el-select
             v-model="searchCondition.category"
             clearable
@@ -18,21 +18,21 @@
           </el-select>
         </el-form-item>
         <!-- 基于商品名查询 -->
-        <el-form-item label="goods name:">
+        <el-form-item :label="t('goods.goodsName')">
           <el-input
             v-model="searchCondition.name"
             clearable
             style="width: 220px"
           ></el-input>
         </el-form-item>
-        <el-form-item label="MinPrice:">
+        <el-form-item :label="t('goods.minPrice')">
           <el-input
             v-model="searchCondition.min_price"
             clearable
             style="width: 120px"
           ></el-input>
         </el-form-item>
-        <el-form-item label="MaxPrice:">
+        <el-form-item :label="t('goods.maxPrice')">
           <el-input
             v-model="searchCondition.max_price"
             clearable
@@ -40,27 +40,27 @@
           ></el-input>
         </el-form-item>
         <!-- 基于商品状态查询 -->
-        <el-form-item label="goods state:" v-if="curStatus === 'admin'">
+        <el-form-item :label="t('goods.goodsState')" v-if="curStatus === 'admin'">
           <el-select
             v-model="searchCondition.state"
             clearable
             style="width: 120px"
           >
-            <el-option label="Not Passed" :value="-1"></el-option>
-            <el-option label="Pending review" :value="0"></el-option>
-            <el-option label="Passed" :value="1"></el-option> </el-select
+            <el-option :label="t('goods.notPassed')" :value="-1"></el-option>
+            <el-option :label="t('goods.pendingReview')" :value="0"></el-option>
+            <el-option :label="t('goods.passed')" :value="1"></el-option> </el-select
         ></el-form-item>
 
         <!-- 基于商品状态查询 -->
-        <el-form-item label="goods state:" v-if="curStatus === 'admin'">
+        <el-form-item :label="t('goods.goodsState')" v-if="curStatus === 'admin'">
           <el-select
             v-model="searchCondition.state"
             clearable
             style="width: 120px"
           >
-            <el-option label="Not Passed" :value="-1"></el-option>
-            <el-option label="Pending review" :value="0"></el-option>
-            <el-option label="Passed" :value="1"></el-option> </el-select
+            <el-option :label="t('goods.notPassed')" :value="-1"></el-option>
+            <el-option :label="t('goods.pendingReview')" :value="0"></el-option>
+            <el-option :label="t('goods.passed')" :value="1"></el-option> </el-select
         ></el-form-item>
 
         <el-form-item>
@@ -68,29 +68,29 @@
             v-if="searchCondition.priceOrder == 0"
             @click="order(1)"
             type="primary"
-            >low to hign↑</el-button
+            >{{ t('goods.lowToHigh') }}</el-button
           >
           <el-button
             v-if="searchCondition.priceOrder == 1"
             @click="order(0)"
             type="primary"
-            >high to low↓</el-button
+            >{{ t('goods.highToLow') }}</el-button
           >
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="clickSearchGoods"
-            ><el-icon><Search /></el-icon>Search</el-button
+            ><el-icon><Search /></el-icon>{{ t('goods.search') }}</el-button
           >
         </el-form-item>
         <el-form-item v-if="curStatus === 'merchant'">
           <el-button type="primary" @click="openEditModal"
-            ><el-icon><Plus /></el-icon>Add</el-button
+            ><el-icon><Plus /></el-icon>{{ t('goods.add') }}</el-button
           >
         </el-form-item>
         <el-form-item v-if="curStatus === 'customer'">
           <el-button type="primary" @click="toggleCart"
-            ><el-icon><ShoppingCart /></el-icon>Cart</el-button
+            ><el-icon><ShoppingCart /></el-icon>{{ t('goods.cart') }}</el-button
           >
         </el-form-item>
       </el-form>
@@ -170,6 +170,7 @@
 <script setup>
 import { goodsCategories, prod_list } from "@/mock";
 import { ref, reactive, onMounted, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { imageUrlMap } from "@/mock";
 import { ElMessage } from "element-plus";
 import { curStatus } from "@/store";
@@ -180,6 +181,8 @@ import $store, { userInfo, productCategories, cartList } from "@/store";
 import fetch from "@/api/fetch.js";
 import { User, Product, Cart } from "@/api/apis.js";
 import { Search, ShoppingCart, Plus } from "@element-plus/icons-vue";
+
+const { t } = useI18n();
 
 /* 查询列表 */
 const searchCondition = reactive({
@@ -344,7 +347,7 @@ const addToCart = (productId, number) => {
     cartList: cartListFormated,
   }).then(() => {
     getCartInfo();
-    ElMessage.success("Add to cart Successfully");
+    ElMessage.success(t('goods.addToCartSuccess'));
   });
 };
 

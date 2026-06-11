@@ -1,7 +1,7 @@
 <template>
   <div class="login">
     <div class="login-bg"></div>
-    <div class="login-title">Welcome to DBTake-Out</div>
+    <div class="login-title">{{ t('login.title') }}</div>
     <div class="login-board">
       <el-form
         class="login-form"
@@ -10,10 +10,10 @@
         :model="loginForm"
         label-width="auto"
       >
-        <el-form-item label="name" prop="name" required>
+        <el-form-item :label="t('login.name')" prop="name" required>
           <el-input v-model="loginForm.name" />
         </el-form-item>
-        <el-form-item label="password" prop="password" required>
+        <el-form-item :label="t('login.password')" prop="password" required>
           <el-input
             type="password"
             show-password
@@ -29,40 +29,41 @@
         :rules="registerFormRules"
         label-width="auto"
       >
-        <el-form-item label="account-type" prop="type" required>
-          <el-select v-model="registerForm.type" placeholder="select your type">
-            <el-option label="customer" value="cus"></el-option>
-            <el-option label="merchant" value="mer"></el-option>
+        <el-form-item :label="t('login.accountType')" prop="type" required>
+          <el-select v-model="registerForm.type" :placeholder="t('login.selectYourType')">
+            <el-option :label="t('login.customer')" value="cus"></el-option>
+            <el-option :label="t('login.merchant')" value="mer"></el-option>
+            <el-option :label="t('login.driver')" value="driver"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="name" prop="name" required>
+        <el-form-item :label="t('login.name')" prop="name" required>
           <el-input v-model="registerForm.name" />
         </el-form-item>
-        <el-form-item label="phone" prop="phone" required>
+        <el-form-item :label="t('login.phone')" prop="phone" required>
           <el-input v-model="registerForm.phone" />
         </el-form-item>
-        <el-form-item label="password" prop="password" required>
+        <el-form-item :label="t('login.password')" prop="password" required>
           <el-input v-model="registerForm.password" show-password />
         </el-form-item>
-        <el-form-item label="confirm-password" prop="confirm_password" required>
+        <el-form-item :label="t('login.confirmPassword')" prop="confirm_password" required>
           <el-input v-model="registerForm.confirm_password" show-password />
         </el-form-item>
       </el-form>
 
       <div class="btn-box">
         <template v-if="curFormCase === 'login'">
-          <el-button @click="clickLogIn(loginFormRef)">Log in</el-button>
-          <el-button @click="guestVisit">Have a look</el-button>
+          <el-button @click="clickLogIn(loginFormRef)">{{ t('login.login') }}</el-button>
+          <el-button @click="guestVisit">{{ t('login.haveLook') }}</el-button>
           <el-button type="primary" @click="() => (curFormCase = 'register')"
-            >Sign up</el-button
+            >{{ t('login.signUp') }}</el-button
           >
         </template>
         <template v-else>
           <el-button @click="() => (curFormCase = 'login')"
-            >Back to log in</el-button
+            >{{ t('login.backToLogin') }}</el-button
           >
           <el-button type="primary" @click="clickSignUp(registerFormRef)"
-            >Sign up</el-button
+            >{{ t('login.signUp') }}</el-button
           >
         </template>
       </div>
@@ -73,11 +74,13 @@
 <script setup>
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
 import $store from "@/store/index.js";
 import fetch from "@/api/fetch.js";
 import { User } from "@/api/apis.js";
 
+const { t } = useI18n();
 const $router = useRouter();
 const curFormCase = ref("login"); // "login" | "register"
 const loginFormRef = ref();
@@ -91,12 +94,14 @@ const clickLogIn = (loginFormRef) => {
       console.log("校验成功，发送请求");
       fetch(User.login, loginForm).then((data) => {
         console.log("登录成功", data);
-        ElMessage.success("Log in Successfully");
+        ElMessage.success(t('login.loginSuccess'));
+        sessionStorage.removeItem("guestMode");
+        sessionStorage.setItem("token", data.token || data.jwt || data.JWT);
         $store.commit("setUserInfo", data.user);
         $router.push({ path: "/home" });
       });
     } else {
-      ElMessage.error("please finish the fields");
+      ElMessage.error(t('login.pleaseFinish'));
     }
   });
 };
@@ -115,9 +120,9 @@ const registerFormRules = reactive({
     {
       validator: (rule, value, callback) => {
         if (!value) {
-          callback(new Error("confirm_password is required"));
+          callback(new Error(t('login.confirmPasswordRequired')));
         } else if (value !== registerForm.password) {
-          callback(new Error("Two password inputs don't match"));
+          callback(new Error(t('login.passwordNotMatch')));
         } else {
           callback();
         }
@@ -131,7 +136,7 @@ const clickSignUp = async (registerFormRef) => {
       console.log("校验通过，发送请求");
       fetch(User.register, registerForm).then((res) => {
         console.log("注册成功", res);
-        ElMessage.success("Sign up Successfully");
+        ElMessage.success(t('login.signUpSuccess'));
       });
     } else {
       console.log("校验失败", fields);
@@ -140,7 +145,8 @@ const clickSignUp = async (registerFormRef) => {
 };
 
 const guestVisit = () => {
-  $store.commit("setUserInfo", { status: "guest" });
+  $store.commit("clearUserInfo");
+  sessionStorage.setItem("guestMode", "1");
   $router.push({ path: "/home" });
 };
 </script>

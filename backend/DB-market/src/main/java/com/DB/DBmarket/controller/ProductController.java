@@ -3,6 +3,8 @@ package com.DB.DBmarket.controller;
 import com.DB.DBmarket.pojo.Product;
 import com.DB.DBmarket.pojo.Result;
 import com.DB.DBmarket.pojo.SearchProductRequest;
+import com.DB.DBmarket.pojo.utils.CurrentUser;
+import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
 import com.DB.DBmarket.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,9 @@ public class ProductController {
 
     @PostMapping("/add")
     public Result addProduct(@RequestBody Product product) {
+        CurrentUser currentUser = CurrentUserHolder.require();
+        if (!currentUser.isMerchant() && !currentUser.isAdmin()) return Result.error("Only merchants can add products.");
+        if (!currentUser.isAdmin()) product.setMer(currentUser.getId());
         log.info("addProduct");
         log.info(product.toString());
         if(productService.addProduct(product)) {
@@ -35,6 +40,14 @@ public class ProductController {
 
     @DeleteMapping("/delete")
     public Result deleteProduct(@RequestParam("id") String id) {
+        CurrentUser currentUser = CurrentUserHolder.require();
+        Product product = null;
+        List<Product> products = productService.getProductById(id);
+        if (products != null && !products.isEmpty()) product = products.get(0);
+        if (product == null) return Result.error("Product does not exist.");
+        if (!currentUser.isAdmin() && (!currentUser.isMerchant() || !currentUser.getId().equals(product.getMer()))) {
+            return Result.error("No permission to delete this product.");
+        }
         log.info("deleteProduct");
         log.info(id);
         if(productService.deleteProduct(id)) {
@@ -48,6 +61,8 @@ public class ProductController {
 
     @GetMapping("/search")
     public Result searchProduct(@ModelAttribute SearchProductRequest searchProductRequest) {
+        CurrentUser currentUser = CurrentUserHolder.get();
+        searchProductRequest.setId(currentUser == null ? null : currentUser.getId());
         searchProductRequest.format();
         log.info("search product:{}",searchProductRequest);
         productService.calculateRefundAndComp();
@@ -84,6 +99,14 @@ public class ProductController {
 
     @PostMapping("/update")
     public Result updateProduct(@RequestBody Product product){
+        CurrentUser currentUser = CurrentUserHolder.require();
+        List<Product> products = productService.getProductById(product.getId());
+        if (products == null || products.isEmpty()) return Result.error("Product does not exist.");
+        Product existing = products.get(0);
+        if (!currentUser.isAdmin() && (!currentUser.isMerchant() || !currentUser.getId().equals(existing.getMer()))) {
+            return Result.error("No permission to update this product.");
+        }
+        if (!currentUser.isAdmin()) product.setMer(currentUser.getId());
         log.info("update product:{}",product);
         productService.updateProduct(product);
         return Result.success();
@@ -91,6 +114,8 @@ public class ProductController {
 
     @GetMapping("/check")
     public Result checkProduct(@RequestParam("id") String id,@RequestParam("state") Integer state){
+        CurrentUser currentUser = CurrentUserHolder.require();
+        if (!currentUser.isAdmin()) return Result.error("Only admin can check products.");
         log.info("admin check products");
         if (state < -1 || state > 1) return Result.error("Invalid product state!");
         productService.updateState(id, state);

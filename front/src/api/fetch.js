@@ -1,6 +1,8 @@
 import axios from "axios";
 // import qs from "qs";
 import { ElMessage as message } from "element-plus";
+import router from "@/router";
+import $store from "@/store";
 
 const instance = axios.create({
   timeout: 20000,
@@ -102,6 +104,12 @@ const fetch = (info, data) => {
     .then((res) => {
       // 请求成功，检查业务（code）是否成功
       console.log("check code", res);
+      if (res.code === -1) {
+        $store.commit("clearUserInfo");
+        router.push({ path: "/login" });
+        message.error(res.msg ?? "please log in first");
+        return Promise.reject(res.data);
+      }
       if (!/mock/.test(url) && res.code !== 1) {
         message.error(res.msg ?? "res.code error");
         return Promise.reject(res.data);

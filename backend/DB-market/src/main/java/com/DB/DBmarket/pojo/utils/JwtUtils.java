@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class JwtUtils {
     //JWT签名密钥
-    private static String signKey="muizhizhi";
+    private static String signKey=System.getenv().getOrDefault("DBMARKET_JWT_SECRET", "change-me-in-env");
     //JWT过期时间
     private static Long expire=1800000L;//30分钟
 

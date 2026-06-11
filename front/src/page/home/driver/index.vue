@@ -2,24 +2,30 @@
   <!-- driver 身份 -->
   <div class="driver">
     <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
-      <el-tab-pane label="Goods" name="first"><Goods /></el-tab-pane>
-      <el-tab-pane label="Order" name="second"><Order /></el-tab-pane>
-      <el-tab-pane label="Info" name="third"><Info /></el-tab-pane>
+      <el-tab-pane :label="t('common.order')" name="first"><Order /></el-tab-pane>
+      <el-tab-pane :label="t('common.info')" name="second"><Info /></el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup>
 import { ref } from "vue";
-import Goods from "@/components/goods/index.vue";
+import { useI18n } from "vue-i18n";
 import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
 import { curStatus, refreshDataFnMap } from "@/store";
 
+const { t } = useI18n();
 const activeName = ref("first");
 
+const tabKeyMap = {
+  [t('common.order')]: 'Order',
+  [t('common.info')]: 'Info'
+};
+
 const handleClick = (tab, event) => {
-  refreshDataFnMap.value?.[tab.props.label]?.();
+  const key = tabKeyMap[tab.props.label] || tab.props.label;
+  refreshDataFnMap.value?.[key]?.();
 };
 </script>
 

@@ -174,9 +174,9 @@ const submit = (productInfoRef) => {
         });
       } else {
         fetch(Product.addProduct, {
-          ...productInfoForm,
-          price: Number(productInfoForm.price),
-          number: Number(productInfoForm.number),
+          ...productInfoForm.value,
+          price: Number(productInfoForm.value.price),
+          number: Number(productInfoForm.value.number),
           mer: userInfo.value.id,
         }).then(() => {
           ElMessage.success("Add the product successfully");

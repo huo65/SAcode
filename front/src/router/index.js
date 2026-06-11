@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import Login from "@/page/login/index.vue";
 import Home from "@/page/home/index.vue";
+import $store from "@/store";
 
 const routes = [
   { path: "/", redirect: "/login" },
@@ -14,6 +15,16 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes,
+});
+
+router.beforeEach((to) => {
+  if (to.path === "/home" && !$store.state.userInfo.id && !sessionStorage.getItem("token") && !sessionStorage.getItem("guestMode")) {
+    return "/login";
+  }
+  if (to.path === "/login" && $store.state.userInfo.id && sessionStorage.getItem("token")) {
+    return "/home";
+  }
+  return true;
 });
 
 export default router;

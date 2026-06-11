@@ -31,7 +31,7 @@ export const User = {
     // 添加地址
     addAddress: {
         method: "post",
-        url: `${host}/user/addAdress`,
+        url: `${host}/user/addAddress`,
     },
 
     // 获取用户的地址
@@ -44,6 +44,16 @@ export const User = {
     deleteAddress: {
         method: "delete",
         url: `${host}/user/deleteAddress`,
+    },
+
+    listUsers: {
+        method: "get",
+        url: `${host}/user/list`,
+    },
+
+    updateUserDisabled: {
+        method: "post",
+        url: `${host}/user/disabled`,
     },
 };
 

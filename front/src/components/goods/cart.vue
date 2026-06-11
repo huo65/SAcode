@@ -98,8 +98,6 @@ const finishPay = () => {
   if (!payResolver) return;
   console.log("finishPay");
   fetch(Order.payOrder2, {
-    id: userInfo.value.id,
-    price_list: currentOrderIdList.value.map((_) => [0]),
     orderIdList: currentOrderIdList.value,
   }).then(() => {
     ElMessage.success("Pay the bill successfully");

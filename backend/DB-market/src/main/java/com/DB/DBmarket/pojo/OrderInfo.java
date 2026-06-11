@@ -35,6 +35,17 @@ public class OrderInfo {
     private Integer state;
     //订单金额
     private Integer account;
+    //骑手ID
+    @JsonProperty("driver_id")
+    private String driverId;
+    //订单备注
+    private String remark;
+    //预计送达时间
+    @JsonProperty("expected_delivery_time")
+    private LocalDateTime expectedDeliveryTime;
+    //支付时间
+    @JsonProperty("pay_time")
+    private LocalDateTime payTime;
     //2024.5.22
     //是否被投诉  0未被投诉，1被投诉
     private String  complain;

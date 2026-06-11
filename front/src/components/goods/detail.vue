@@ -215,8 +215,6 @@ const payBill = () => {
 
   // 发送请求支付成功
   fetch(Order.payOrder2, {
-    id: userInfo.value.id,
-    price_list: [[0]],
     orderIdList: [props.orderId || curOrderInfo.value.id],
   }).then(() => {
     ElMessage.success("Pay the Bill Successfully");

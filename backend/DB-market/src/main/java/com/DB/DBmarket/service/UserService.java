@@ -18,4 +18,8 @@ public interface UserService {
     void update(User user);
 
     List<Address> getUserAddress(String id);
+
+    List<User> listUsers(String type);
+
+    boolean updateDisabled(String id, Integer disabled);
 }

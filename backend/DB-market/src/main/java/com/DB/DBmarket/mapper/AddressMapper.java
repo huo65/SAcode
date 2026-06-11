@@ -19,6 +19,8 @@ public interface AddressMapper {
     Integer countAddress();
     @Select("select location from address where addr_id = #{id} ")
     String getAddressByAddressId(String id);
+    @Select("select usr from address where addr_id = #{addressId}")
+    String getAddressOwner(String addressId);
     @Delete("DELETE FROM address")
     void deleteAllAddress();
     @Delete("DELETE FROM address WHERE addr_id = #{addressId}")

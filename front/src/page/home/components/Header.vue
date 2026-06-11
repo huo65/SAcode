@@ -17,7 +17,7 @@
         :type="userInfo.id ? 'danger' : 'primary'"
         @click="clickLogout"
         style="margin-left: 10px"
-        >{{ userInfo.id ? "Log out" : "Log in" }}</el-button
+        >{{ userInfo.id ? t('header.logout') : t('header.login') }}</el-button
       >
     </span>
   </div>
@@ -25,9 +25,12 @@
 
 <script setup>
 import { ref, reactive, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import $store, { curStatus, userInfo } from "@/store/index.js";
 import { Avatar } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
+
+const { t } = useI18n();
 
 // TEST:
 const isTEST = computed(() => $store.state.isTEST);
@@ -46,6 +49,7 @@ defineProps({
 const $router = useRouter();
 
 const clickLogout = () => {
+  $store.commit("clearUserInfo");
   $router.push({
     path: "/login",
   });

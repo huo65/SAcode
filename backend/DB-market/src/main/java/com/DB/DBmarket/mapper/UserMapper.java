@@ -10,15 +10,14 @@ import java.util.List;
 @Mapper
 public interface UserMapper {
     @Update("update user set balance=#{s} where id=#{id}")
-    void refundOrPay(String id,double s);
+    void refundOrPay(@Param("id") String id, @Param("s") double s);
     @Select("select balance from market.user where id=#{id}")
     double getBalance(String id);
     @Select("select * from market.user where id=#{id}")
     User getInfo(String id);
 
-    //通过name和password获取用户
-    @Select("select * from user where name = #{name} and password = #{password}")
-    User getByNameAndPassword(User user);
+    @Select("select * from user where name = #{name}")
+    User getByName(String name);
 
     //注册新用户
     @Insert("insert into user(id, type, name, portrait, password, phone, balance) " +
@@ -32,6 +31,12 @@ public interface UserMapper {
     //获得用户列表最后一个id
     @Select("select id from user order by id desc limit 1")
     String getLastId();
+
+    @Select("<script>select * from market.user <where><if test='type != null and type != \"\"'> type = #{type}</if></where> order by id</script>")
+    List<User> listUsers(@Param("type") String type);
+
+    @Update("update market.user set disabled=#{disabled} where id=#{id}")
+    int updateDisabled(@Param("id") String id, @Param("disabled") Integer disabled);
 
     //更新用户信息
     @UpdateProvider(type = UserMapper.UserProvider.class, method = "updateUser")
@@ -70,6 +75,9 @@ public interface UserMapper {
                     }
                     if (user.getDescription() != null) {
                         SET("description = #{description}");
+                    }
+                    if (user.getDisabled() != null) {
+                        SET("disabled = #{disabled}");
                     }
                     WHERE("id = #{id}");
                 }

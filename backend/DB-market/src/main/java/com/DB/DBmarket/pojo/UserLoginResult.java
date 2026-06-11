@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserLoginResult {
-    private String JWT;
+    private String token;
     private User user;
 }

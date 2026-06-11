@@ -14,5 +14,7 @@ public class OrderList {
 
     private ArrayList<OrderInfoReturn> merList;
 
+    private ArrayList<OrderInfoReturn> driverList;
+
     private ArrayList<OrderInfoReturn> allOrderList;
 }

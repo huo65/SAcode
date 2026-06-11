@@ -7,9 +7,7 @@ const store = createStore({
             isTEST: false,
 
             // 用户身份信息
-            userInfo: {
-                status: "guest",
-            },
+            userInfo: JSON.parse(sessionStorage.getItem("userInfo") || '{"status":"guest"}'),
             category_list: [], // 分类信息
             cart_list: [], // 本地存储的购物车信息
             refreshDataFnMap: {
@@ -43,7 +41,14 @@ const store = createStore({
                 ...state.userInfo,
                 ...info,
             };
+            sessionStorage.setItem("userInfo", JSON.stringify(state.userInfo));
             //console.log("state.userInfo = ", state.userInfo);
+        },
+        clearUserInfo(state) {
+            state.userInfo = { status: "guest" };
+            sessionStorage.removeItem("userInfo");
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("guestMode");
         },
         setCategoryList(state, list) {
             state.category_list = list;

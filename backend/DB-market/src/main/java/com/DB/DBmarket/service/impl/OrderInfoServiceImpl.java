@@ -6,6 +6,7 @@ import com.DB.DBmarket.mapper.ProductMapper;
 import com.DB.DBmarket.mapper.UserMapper;
 import com.DB.DBmarket.pojo.OrderInfo;
 import com.DB.DBmarket.pojo.Product;
+import com.DB.DBmarket.pojo.utils.CurrentUser;
 import com.DB.DBmarket.pojo.utils.OrderInfoReturn;
 import com.DB.DBmarket.pojo.utils.OrderList;
 import com.DB.DBmarket.pojo.utils.ProductReturn;
@@ -34,11 +35,29 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     @Transactional(rollbackFor = Exception.class)
     public Boolean addOrder(OrderInfo orderInfo){
         try {
+            Product product = productMapper.getOneProductById(orderInfo.getProd());
+            if (product == null) {
+                throw new IllegalArgumentException("Product does not exist.");
+            }
+            if (product.getState() == null || product.getState() != 1) {
+                throw new IllegalArgumentException("Product has not been approved.");
+            }
+            if (orderInfo.getProdNum() == null || orderInfo.getProdNum() <= 0) {
+                throw new IllegalArgumentException("Invalid product quantity.");
+            }
+            if (product.getNumber() == null || product.getNumber() < orderInfo.getProdNum()) {
+                throw new IllegalArgumentException("Insufficient stock.");
+            }
+            if (orderInfo.getCus() == null || orderInfo.getRecAddr() == null) {
+                throw new IllegalArgumentException("Customer and receive address are required.");
+            }
             //价格全为整数...
-            Integer price= productMapper.getPrice(orderInfo.getProd());
+            Integer price= product.getPrice();
             Integer account=price * orderInfo.getProdNum();
             orderInfo.setAccount(account);
             orderInfo.setTime(LocalDateTime.now());
+            orderInfo.setMer(product.getMer());
+            if (orderInfo.getState() == null) orderInfo.setState(-1);
             //orderInfo.setMer(userMapper.getIdByName(orderInfo.getMer()));
             List<String> merchantAddress = addressMapper.getAddress(orderInfo.getMer());
             Random random = new Random();
@@ -58,6 +77,54 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         } catch (Exception e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void payOrders(CurrentUser currentUser, List<String> orderIdList) {
+        if (orderIdList == null || orderIdList.isEmpty()) {
+            throw new IllegalArgumentException("Order list is empty.");
+        }
+        double total = 0;
+        List<OrderInfo> rows = new ArrayList<>();
+        Set<String> seenRows = new HashSet<>();
+        for (String orderId : orderIdList) {
+            List<OrderInfo> orderRows = orderInfoMapper.getOrdersById(orderId);
+            if (orderRows == null || orderRows.isEmpty()) {
+                throw new IllegalArgumentException("Order does not exist: " + orderId);
+            }
+            for (OrderInfo order : orderRows) {
+                String rowKey = order.getId() + ":" + order.getProd();
+                if (seenRows.contains(rowKey)) continue;
+                seenRows.add(rowKey);
+                if (!currentUser.isAdmin() && !currentUser.getId().equals(order.getCus())) {
+                    throw new IllegalArgumentException("No permission to pay this order.");
+                }
+                if (order.getState() == null || order.getState() != -1) {
+                    throw new IllegalArgumentException("Only unpaid orders can be paid.");
+                }
+                Product product = productMapper.getOneProductById(order.getProd());
+                if (product == null || product.getNumber() == null || product.getNumber() < order.getProdNum()) {
+                    throw new IllegalArgumentException("Insufficient stock for order " + orderId);
+                }
+                total += order.getAccount();
+                rows.add(order);
+            }
+        }
+        if (!currentUser.isAdmin() && userMapper.getBalance(currentUser.getId()) < total) {
+            throw new IllegalArgumentException("The balance is insufficient.");
+        }
+        for (OrderInfo order : rows) {
+            int affected = productMapper.decrementStock(order.getProd(), order.getProdNum());
+            if (affected <= 0) throw new IllegalArgumentException("Insufficient stock for order " + order.getId());
+        }
+        if (!currentUser.isAdmin()) {
+            userMapper.refundOrPay(currentUser.getId(), userMapper.getBalance(currentUser.getId()) - total);
+        }
+        String now = String.valueOf(LocalDateTime.now());
+        for (String orderId : new HashSet<>(orderIdList)) {
+            orderInfoMapper.updateOrderState(orderId, 0, now, null, now, null, null, null);
         }
     }
     @Override
@@ -104,6 +171,12 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         }else {
                 orderList.setAllOrderList(null);
         }
+        if ("driver".equals(type)) {
+            ArrayList<OrderInfo> driverOrders = orderInfoMapper.getDriverOrder(id, state, timeOrder);
+            orderList.setDriverList(dealOrderInfo(driverOrders));
+        } else {
+            orderList.setDriverList(null);
+        }
 
         return orderList;
     }
@@ -142,6 +215,57 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         } else {
             return null;
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderInfo transitionOrder(CurrentUser currentUser, String orderId, int targetState, String complain, String complainReason, String refundReason) {
+        List<OrderInfo> rows = orderInfoMapper.getOrdersById(orderId);
+        if (rows == null || rows.isEmpty()) {
+            throw new IllegalArgumentException("Order does not exist.");
+        }
+        OrderInfo first = rows.get(0);
+        int currentState = first.getState();
+        String driverId = null;
+
+        if (targetState == 3) {
+            if (!currentUser.isMerchant() || !currentUser.getId().equals(first.getMer()) || currentState != 0) {
+                throw new IllegalArgumentException("Only the merchant can send a paid order to delivery.");
+            }
+        } else if (targetState == 1) {
+            if (!currentUser.isDriver() || currentState != 3) {
+                throw new IllegalArgumentException("Only a driver can take a waiting delivery order.");
+            }
+            driverId = currentUser.getId();
+        } else if (targetState == 2) {
+            if (!currentUser.isCustomer() || !currentUser.getId().equals(first.getCus()) || currentState != 1) {
+                throw new IllegalArgumentException("Only the customer can receive a delivering order.");
+            }
+        } else if (targetState == -2) {
+            if (!currentUser.isCustomer() || !currentUser.getId().equals(first.getCus()) || !(currentState == 1 || currentState == 2)) {
+                throw new IllegalArgumentException("Only the customer can request refund after delivery starts.");
+            }
+        } else if (targetState == -3) {
+            if (!(currentUser.isMerchant() && currentUser.getId().equals(first.getMer())) && !currentUser.isAdmin()) {
+                throw new IllegalArgumentException("Only merchant or admin can confirm refund.");
+            }
+            if (currentState != -2) {
+                throw new IllegalArgumentException("Only refunding orders can be refunded.");
+            }
+            if (first.getCus() != null) {
+                double balance = userMapper.getBalance(first.getCus());
+                userMapper.refundOrPay(first.getCus(), balance + orderInfoMapper.getOrderAccount(orderId));
+            }
+        } else if (targetState == -1 || targetState == 0) {
+            throw new IllegalArgumentException("Use order creation or payment endpoint for this state.");
+        } else {
+            throw new IllegalArgumentException("Invalid order state.");
+        }
+
+        String now = String.valueOf(LocalDateTime.now());
+        int affected = orderInfoMapper.updateOrderState(orderId, targetState, now, driverId, null, complain, complainReason, refundReason);
+        if (affected <= 0) return null;
+        return orderInfoMapper.getOrdersById(orderId).get(0);
     }
 
     @Override
