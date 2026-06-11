@@ -2,7 +2,9 @@ package com.DB.DBmarket;
 
 import com.DB.DBmarket.mapper.ProdImgMapper;
 import com.DB.DBmarket.mapper.ProductMapper;
+import com.DB.DBmarket.mapper.OrderReviewMapper;
 import com.DB.DBmarket.mapper.UserMapper;
+import com.DB.DBmarket.pojo.OrderReview;
 import com.DB.DBmarket.pojo.Address;
 import com.DB.DBmarket.pojo.Product;
 import com.DB.DBmarket.pojo.User;
@@ -37,6 +39,9 @@ class RestaurantServiceImplTests {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private OrderReviewMapper orderReviewMapper;
+
     @InjectMocks
     private RestaurantServiceImpl restaurantService;
 
@@ -55,6 +60,9 @@ class RestaurantServiceImplTests {
         when(prodImgMapper.getProdImg("prod003")).thenReturn(Collections.singletonList("/img/cake.png"));
         when(userMapper.getAddressById("mer001")).thenReturn(Collections.singletonList(new Address("addr1", "mer001", "Downtown")));
         when(userMapper.getAddressById("mer002")).thenReturn(Collections.singletonList(new Address("addr2", "mer002", "Uptown")));
+        when(orderReviewMapper.listByMerchantId("mer001")).thenReturn(Collections.singletonList(buildReview("order-1", "cus001", "mer001", 4)));
+        when(orderReviewMapper.listByMerchantId("mer002")).thenReturn(Collections.emptyList());
+        when(userMapper.getNameById("cus001")).thenReturn("customer");
 
         List<RestaurantSummary> restaurants = restaurantService.listRestaurants(null, null);
 
@@ -64,6 +72,7 @@ class RestaurantServiceImplTests {
         assertEquals(Integer.valueOf(2), spicyHouse.getMenuCount());
         assertEquals(Integer.valueOf(12), spicyHouse.getMinPrice());
         assertEquals("Downtown", spicyHouse.getAddress());
+        assertEquals(Double.valueOf(4.0), spicyHouse.getAverageScore());
     }
 
     @Test
@@ -75,6 +84,7 @@ class RestaurantServiceImplTests {
         when(productMapper.searchProduct(any())).thenReturn(Collections.singletonList(product));
         when(prodImgMapper.getProdImg("prod001")).thenReturn(Collections.singletonList("/img/noodle.png"));
         when(userMapper.getAddressById("mer001")).thenReturn(Collections.singletonList(new Address("addr1", "mer001", "Downtown")));
+        when(orderReviewMapper.listByMerchantId("mer001")).thenReturn(Collections.emptyList());
 
         List<RestaurantSummary> restaurants = restaurantService.listRestaurants("spicy", null);
         List<RestaurantSummary> filteredOut = restaurantService.listRestaurants("burger", null);
@@ -94,6 +104,8 @@ class RestaurantServiceImplTests {
         when(prodImgMapper.getProdImg("prod001")).thenReturn(Collections.singletonList("/img/noodle.png"));
         when(prodImgMapper.getProdImg("prod002")).thenReturn(Collections.singletonList("/img/rice.png"));
         when(userMapper.getAddressById("mer001")).thenReturn(Collections.singletonList(new Address("addr1", "mer001", "Downtown")));
+        when(orderReviewMapper.listByMerchantId("mer001")).thenReturn(Collections.singletonList(buildReview("order-1", "cus001", "mer001", 5)));
+        when(userMapper.getNameById("cus001")).thenReturn("customer");
 
         RestaurantDetail detail = restaurantService.getRestaurantInfo("mer001");
 
@@ -101,6 +113,7 @@ class RestaurantServiceImplTests {
         assertEquals("Spicy House", detail.getName());
         assertEquals(2, detail.getProductList().size());
         assertEquals(Integer.valueOf(12), detail.getMinPrice());
+        assertEquals(1, detail.getReviewList().size());
     }
 
     @Test
@@ -133,5 +146,15 @@ class RestaurantServiceImplTests {
         product.setPrice(price);
         product.setState(1);
         return product;
+    }
+
+    private OrderReview buildReview(String orderId, String cus, String mer, Integer score) {
+        OrderReview review = new OrderReview();
+        review.setOrderId(orderId);
+        review.setCus(cus);
+        review.setMer(mer);
+        review.setScore(score);
+        review.setContent("good");
+        return review;
     }
 }

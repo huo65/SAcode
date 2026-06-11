@@ -118,6 +118,20 @@ CREATE TABLE IF NOT EXISTS message (
     FOREIGN KEY (receiver) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息表';
 
+-- Order Review table
+CREATE TABLE IF NOT EXISTS order_review (
+    order_id VARCHAR(64) PRIMARY KEY COMMENT '订单id',
+    cus VARCHAR(64) NOT NULL COMMENT '评价顾客id',
+    mer VARCHAR(64) NOT NULL COMMENT '被评价商家id',
+    score INT NOT NULL COMMENT '评分 1-5',
+    content TEXT NOT NULL COMMENT '评价内容',
+    created_time DATETIME NOT NULL COMMENT '评价时间',
+    INDEX idx_order_review_mer (mer),
+    INDEX idx_order_review_cus (cus),
+    FOREIGN KEY (cus) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (mer) REFERENCES user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单评价表';
+
 -- Insert default categories
 INSERT IGNORE INTO category (name) VALUES
     ('数码产品'),

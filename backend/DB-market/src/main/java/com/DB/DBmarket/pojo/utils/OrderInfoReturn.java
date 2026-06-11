@@ -24,4 +24,5 @@ public class OrderInfoReturn {
     private String merName;
     //private String img;//商品第一张图片
     private List<String> imgList;//商品第一张图片
+    private Boolean reviewed;
 }

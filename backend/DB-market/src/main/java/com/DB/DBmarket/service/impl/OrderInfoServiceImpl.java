@@ -2,6 +2,7 @@ package com.DB.DBmarket.service.impl;
 
 import com.DB.DBmarket.mapper.AddressMapper;
 import com.DB.DBmarket.mapper.OrderInfoMapper;
+import com.DB.DBmarket.mapper.OrderReviewMapper;
 import com.DB.DBmarket.mapper.ProductMapper;
 import com.DB.DBmarket.mapper.UserMapper;
 import com.DB.DBmarket.pojo.OrderInfo;
@@ -30,6 +31,8 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     private ProductMapper productMapper;
     @Resource
     private AddressMapper addressMapper;
+    @Resource
+    private OrderReviewMapper orderReviewMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -349,6 +352,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 orderInfoReturn.setImgList(imgList);
                 orderInfoReturn.setCusName(userMapper.getNameById(orderInfo.getCus()));
                 orderInfoReturn.setMerName(userMapper.getNameById(orderInfo.getMer()));
+                orderInfoReturn.setReviewed(orderReviewMapper.getByOrderId(orderInfo.getId()) != null);
 
                 orderIdMap.put(orderInfo.getId(),merchantId);
                 returnList.add(orderInfoReturn);

@@ -19,5 +19,7 @@ public class RestaurantSummary {
     private String cover;
     private Integer menuCount;
     private Integer minPrice;
+    private Double averageScore;
+    private Integer reviewCount;
     private List<String> categories = new ArrayList<>();
 }

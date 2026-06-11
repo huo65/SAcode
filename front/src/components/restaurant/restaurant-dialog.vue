@@ -21,6 +21,10 @@
           </p>
           <p class="address">Address: {{ restaurantInfo.address || "TBD" }}</p>
           <p class="price">From {{ restaurantInfo.minPrice || 0 }}￥</p>
+          <p class="rating">
+            Rating: {{ restaurantInfo.averageScore || 0 }} / 5
+            <span>({{ restaurantInfo.reviewCount || 0 }} review(s))</span>
+          </p>
           <div class="tags">
             <el-tag
               v-for="category in restaurantInfo.categories || []"
@@ -62,6 +66,24 @@
         </div>
       </div>
       <el-empty v-else description="No menu available yet." />
+
+      <div class="reviews">
+        <div class="review-header">
+          <h3>Reviews</h3>
+          <span>{{ reviewList.length }} item(s)</span>
+        </div>
+        <div v-if="reviewList.length" class="review-list">
+          <div v-for="review in reviewList" :key="review.orderId" class="review-card">
+            <div class="review-title">
+              <strong>{{ review.customerName || "Anonymous" }}</strong>
+              <el-rate :model-value="review.score" disabled />
+            </div>
+            <p class="review-content">{{ review.content }}</p>
+            <span class="review-time">{{ formatReviewTime(review.createdTime) }}</span>
+          </div>
+        </div>
+        <el-empty v-else description="No reviews yet." />
+      </div>
     </div>
 
     <GoodsDetail
@@ -112,6 +134,8 @@ const menuGroups = computed(() => {
   }));
 });
 
+const reviewList = computed(() => props.restaurantInfo?.reviewList || []);
+
 const openProduct = (product) => {
   selectedProduct.value = product;
   productVisible.value = true;
@@ -124,6 +148,11 @@ const closeProduct = () => {
 const closeDialog = () => {
   closeProduct();
   emit("close");
+};
+
+const formatReviewTime = (value) => {
+  if (!value) return "-";
+  return String(value).replace("T", " ");
 };
 </script>
 
@@ -157,7 +186,8 @@ const closeDialog = () => {
 
   .description,
   .address,
-  .price {
+  .price,
+  .rating {
     color: #666;
     line-height: 1.6;
   }
@@ -171,6 +201,45 @@ const closeDialog = () => {
 
   .menu-group {
     margin-bottom: 20px;
+  }
+
+  .reviews {
+    margin-top: 28px;
+  }
+
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .review-card {
+    padding: 12px 14px;
+    border: 1px solid #ebeef5;
+    border-radius: 10px;
+  }
+
+  .review-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .review-content {
+    margin: 8px 0;
+    color: #606266;
+  }
+
+  .review-time {
+    color: #909399;
+    font-size: 12px;
   }
 
   .product-list {

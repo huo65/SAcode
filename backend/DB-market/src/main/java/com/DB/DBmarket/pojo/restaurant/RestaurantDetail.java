@@ -1,5 +1,6 @@
 package com.DB.DBmarket.pojo.restaurant;
 
+import com.DB.DBmarket.pojo.OrderReview;
 import com.DB.DBmarket.pojo.Product;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,4 +16,5 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class RestaurantDetail extends RestaurantSummary {
     private List<Product> productList = new ArrayList<>();
+    private List<OrderReview> reviewList = new ArrayList<>();
 }

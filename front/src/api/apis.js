@@ -126,6 +126,13 @@ export const Restaurant = {
     },
 };
 
+export const Review = {
+    add: {
+        method: "post",
+        url: `${host}/review/add`,
+    },
+};
+
 // 订单相关接口信息
 export const Order = {
     // 创建订单(单个)

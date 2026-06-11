@@ -2,7 +2,9 @@ package com.DB.DBmarket.service.impl;
 
 import com.DB.DBmarket.mapper.ProdImgMapper;
 import com.DB.DBmarket.mapper.ProductMapper;
+import com.DB.DBmarket.mapper.OrderReviewMapper;
 import com.DB.DBmarket.mapper.UserMapper;
+import com.DB.DBmarket.pojo.OrderReview;
 import com.DB.DBmarket.pojo.Address;
 import com.DB.DBmarket.pojo.Product;
 import com.DB.DBmarket.pojo.SearchProductRequest;
@@ -33,6 +35,9 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private OrderReviewMapper orderReviewMapper;
 
     @Override
     public List<RestaurantSummary> listRestaurants(String keyword, String category) {
@@ -92,8 +97,11 @@ public class RestaurantServiceImpl implements RestaurantService {
         detail.setCover(summary.getCover());
         detail.setMenuCount(summary.getMenuCount());
         detail.setMinPrice(summary.getMinPrice());
+        detail.setAverageScore(summary.getAverageScore());
+        detail.setReviewCount(summary.getReviewCount());
         detail.setCategories(summary.getCategories());
         detail.setProductList(merchantProducts);
+        detail.setReviewList(resolveReviews(merchant.getId()));
         return detail;
     }
 
@@ -154,6 +162,9 @@ public class RestaurantServiceImpl implements RestaurantService {
         summary.setCover(resolveCover(products, merchant.getPortrait()));
         summary.setMenuCount(products.size());
         summary.setMinPrice(resolveMinPrice(products));
+        List<OrderReview> reviews = resolveReviews(merchant.getId());
+        summary.setAverageScore(resolveAverageScore(reviews));
+        summary.setReviewCount(reviews.size());
         summary.setCategories(resolveCategories(products));
         return summary;
     }
@@ -196,6 +207,28 @@ public class RestaurantServiceImpl implements RestaurantService {
             }
         }
         return new ArrayList<>(categories);
+    }
+
+    private List<OrderReview> resolveReviews(String merchantId) {
+        List<OrderReview> reviews = orderReviewMapper.listByMerchantId(merchantId);
+        if (reviews == null) {
+            return new ArrayList<>();
+        }
+        for (OrderReview review : reviews) {
+            review.setCustomerName(userMapper.getNameById(review.getCus()));
+        }
+        return reviews;
+    }
+
+    private Double resolveAverageScore(List<OrderReview> reviews) {
+        if (reviews == null || reviews.isEmpty()) {
+            return 0.0;
+        }
+        double total = 0;
+        for (OrderReview review : reviews) {
+            total += review.getScore() == null ? 0 : review.getScore();
+        }
+        return Math.round((total / reviews.size()) * 10.0) / 10.0;
     }
 
     private boolean matchesKeyword(RestaurantSummary summary, List<Product> products, String keywordNormalized) {

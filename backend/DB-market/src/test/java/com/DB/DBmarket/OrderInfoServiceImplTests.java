@@ -2,6 +2,7 @@ package com.DB.DBmarket;
 
 import com.DB.DBmarket.mapper.AddressMapper;
 import com.DB.DBmarket.mapper.OrderInfoMapper;
+import com.DB.DBmarket.mapper.OrderReviewMapper;
 import com.DB.DBmarket.mapper.ProductMapper;
 import com.DB.DBmarket.mapper.UserMapper;
 import com.DB.DBmarket.pojo.OrderInfo;
@@ -43,6 +44,9 @@ class OrderInfoServiceImplTests {
 
     @Mock
     private AddressMapper addressMapper;
+
+    @Mock
+    private OrderReviewMapper orderReviewMapper;
 
     @InjectMocks
     private OrderInfoServiceImpl orderInfoService;

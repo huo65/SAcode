@@ -174,6 +174,16 @@
           >Receive</el-button
         >
         <el-button
+          type="success"
+          v-if="
+            item.orderInfo.state == stateEnum.received &&
+            userInfo.type === 'cus' &&
+            !item.reviewed
+          "
+          @click="openReviewDialog(item)"
+          >Review</el-button
+        >
+        <el-button
           type="danger"
           v-if="
             item.orderInfo.state == stateEnum.delivering ||
@@ -200,12 +210,42 @@
       :curStatus="'customer'"
       @close="closeDetail"
     />
+
+    <el-dialog
+      :model-value="reviewVisible"
+      title="Review Order"
+      width="520px"
+      @close="closeReviewDialog"
+    >
+      <el-form label-width="110px">
+        <el-form-item label="Order">
+          <span>{{ reviewForm.orderId || "-" }}</span>
+        </el-form-item>
+        <el-form-item label="Score" required>
+          <el-rate v-model="reviewForm.score" />
+        </el-form-item>
+        <el-form-item label="Content" required>
+          <el-input
+            v-model="reviewForm.content"
+            type="textarea"
+            :rows="4"
+            maxlength="300"
+            show-word-limit
+            placeholder="share your dining experience"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="closeReviewDialog">Cancel</el-button>
+        <el-button type="primary" @click="submitReview">Submit Review</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { Order } from "@/api/apis.js";
+import { Order, Review } from "@/api/apis.js";
 import fetch from "@/api/fetch.js";
 import $store, { userInfo } from "@/store";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -400,6 +440,48 @@ const detailVisible = ref(false);
 const closeDetail = () => {
   detailVisible.value = false;
   getOrderList();
+};
+
+const reviewVisible = ref(false);
+const reviewForm = reactive({
+  orderId: "",
+  score: 5,
+  content: "",
+});
+
+const openReviewDialog = (item) => {
+  reviewForm.orderId = item.orderInfo.id;
+  reviewForm.score = 5;
+  reviewForm.content = "";
+  reviewVisible.value = true;
+};
+
+const closeReviewDialog = () => {
+  reviewVisible.value = false;
+};
+
+const submitReview = () => {
+  if (!reviewForm.orderId) {
+    ElMessage.error("Order is required");
+    return;
+  }
+  if (!reviewForm.score) {
+    ElMessage.error("Score is required");
+    return;
+  }
+  if (!reviewForm.content.trim()) {
+    ElMessage.error("Review content is required");
+    return;
+  }
+  fetch(Review.add, {
+    orderId: reviewForm.orderId,
+    score: reviewForm.score,
+    content: reviewForm.content.trim(),
+  }).then(() => {
+    ElMessage.success("Review submitted successfully");
+    closeReviewDialog();
+    getOrderList();
+  });
 };
 
 const initOrderData = () => {
