@@ -2,10 +2,10 @@
   <div class="ops-admin">
     <section class="ops-hero">
       <div>
-        <p class="eyebrow">Governance & Analytics</p>
-        <h3>课堂展示版平台经营与治理中枢</h3>
+        <p class="eyebrow">平台运营</p>
+        <h3>平台经营与治理中枢</h3>
         <p class="hero-desc">
-          将平台 GMV、订单趋势、角色规模、权限配置与审计留痕集中到一个界面，便于课堂上连续演示“看数据、调权限、查日志”的管理闭环。
+          将平台 GMV、订单趋势、角色规模、权限配置与审计留痕集中到一个界面，帮助管理端快速完成数据查看和权限治理。
         </p>
       </div>
       <div class="hero-actions">
@@ -26,7 +26,7 @@
       <article class="panel trend-panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">Platform Trend</p>
+            <p class="panel-kicker">平台趋势</p>
             <h4>近 7 天平台交易走势</h4>
           </div>
           <div class="mini-pills">
@@ -62,7 +62,7 @@
       <article class="panel role-panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">Role Coverage</p>
+            <p class="panel-kicker">角色分布</p>
             <h4>当前角色与治理分布</h4>
           </div>
         </div>
@@ -83,7 +83,7 @@
       <article class="panel permission-panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">Permission Matrix</p>
+            <p class="panel-kicker">权限矩阵</p>
             <h4>角色-菜单-动作权限配置</h4>
           </div>
           <el-tag type="success" effect="plain">修改后立即影响菜单与关键接口</el-tag>
@@ -125,7 +125,7 @@
       <article class="panel audit-panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">Audit Trail</p>
+            <p class="panel-kicker">审计日志</p>
             <h4>关键操作审计日志</h4>
           </div>
           <el-input
@@ -149,7 +149,7 @@
     <section class="panel">
       <div class="panel-head">
         <div>
-          <p class="panel-kicker">Recent Orders</p>
+          <p class="panel-kicker">近期订单</p>
           <h4>最近订单样本</h4>
         </div>
       </div>
@@ -182,7 +182,7 @@ const overviewCards = computed(() => {
     {
       label: "平台 GMV",
       value: `¥${overview.gmv || 0}`,
-      tip: "课堂展示版按有效支付订单汇总",
+      tip: "按有效支付订单汇总",
     },
     {
       label: "有效订单",
@@ -202,7 +202,7 @@ const overviewCards = computed(() => {
     {
       label: "顾客规模",
       value: overview.customers || 0,
-      tip: "课堂展示版账号池",
+      tip: "当前顾客账号数量",
     },
     {
       label: "审核通过商品",

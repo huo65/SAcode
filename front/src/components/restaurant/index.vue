@@ -2,10 +2,10 @@
   <div class="restaurant">
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">City Picks</p>
-        <h2>课堂展示版门店广场</h2>
+        <p class="eyebrow">精选店铺</p>
+        <h2>精选门店</h2>
         <p class="hero-desc">
-          以门店为中心展示品牌信息、营业状态、配送规则和菜单风格，让课堂演示时顾客侧更像真实外卖平台。
+          以门店为中心展示品牌信息、营业状态、配送规则和菜单风格，帮助你更快找到合适的用餐选择。
         </p>
         <div class="hero-meta">
           <span>共 {{ restaurantList.length }} 家门店</span>
@@ -21,7 +21,7 @@
         <div class="spotlight-copy">
           {{
             featuredRestaurant?.promoText ||
-            "支持距离 / 评分 / 起送价 / 营业中筛选，适合课堂展示完整点餐链路。"
+            "支持距离、评分、起送价和营业状态筛选。"
           }}
         </div>
         <div class="spotlight-stats">
@@ -72,7 +72,7 @@
     </section>
 
     <section class="result-bar">
-      <span>已筛选出 {{ restaurantList.length }} 家适合当前课堂展示的门店</span>
+      <span>已筛选出 {{ restaurantList.length }} 家符合条件的门店</span>
       <span class="muted">点击卡片可进入门店详情、菜单和评价展示页</span>
     </section>
 
@@ -88,9 +88,9 @@
             v-if="restaurant.cover || restaurant.portrait"
             :src="restaurant.cover || restaurant.portrait"
             class="cover"
-            alt="restaurant cover"
+            alt="店铺封面"
           />
-          <div v-else class="cover cover-placeholder">Store Cover</div>
+          <div v-else class="cover cover-placeholder">店铺封面</div>
           <div class="cover-overlay">
             <el-tag :type="restaurant.status === 1 ? 'success' : 'info'">
               {{ restaurant.statusText || (restaurant.status === 1 ? "营业中" : "休息中") }}
@@ -186,6 +186,25 @@ const restaurantList = ref([]);
 const currentRestaurant = ref(null);
 const detailVisible = ref(false);
 
+const sanitizeText = (value = "") =>
+  String(value || "")
+    .replace(/课堂展示版/g, "")
+    .replace(/课堂展示/g, "")
+    .replace(/演示/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+const sanitizeRestaurant = (restaurant = {}) => ({
+  ...restaurant,
+  description: sanitizeText(restaurant.description),
+  notice: sanitizeText(restaurant.notice),
+  promoText: sanitizeText(restaurant.promoText),
+  address: sanitizeText(restaurant.address),
+  serviceTags: (restaurant.serviceTags || []).map((item) => sanitizeText(item)).filter(Boolean),
+  menuCategories: (restaurant.menuCategories || []).map((item) => sanitizeText(item)).filter(Boolean),
+  categories: (restaurant.categories || []).map((item) => sanitizeText(item)).filter(Boolean),
+});
+
 const featuredRestaurant = computed(() => restaurantList.value[0] || null);
 const addressSummary = computed(() => userInfo.value?.addr_list?.[0]?.location || "");
 
@@ -219,13 +238,13 @@ const loadRestaurants = () => {
     onlyOpen: searchCondition.onlyOpen,
     minScore: searchCondition.minScore,
   }).then((data) => {
-    restaurantList.value = data.restaurant_list || [];
+    restaurantList.value = (data.restaurant_list || []).map((item) => sanitizeRestaurant(item));
   });
 };
 
 const openRestaurant = (id) => {
   fetch(Restaurant.info, { id }).then((data) => {
-    currentRestaurant.value = data.restaurant_info;
+    currentRestaurant.value = sanitizeRestaurant(data.restaurant_info);
     detailVisible.value = true;
   });
 };

@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="visible"
-    :title="restaurantInfo?.name || 'Restaurant Detail'"
+    :title="restaurantInfo?.name || '店铺详情'"
     width="1180"
     :before-close="closeDialog"
     top="4vh"
@@ -14,9 +14,9 @@
             v-if="restaurantInfo.cover || restaurantInfo.portrait"
             :src="restaurantInfo.cover || restaurantInfo.portrait"
             class="cover"
-            alt="restaurant cover"
+            alt="店铺封面"
           />
-          <div v-else class="cover cover-placeholder">Store Cover</div>
+          <div v-else class="cover cover-placeholder">店铺封面</div>
           <div class="cover-badge">
             <el-tag :type="restaurantInfo.status === 1 ? 'success' : 'info'">
               {{ restaurantInfo.statusText || (restaurantInfo.status === 1 ? "营业中" : "休息中") }}
@@ -28,7 +28,7 @@
         <div class="hero-main">
           <div class="hero-title-row">
             <div>
-              <p class="eyebrow">Store Profile</p>
+              <p class="eyebrow">店铺档案</p>
               <h2>{{ restaurantInfo.name }}</h2>
             </div>
             <div class="score-box">
@@ -93,7 +93,7 @@
       <section class="menu-section">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Menu Curation</p>
+            <p class="eyebrow">菜单展示</p>
             <h3>门店菜单与分类</h3>
           </div>
           <div class="menu-tags">
@@ -125,9 +125,9 @@
                   v-if="product.image_list?.[0]"
                   :src="product.image_list[0]"
                   class="product-image"
-                  alt="product cover"
+                  alt="商品图片"
                 />
-                <div v-else class="product-image product-placeholder">Dish</div>
+                <div v-else class="product-image product-placeholder">菜品</div>
                 <div class="product-info">
                   <div class="product-header">
                     <span>{{ product.name }}</span>
@@ -142,13 +142,13 @@
             </div>
           </div>
         </div>
-        <el-empty v-else description="No menu available yet." />
+        <el-empty v-else description="暂无菜单内容" />
       </section>
 
       <section class="reviews">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Guest Voices</p>
+            <p class="eyebrow">顾客声音</p>
             <h3>顾客评价与商家回复</h3>
           </div>
           <span class="review-count">{{ reviewList.length }} 条记录</span>
@@ -158,7 +158,7 @@
           <div v-for="review in reviewList" :key="review.orderId" class="review-card">
             <div class="review-title">
               <div>
-                <strong>{{ review.customerName || "Anonymous" }}</strong>
+                <strong>{{ review.customerName || "匿名顾客" }}</strong>
                 <span class="review-time">{{ formatReviewTime(review.createdTime) }}</span>
               </div>
               <el-rate :model-value="review.score" disabled />
@@ -171,7 +171,7 @@
             </div>
           </div>
         </div>
-        <el-empty v-else description="No reviews yet." />
+        <el-empty v-else description="暂无评价" />
       </section>
     </div>
 

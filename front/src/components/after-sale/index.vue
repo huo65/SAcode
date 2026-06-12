@@ -2,10 +2,10 @@
   <div class="after-sale">
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Service Recovery Desk</p>
+        <p class="eyebrow">售后服务台</p>
         <h2>{{ pageTitle }}</h2>
         <p class="hero-desc">
-          以课堂展示为目标，把投诉、退款、配送问题统一收口到一张售后工单台，让处理链路和结果反馈一眼可见。
+          将投诉、退款、配送问题统一汇总到售后工单台，让处理链路和结果反馈一眼可见。
         </p>
       </div>
       <div class="hero-stats">
@@ -50,7 +50,7 @@
     <section class="board">
       <div class="board-head">
         <div>
-          <p class="eyebrow">Ticket Queue</p>
+          <p class="eyebrow">工单队列</p>
           <h3>售后处理台</h3>
         </div>
         <span class="board-tip">点击某条工单可查看关联订单与处理记录</span>
@@ -128,7 +128,7 @@
                   :rows="4"
                   maxlength="300"
                   show-word-limit
-                  placeholder="填写本次处理结果，课堂展示时用于说明平台或商家已跟进"
+                  placeholder="填写本次处理结果，例如退款说明、补偿方案或沟通记录"
                 />
               </el-form-item>
               <el-form-item>
@@ -180,8 +180,8 @@ const resolvedScope = computed(() => {
 const isAdmin = computed(() => userInfo.value.type === "admin");
 const canHandle = computed(() => userInfo.value.type === "admin" || userInfo.value.type === "mer");
 const pageTitle = computed(() => {
-  if (resolvedScope.value === "admin") return "课堂展示版平台售后总控台";
-  if (resolvedScope.value === "merchant") return "课堂展示版商家售后处理台";
+  if (resolvedScope.value === "admin") return "平台售后总控台";
+  if (resolvedScope.value === "merchant") return "商家售后处理台";
   return "我的售后工单";
 });
 

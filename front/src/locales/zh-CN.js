@@ -1,6 +1,6 @@
 export default {
   login: {
-    title: '欢迎使用 DB 外卖',
+    title: '欢迎使用西电外卖',
     name: '用户名',
     password: '密码',
     login: '登录',
@@ -46,7 +46,7 @@ export default {
     guest: '访客',
     logout: '退出登录',
     login: '登录',
-    changeStatus: '改变身份'
+    changeStatus: '切换身份'
   },
   common: {
     goods: '商品',

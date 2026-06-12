@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="visible"
-    :title="restaurantInfo?.name || 'Restaurant Detail'"
+    :title="restaurantInfo?.name || '店铺详情'"
     width="900"
     :before-close="closeDialog"
   >
@@ -11,16 +11,16 @@
           v-if="restaurantInfo.cover || restaurantInfo.portrait"
           :src="restaurantInfo.cover || restaurantInfo.portrait"
           class="cover"
-          alt="restaurant cover"
+          alt="店铺封面"
         />
-        <div v-else class="cover cover-placeholder">No Image</div>
+        <div v-else class="cover cover-placeholder">暂无图片</div>
         <div class="meta">
           <h2>{{ restaurantInfo.name }}</h2>
           <p class="description">
-            {{ restaurantInfo.description || "No restaurant description yet." }}
+            {{ restaurantInfo.description || "暂无店铺介绍" }}
           </p>
-          <p class="address">Address: {{ restaurantInfo.address || "TBD" }}</p>
-          <p class="price">From {{ restaurantInfo.minPrice || 0 }}￥</p>
+          <p class="address">店铺地址：{{ restaurantInfo.address || "待补充" }}</p>
+          <p class="price">起送价：{{ restaurantInfo.minPrice || 0 }}￥</p>
           <div class="tags">
             <el-tag
               v-for="category in restaurantInfo.categories || []"
@@ -47,21 +47,21 @@
                 v-if="product.image_list?.[0]"
                 :src="product.image_list[0]"
                 class="product-image"
-                alt="product cover"
+                alt="商品图片"
               />
-              <div v-else class="product-image product-placeholder">No Image</div>
+              <div v-else class="product-image product-placeholder">暂无图片</div>
               <div class="product-info">
                 <div class="product-header">
                   <span>{{ product.name }}</span>
                   <span>{{ product.price }}￥</span>
                 </div>
-                <p>{{ product.description || "No product description yet." }}</p>
+                <p>{{ product.description || "暂无商品介绍" }}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <el-empty v-else description="No menu available yet." />
+      <el-empty v-else description="暂无菜单内容" />
     </div>
 
     <GoodsDetail
@@ -100,7 +100,7 @@ const productVisible = ref(false);
 const menuGroups = computed(() => {
   const groups = new Map();
   (props.restaurantInfo?.productList || []).forEach((product) => {
-    const key = product.cat_name || "Others";
+    const key = product.cat_name || "其他";
     if (!groups.has(key)) {
       groups.set(key, []);
     }

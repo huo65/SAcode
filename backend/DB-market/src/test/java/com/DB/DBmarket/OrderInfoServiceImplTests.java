@@ -7,6 +7,8 @@ import com.DB.DBmarket.mapper.ProductMapper;
 import com.DB.DBmarket.mapper.UserMapper;
 import com.DB.DBmarket.pojo.OrderInfo;
 import com.DB.DBmarket.pojo.Product;
+import com.DB.DBmarket.pojo.utils.OrderList;
+import com.DB.DBmarket.pojo.utils.ProductReturn;
 import com.DB.DBmarket.pojo.utils.CurrentUser;
 import com.DB.DBmarket.service.impl.OrderInfoServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -79,7 +82,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.payOrders(customer, Collections.singletonList("order-1")));
 
-        assertEquals("No permission to pay this order.", ex.getMessage());
+        assertEquals("无权支付该订单", ex.getMessage());
         verify(productMapper, never()).decrementStock(anyString(), eq(1));
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
     }
@@ -97,7 +100,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.payOrders(customer, Collections.singletonList("order-1")));
 
-        assertEquals("The balance is insufficient.", ex.getMessage());
+        assertEquals("余额不足", ex.getMessage());
         verify(productMapper, never()).decrementStock(anyString(), eq(1));
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
         verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(0), anyString(), isNull(), anyString(), isNull(), isNull(), isNull());
@@ -140,6 +143,38 @@ class OrderInfoServiceImplTests {
     }
 
     @Test
+    void getOrderInfoForDriverKeepsWaitingAndAssignedDeliveringOrders() {
+        OrderInfo deliveringOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 1, 1, 30);
+        deliveringOrder.setDriverId("4");
+        deliveringOrder.setDeliAddr("addr-mer");
+        deliveringOrder.setRecAddr("addr-cus");
+        OrderInfo waitingOrder = buildOrder("order-2", "cus001", "mer001", "prod001", 3, 1, 30);
+        waitingOrder.setDeliAddr("addr-mer");
+        waitingOrder.setRecAddr("addr-cus");
+        ArrayList<OrderInfo> driverRows = new ArrayList<>(Arrays.asList(deliveringOrder, waitingOrder));
+
+        when(orderInfoMapper.getCusOrder("4", null, 1)).thenReturn(new ArrayList<>());
+        when(orderInfoMapper.getMerOrder("4", null, 1)).thenReturn(new ArrayList<>());
+        when(userMapper.getUserType("4")).thenReturn("driver");
+        when(orderInfoMapper.getDriverOrder("4", null, 1)).thenReturn(driverRows);
+        when(addressMapper.getAddressByAddressId("addr-mer")).thenReturn("商家地址");
+        when(addressMapper.getAddressByAddressId("addr-cus")).thenReturn("顾客地址");
+        when(productMapper.getOneProductReturnById("prod001")).thenReturn(buildProductReturn("prod001"));
+        when(productMapper.getFirstImg("prod001")).thenReturn(Collections.singletonList("http://img.test/prod001.png"));
+        when(userMapper.getNameById("cus001")).thenReturn("顾客甲");
+        when(userMapper.getNameById("mer001")).thenReturn("商家甲");
+        when(orderReviewMapper.getByOrderId("order-1")).thenReturn(null);
+        when(orderReviewMapper.getByOrderId("order-2")).thenReturn(null);
+
+        OrderList result = orderInfoService.getOrderInfo("4", null, 1);
+
+        assertNotNull(result.getDriverList());
+        assertEquals(2, result.getDriverList().size());
+        assertEquals("4", result.getDriverList().get(0).getOrderInfo().getDriverId());
+        assertEquals(Integer.valueOf(3), result.getDriverList().get(1).getOrderInfo().getState());
+    }
+
+    @Test
     void driverCanTakeWaitingOrderAndBindDriverId() {
         CurrentUser driver = new CurrentUser("driver001", "driver", "driver");
         OrderInfo waitingOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 3, 1, 30);
@@ -150,7 +185,7 @@ class OrderInfoServiceImplTests {
                 .thenReturn(Collections.singletonList(waitingOrder))
                 .thenReturn(Collections.singletonList(updatedOrder));
         when(orderInfoMapper.countDriverDeliveringOrders("driver001")).thenReturn(0);
-        when(orderInfoMapper.updateOrderState(eq("order-1"), eq(1), anyString(), eq("driver001"), isNull(), isNull(), isNull(), isNull()))
+        when(orderInfoMapper.takeDriverOrder(eq("order-1"), eq("driver001"), anyString()))
                 .thenReturn(1);
 
         OrderInfo result = orderInfoService.transitionOrder(driver, "order-1", 1, null, null, null);
@@ -171,8 +206,24 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(driver, "order-2", 1, null, null, null));
 
-        assertEquals("Driver already has an active delivery order.", ex.getMessage());
-        verify(orderInfoMapper, never()).updateOrderState(eq("order-2"), eq(1), anyString(), eq("driver001"), isNull(), isNull(), isNull(), isNull());
+        assertEquals("当前还有配送中的订单", ex.getMessage());
+        verify(orderInfoMapper, never()).takeDriverOrder(eq("order-2"), eq("driver001"), anyString());
+    }
+
+    @Test
+    void driverTakeOrderFailsWhenAnotherDriverAlreadyTookIt() {
+        CurrentUser driver = new CurrentUser("driver001", "driver", "driver");
+        OrderInfo waitingOrder = buildOrder("order-3", "cus001", "mer001", "prod001", 3, 1, 30);
+
+        when(orderInfoMapper.getOrdersById("order-3")).thenReturn(Collections.singletonList(waitingOrder));
+        when(orderInfoMapper.countDriverDeliveringOrders("driver001")).thenReturn(0);
+        when(orderInfoMapper.takeDriverOrder(eq("order-3"), eq("driver001"), anyString()))
+                .thenReturn(0);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(driver, "order-3", 1, null, null, null));
+
+        assertEquals("订单已被其他骑手接单，请刷新后重试", ex.getMessage());
     }
 
     @Test
@@ -185,14 +236,30 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1"))
                 .thenReturn(Collections.singletonList(deliveringOrder))
                 .thenReturn(Collections.singletonList(waitingOrder));
-        when(orderInfoMapper.updateOrderStateAndClearDriver(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull()))
+        when(orderInfoMapper.returnDriverOrderToPool(eq("order-1"), eq("driver001"), anyString()))
                 .thenReturn(1);
 
         OrderInfo result = orderInfoService.transitionOrder(driver, "order-1", 3, null, null, null);
 
         assertNotNull(result);
         assertEquals(Integer.valueOf(3), result.getState());
-        verify(orderInfoMapper).updateOrderStateAndClearDriver(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull());
+        verify(orderInfoMapper).returnDriverOrderToPool(eq("order-1"), eq("driver001"), anyString());
+    }
+
+    @Test
+    void driverRejectAssignedOrderFailsWhenStateChangesBeforeUpdate() {
+        CurrentUser driver = new CurrentUser("driver001", "driver", "driver");
+        OrderInfo deliveringOrder = buildOrder("order-4", "cus001", "mer001", "prod001", 1, 1, 30);
+        deliveringOrder.setDriverId("driver001");
+
+        when(orderInfoMapper.getOrdersById("order-4")).thenReturn(Collections.singletonList(deliveringOrder));
+        when(orderInfoMapper.returnDriverOrderToPool(eq("order-4"), eq("driver001"), anyString()))
+                .thenReturn(0);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(driver, "order-4", 3, null, null, null));
+
+        assertEquals("订单状态已变更，请刷新后重试", ex.getMessage());
     }
 
     @Test
@@ -295,7 +362,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, "bad food"));
 
-        assertEquals("Only paid, preparing or refunding orders can be refunded.", ex.getMessage());
+        assertEquals("仅已支付、备餐中或退款中的订单可退款", ex.getMessage());
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
         verify(productMapper, never()).incrementStock(anyString(), eq(1));
     }
@@ -310,7 +377,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, " "));
 
-        assertEquals("Merchant cancellation requires a refund reason.", ex.getMessage());
+        assertEquals("商家取消订单时必须填写退款原因", ex.getMessage());
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
     }
 
@@ -324,7 +391,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, ""));
 
-        assertEquals("Merchant cancellation requires a refund reason.", ex.getMessage());
+        assertEquals("商家取消订单时必须填写退款原因", ex.getMessage());
         verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
     }
 
@@ -338,7 +405,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(customer, "order-1", 0, null, null, null));
 
-        assertEquals("Use order creation or payment endpoint for this state.", ex.getMessage());
+        assertEquals("该状态请使用下单或支付接口处理", ex.getMessage());
         verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(0), anyString(), isNull(), isNull(), isNull(), isNull(), isNull());
     }
 
@@ -352,7 +419,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(wrongMerchant, "order-1", 4, null, null, null));
 
-        assertEquals("Only the merchant can accept a paid order for preparation.", ex.getMessage());
+        assertEquals("仅商家可将已支付订单流转为备餐中", ex.getMessage());
         verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(4), anyString(), isNull(), isNull(), isNull(), isNull(), isNull());
     }
 
@@ -366,7 +433,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(merchant, "order-1", 3, null, null, null));
 
-        assertEquals("Only the merchant can send a preparing order to drivers.", ex.getMessage());
+        assertEquals("仅商家可将备餐中订单派发给骑手", ex.getMessage());
         verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull(), isNull());
     }
 
@@ -380,7 +447,7 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(driver, "order-1", 1, null, null, null));
 
-        assertEquals("Only a driver can take a waiting delivery order.", ex.getMessage());
+        assertEquals("仅骑手可接取待骑手接单订单", ex.getMessage());
     }
 
     @Test
@@ -394,8 +461,8 @@ class OrderInfoServiceImplTests {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.transitionOrder(driver, "order-1", 3, null, null, null));
 
-        assertEquals("Only the assigned driver can reject a delivering order.", ex.getMessage());
-        verify(orderInfoMapper, never()).updateOrderStateAndClearDriver(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull());
+        assertEquals("仅当前配送骑手可退回该订单", ex.getMessage());
+        verify(orderInfoMapper, never()).returnDriverOrderToPool(eq("order-1"), eq("driver002"), anyString());
     }
 
     @Test
@@ -452,6 +519,16 @@ class OrderInfoServiceImplTests {
         product.setId(id);
         product.setNumber(number);
         product.setState(1);
+        return product;
+    }
+
+    private static ProductReturn buildProductReturn(String id) {
+        ProductReturn product = new ProductReturn();
+        product.setId(id);
+        product.setName("测试商品");
+        product.setPrice(11);
+        product.setState(1);
+        product.setNumber(10);
         return product;
     }
 }

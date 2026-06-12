@@ -4,10 +4,10 @@
 
     <div class="login-shell">
       <section class="login-brand">
-        <span class="micro-tag">Campus Food Network</span>
+        <span class="micro-tag">西电外卖</span>
         <h1>{{ t("login.title") }}</h1>
         <p class="brand-copy">
-          面向课堂展示的外卖系统入口，覆盖顾客下单、商家经营、骑手配送和平台治理四条业务主线。
+          汇聚顾客下单、商家经营、骑手配送与平台管理，提供统一顺畅的校园外卖服务。
         </p>
 
         <div class="brand-grid">
@@ -21,29 +21,16 @@
             <p>{{ item.desc }}</p>
           </article>
         </div>
-
-        <div class="demo-board">
-          <div class="demo-board-head">
-            <strong>演示账号</strong>
-            <span>密码统一为 `123456`</span>
-          </div>
-          <div class="demo-list">
-            <div v-for="item in demoAccounts" :key="item.role" class="demo-item">
-              <span>{{ item.role }}</span>
-              <strong>{{ item.account }}</strong>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="login-board">
         <div class="board-head">
-          <p class="eyebrow">{{ curFormCase === "login" ? "Sign In" : "Create Account" }}</p>
-          <h2>{{ curFormCase === "login" ? "欢迎回来" : "创建新的演示身份" }}</h2>
+          <p class="eyebrow">{{ curFormCase === "login" ? "账号登录" : "创建账号" }}</p>
+          <h2>{{ curFormCase === "login" ? "欢迎回来" : "创建账号" }}</h2>
           <p>
             {{ curFormCase === "login"
-              ? "进入对应角色工作台，继续演示下单、接单、配送与治理流程。"
-              : "支持顾客、商家和骑手注册，便于课堂展示不同业务入口。" }}
+              ? "登录后即可进入对应工作台，继续处理下单、接单、配送与管理操作。"
+              : "支持顾客、商家和骑手注册，快速开通对应业务入口。" }}
           </p>
         </div>
 
@@ -216,32 +203,25 @@ const guestVisit = () => {
 
 const roleHighlights = [
   {
-    tag: "Customer",
+    tag: "顾客",
     title: "顾客点餐体验",
     desc: "浏览门店、查看菜单、下单支付与售后反馈完整串联。",
   },
   {
-    tag: "Merchant",
+    tag: "商家",
     title: "商家经营工作台",
-    desc: "集中处理商品、订单、门店资料与课堂展示版经营数据。",
+    desc: "集中处理商品、订单、门店资料与门店经营数据。",
   },
   {
-    tag: "Driver",
+    tag: "骑手",
     title: "骑手配送大盘",
-    desc: "支持接单、配送状态、收入绩效与异常上报的可视化展示。",
+    desc: "支持接单、配送状态、收入表现与异常上报的可视化展示。",
   },
   {
-    tag: "Admin",
+    tag: "管理",
     title: "平台治理中心",
-    desc: "统一查看售后、用户状态、权限配置和平台治理视角信息。",
+    desc: "统一查看售后、用户状态、权限配置和平台经营信息。",
   },
-];
-
-const demoAccounts = [
-  { role: "管理员", account: "admin" },
-  { role: "顾客", account: "customer" },
-  { role: "商家", account: "merchant" },
-  { role: "骑手", account: "driver" },
 ];
 </script>
 
@@ -345,52 +325,6 @@ const demoAccounts = [
   line-height: 1.7;
 }
 
-.demo-board {
-  margin-top: 28px;
-  padding: 18px 20px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.demo-board-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  color: rgba(255, 243, 234, 0.78);
-}
-
-.demo-board-head strong {
-  color: #fff;
-  font-size: 18px;
-}
-
-.demo-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.demo-item {
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.demo-item span {
-  display: block;
-  color: rgba(255, 243, 234, 0.66);
-  font-size: 13px;
-}
-
-.demo-item strong {
-  display: block;
-  margin-top: 6px;
-  color: #fff8f0;
-  font-size: 20px;
-}
-
 .login-board {
   padding: 34px 34px 28px;
   background: linear-gradient(180deg, rgba(255, 252, 249, 0.92), rgba(255, 247, 240, 0.82));
@@ -473,7 +407,6 @@ const demoAccounts = [
   }
 
   .brand-grid,
-  .demo-list,
   .btn-box {
     grid-template-columns: 1fr;
   }

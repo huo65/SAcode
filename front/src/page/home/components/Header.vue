@@ -2,16 +2,11 @@
   <div class="page-shell">
     <header class="header">
       <div class="brand">
-        <div class="brand-mark">DB</div>
+        <div class="brand-mark">西电</div>
         <div class="brand-copy">
-          <span class="brand-title">DBTake-Out</span>
+          <span class="brand-title">西电外卖</span>
           <span class="brand-subtitle">{{ roleLabel }}</span>
         </div>
-      </div>
-
-      <div v-if="isTEST" class="nav">
-        <el-input v-model="TEST_Status" placeholder="切换测试身份"></el-input>
-        <el-button @click="clickChangeStatus">改变身份</el-button>
       </div>
 
       <div class="user-card">
@@ -33,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import $store, { curStatus, userInfo } from "@/store/index.js";
 import { Avatar } from "@element-plus/icons-vue";
@@ -41,23 +36,15 @@ import { useRouter } from "vue-router";
 
 const { t } = useI18n();
 
-// TEST:
-const isTEST = computed(() => $store.state.isTEST);
-const TEST_Status = ref(String(curStatus.value));
-const clickChangeStatus = () => {
-  console.log("changeStatus", TEST_Status.value);
-  $store.commit("changeStatus", TEST_Status.value);
-};
-
 const roleLabel = computed(() => {
   const map = {
-    admin: "平台治理视角",
-    customer: "顾客点餐视角",
-    merchant: "商家经营视角",
-    driver: "骑手配送视角",
-    guest: "游客浏览视角",
+    admin: "平台管理",
+    customer: "顾客中心",
+    merchant: "商家中心",
+    driver: "骑手中心",
+    guest: "随便看看",
   };
-  return map[curStatus.value] || "课堂展示入口";
+  return map[curStatus.value] || "首页";
 });
 
 defineProps({
@@ -128,14 +115,6 @@ const clickLogout = () => {
   font-size: 13px;
 }
 
-.nav {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 420px;
-}
-
 .user-card {
   display: flex;
   align-items: center;
@@ -180,11 +159,6 @@ const clickLogout = () => {
     padding: 16px;
   }
 
-  .nav {
-    order: 3;
-    flex: 1 0 100%;
-    max-width: none;
-  }
 }
 
 @media (max-width: 640px) {

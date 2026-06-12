@@ -5,7 +5,7 @@ import fetch from "@/api/fetch";
 import { User } from "@/api/apis";
 import { ElMessage } from "element-plus";
 import { STATUS_MAP } from "@/constant";
-import { uploadImageFromRawFile } from "@/lib/imageHelper.js";
+import { uploadImageFromRawFile, validateImageFile } from "@/lib/imageHelper.js";
 const modifyFormVisible = ref(false);
 const modifyAddressVisible = ref(false);
 const formLabelWidth = "140px";
@@ -23,6 +23,12 @@ const chooseFile = () => {
 const uploadFile = async (event) => {
   const file = event.target.files[0];
   if (file) {
+    const { valid, message } = validateImageFile(file);
+    if (!valid) {
+      ElMessage.error(message);
+      event.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       previewImageUrl.value = e.target.result;
@@ -33,7 +39,7 @@ const uploadFile = async (event) => {
       modifyUserPortrait();
     } catch (error) {
       previewImageUrl.value = null;
-      ElMessage.error(error?.message || "Upload avatar failed");
+      ElMessage.error(error?.message || "头像上传失败");
     } finally {
       event.target.value = "";
     }
@@ -80,7 +86,7 @@ const handleDelete = (row) => {
     addressId: row.addrId,
   })
     .then(() => {
-      ElMessage.success("Delete Address Successfully.");
+      ElMessage.success("地址删除成功");
       fetchAddressData();
     })
     .finally(() => {
@@ -95,7 +101,7 @@ const handleAdd = () => {
     location: modifyAddressData.value,
   })
     .then(() => {
-      ElMessage.success("Add Address Successfully.");
+      ElMessage.success("地址新增成功");
       fetchAddressData();
     })
     .finally(() => {
@@ -115,7 +121,7 @@ const modifyUserInfo = () => {
   };
   fetch(User.updateInfo, payload)
     .then((data) => {
-      ElMessage.success("Update user info successfully");
+      ElMessage.success("资料更新成功");
       fetch(User.getInfo, { id: userInfo.value.id }).then((data) => {
         console.log("@@@getUserInfo", data);
         const newInfo = {
@@ -139,7 +145,7 @@ const modifyUserPortrait = () => {
     id: modifyData.id,
     portrait: modifyData.portrait,
   }).then((data) => {
-    ElMessage.success("Update user portrait successfully");
+    ElMessage.success("头像更新成功");
     fetch(User.getInfo, { id: userInfo.value.id }).then((data) => {
       console.log("@@@getUserInfo", data);
       const newInfo = {
@@ -168,40 +174,40 @@ onMounted(() => {
 <template>
   <!-- 修改数据表单 -->
   <!-- {{ userInfo.id }} -->
-  <el-dialog v-model="modifyFormVisible" title="Modify Information" width="500">
+  <el-dialog v-model="modifyFormVisible" title="编辑资料" width="500">
     <el-form :model="modifyData">
-      <el-form-item label="UserName" :label-width="formLabelWidth">
+      <el-form-item label="用户名" :label-width="formLabelWidth">
         <el-input v-model="modifyData.name" autocomplete="off" />
       </el-form-item>
-      <el-form-item label="Description" :label-width="formLabelWidth">
+      <el-form-item label="个人简介" :label-width="formLabelWidth">
         <el-input v-model="modifyData.description" autocomplete="off" />
       </el-form-item>
-      <el-form-item label="PhoneNumber" :label-width="formLabelWidth">
+      <el-form-item label="手机号" :label-width="formLabelWidth">
         <el-input v-model="modifyData.phone" autocomplete="off" />
       </el-form-item>
         <template v-if="isDriverUser">
-          <el-form-item label="ID Card" :label-width="formLabelWidth">
+          <el-form-item label="身份证号" :label-width="formLabelWidth">
             <el-input
               v-model="modifyData.driverIdCard"
               autocomplete="off"
-              placeholder="课堂展示版补录"
+              placeholder="请输入身份证号"
             />
           </el-form-item>
-          <el-form-item label="Vehicle" :label-width="formLabelWidth">
+          <el-form-item label="交通工具" :label-width="formLabelWidth">
             <el-input
               v-model="modifyData.driverVehicle"
               autocomplete="off"
               placeholder="电动车 / 摩托车 / 自行车"
             />
           </el-form-item>
-          <el-form-item label="Service Area" :label-width="formLabelWidth">
+          <el-form-item label="服务区域" :label-width="formLabelWidth">
             <el-input
               v-model="modifyData.driverServiceArea"
               autocomplete="off"
               placeholder="例如：大学城 / 科技园"
             />
           </el-form-item>
-          <el-form-item label="Emergency Contact" :label-width="formLabelWidth">
+          <el-form-item label="紧急联系人" :label-width="formLabelWidth">
             <el-input
               v-model="modifyData.driverEmergencyContact"
               autocomplete="off"
@@ -209,7 +215,7 @@ onMounted(() => {
             />
           </el-form-item>
         </template>
-      <el-form-item label="Password" :label-width="formLabelWidth">
+      <el-form-item label="登录密码" :label-width="formLabelWidth">
         <el-input
           v-model="modifyData.password"
           type="password"
@@ -220,8 +226,8 @@ onMounted(() => {
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="modifyFormVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="modifyUserInfo"> Confirm </el-button>
+        <el-button @click="modifyFormVisible = false">取消</el-button>
+        <el-button type="primary" @click="modifyUserInfo">保存</el-button>
       </div>
     </template>
   </el-dialog>
@@ -229,12 +235,12 @@ onMounted(() => {
   <!-- 添加地址表单 -->
   <el-dialog
     v-model="modifyAddressVisible"
-    title="Add Address"
+    title="新增地址"
     width="500"
     @close="(modifyAddressVisible = false), (modifyAddressData = '')"
   >
     <el-form>
-      <el-form-item label="New Address" :label-width="formLabelWidth">
+      <el-form-item label="地址内容" :label-width="formLabelWidth">
         <el-input v-model="modifyAddressData" autocomplete="off" />
       </el-form-item>
     </el-form>
@@ -242,16 +248,16 @@ onMounted(() => {
       <div class="dialog-footer">
         <el-button
           @click="(modifyAddressVisible = false), (modifyAddressData = '')"
-          >Cancel</el-button
+          >取消</el-button
         >
-        <el-button type="primary" @click="handleAdd()"> Confirm </el-button>
+        <el-button type="primary" @click="handleAdd()">保存</el-button>
       </div>
     </template>
   </el-dialog>
 
   <div class="profile-shell">
     <aside class="profile-aside glass-panel">
-      <span class="micro-tag">Profile Center</span>
+      <span class="micro-tag">个人中心</span>
       <div class="avatar-wrap">
         <img
           v-if="previewImageUrl"
@@ -275,8 +281,8 @@ onMounted(() => {
         style="display: none"
       />
       <div class="profile-copy">
-        <h3>{{ userInfo.name || "课堂展示账号" }}</h3>
-        <p>{{ currentUserType.value }}</p>
+        <h3>{{ userInfo.name || "当前账号" }}</h3>
+        <p>{{ currentUserType.label }}</p>
       </div>
       <el-button type="primary" @click="chooseFile">更新头像</el-button>
       <el-button @click="modifyFormVisible = true">编辑资料</el-button>
@@ -286,30 +292,30 @@ onMounted(() => {
       <div class="profile-card glass-panel">
         <div class="section-heading">
           <div>
-            <span class="micro-tag">Account Snapshot</span>
+            <span class="micro-tag">账号概览</span>
             <h3>账号信息概览</h3>
-            <p>用更清晰的层级展示身份、联系方式与个人描述，减少传统后台表格的压迫感。</p>
+            <p>用更清晰的层级展示身份、联系方式与个人描述，查看信息更直观。</p>
           </div>
         </div>
 
-        <el-descriptions class="margin-top" title="UserInformation" :column="3" border>
+        <el-descriptions class="margin-top" title="账号信息" :column="3" border>
           <template v-slot:extra>
-            <el-button type="primary" size="small" @click="modifyFormVisible = true">Modify</el-button>
+            <el-button type="primary" size="small" @click="modifyFormVisible = true">编辑</el-button>
           </template>
           <el-descriptions-item>
-            <template v-slot:label> UserName </template>
+            <template v-slot:label> 用户名 </template>
             {{ userInfo.name }}
           </el-descriptions-item>
           <el-descriptions-item>
-            <template v-slot:label> Tel </template>
+            <template v-slot:label> 电话 </template>
             {{ userInfo.phone }}
           </el-descriptions-item>
           <el-descriptions-item>
-            <template v-slot:label> Type </template>
-            {{ currentUserType.value }}
+            <template v-slot:label> 角色 </template>
+            {{ currentUserType.label }}
           </el-descriptions-item>
           <el-descriptions-item :span="3">
-            <template v-slot:label> Description </template>
+            <template v-slot:label> 个人简介 </template>
             {{ userInfo.description || "暂无个人描述，可在编辑资料中补充。" }}
           </el-descriptions-item>
           <el-descriptions-item v-show="false">
@@ -322,27 +328,27 @@ onMounted(() => {
       <div v-if="isDriverUser" class="profile-card glass-panel">
         <div class="section-heading">
           <div>
-            <span class="micro-tag">Driver Details</span>
+            <span class="micro-tag">骑手资料</span>
             <h3>骑手资料与服务配置</h3>
-            <p>补充服务区域、车辆与紧急联系人信息，便于课堂展示配送人员档案。</p>
+            <p>补充服务区域、车辆与紧急联系人信息，方便统一管理配送资料。</p>
           </div>
         </div>
 
-        <el-descriptions class="margin-top" title="DriverProfile" :column="2" border>
+        <el-descriptions class="margin-top" title="骑手档案" :column="2" border>
           <el-descriptions-item>
-            <template v-slot:label> Work Status </template>
+            <template v-slot:label> 接单状态 </template>
             {{ userInfo.driverWorkStatus === "rest" ? "休息中" : "在线接单" }}
           </el-descriptions-item>
           <el-descriptions-item>
-            <template v-slot:label> Service Area </template>
+            <template v-slot:label> 服务区域 </template>
             {{ userInfo.driverServiceArea || modifyData.driverServiceArea || "全城接单" }}
           </el-descriptions-item>
           <el-descriptions-item>
-            <template v-slot:label> Vehicle </template>
+            <template v-slot:label> 交通工具 </template>
             {{ userInfo.driverVehicle || modifyData.driverVehicle || "-" }}
           </el-descriptions-item>
           <el-descriptions-item>
-            <template v-slot:label> ID Card </template>
+            <template v-slot:label> 身份证号 </template>
             {{
               userInfo.driverIdCard || modifyData.driverIdCard
                 ? `${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(0, 4)}********${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(-4)}`
@@ -350,7 +356,7 @@ onMounted(() => {
             }}
           </el-descriptions-item>
           <el-descriptions-item :span="2">
-            <template v-slot:label> Emergency Contact </template>
+            <template v-slot:label> 紧急联系人 </template>
             {{ userInfo.driverEmergencyContact || modifyData.driverEmergencyContact || "-" }}
           </el-descriptions-item>
         </el-descriptions>
@@ -359,22 +365,22 @@ onMounted(() => {
       <div class="profile-card glass-panel">
         <div class="section-heading">
           <div>
-            <span class="micro-tag">Address Book</span>
+            <span class="micro-tag">地址簿</span>
             <h3>地址管理</h3>
-            <p>将常用地址集中管理，支持快速新增与删除，便于下单链路演示。</p>
+            <p>将常用地址集中管理，支持快速新增与删除，便于下单时快速选择。</p>
           </div>
-          <el-button type="primary" size="small" @click="modifyAddressVisible = true">Add Address</el-button>
+          <el-button type="primary" size="small" @click="modifyAddressVisible = true">新增地址</el-button>
         </div>
 
         <el-table :data="addressData" style="width: 100%">
-          <el-table-column label="Address">
+          <el-table-column label="地址">
             <template v-slot="{ row }">
               {{ row.location }}
             </template>
           </el-table-column>
-          <el-table-column fixed="right" label="Operations" width="120">
+          <el-table-column fixed="right" label="操作" width="120">
             <template v-slot="scope">
-              <el-button link type="primary" size="small" @click="handleDelete(scope.row)">Delete</el-button>
+              <el-button link type="primary" size="small" @click="handleDelete(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>

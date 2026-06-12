@@ -40,19 +40,19 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         try {
             Product product = productMapper.getOneProductById(orderInfo.getProd());
             if (product == null) {
-                throw new IllegalArgumentException("Product does not exist.");
+                throw new IllegalArgumentException("商品不存在");
             }
             if (product.getState() == null || product.getState() != 1) {
-                throw new IllegalArgumentException("Product has not been approved.");
+                throw new IllegalArgumentException("商品未通过审核");
             }
             if (orderInfo.getProdNum() == null || orderInfo.getProdNum() <= 0) {
-                throw new IllegalArgumentException("Invalid product quantity.");
+                throw new IllegalArgumentException("商品数量不合法");
             }
             if (product.getNumber() == null || product.getNumber() < orderInfo.getProdNum()) {
-                throw new IllegalArgumentException("Insufficient stock.");
+                throw new IllegalArgumentException("库存不足");
             }
             if (orderInfo.getCus() == null || orderInfo.getRecAddr() == null) {
-                throw new IllegalArgumentException("Customer and receive address are required.");
+                throw new IllegalArgumentException("缺少顾客或收货地址");
             }
             //价格全为整数...
             Integer price= product.getPrice();
@@ -87,7 +87,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void payOrders(CurrentUser currentUser, List<String> orderIdList) {
         if (orderIdList == null || orderIdList.isEmpty()) {
-            throw new IllegalArgumentException("Order list is empty.");
+            throw new IllegalArgumentException("订单列表不能为空");
         }
         double total = 0;
         List<OrderInfo> rows = new ArrayList<>();
@@ -95,33 +95,33 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         for (String orderId : orderIdList) {
             List<OrderInfo> orderRows = orderInfoMapper.getOrdersById(orderId);
             if (orderRows == null || orderRows.isEmpty()) {
-                throw new IllegalArgumentException("Order does not exist: " + orderId);
+                throw new IllegalArgumentException("订单不存在: " + orderId);
             }
             for (OrderInfo order : orderRows) {
                 String rowKey = order.getId() + ":" + order.getProd();
                 if (seenRows.contains(rowKey)) continue;
                 seenRows.add(rowKey);
                 if (!currentUser.isAdmin() && !currentUser.getId().equals(order.getCus())) {
-                    throw new IllegalArgumentException("No permission to pay this order.");
+                    throw new IllegalArgumentException("无权支付该订单");
                 }
                 if (order.getState() == null || order.getState() != -1) {
-                    throw new IllegalArgumentException("Only unpaid orders can be paid.");
+                    throw new IllegalArgumentException("仅待支付订单可发起支付");
                 }
                 // Use FOR UPDATE lock to prevent concurrent stock deduction overselling
                 Product product = productMapper.getOneProductByIdForUpdate(order.getProd());
                 if (product == null || product.getNumber() == null || product.getNumber() < order.getProdNum()) {
-                    throw new IllegalArgumentException("Insufficient stock for order " + orderId);
+                    throw new IllegalArgumentException("订单库存不足: " + orderId);
                 }
                 total += order.getAccount();
                 rows.add(order);
             }
         }
         if (!currentUser.isAdmin() && userMapper.getBalance(currentUser.getId()) < total) {
-            throw new IllegalArgumentException("The balance is insufficient.");
+            throw new IllegalArgumentException("余额不足");
         }
         for (OrderInfo order : rows) {
             int affected = productMapper.decrementStock(order.getProd(), order.getProdNum());
-            if (affected <= 0) throw new IllegalArgumentException("Insufficient stock for order " + order.getId());
+            if (affected <= 0) throw new IllegalArgumentException("订单库存不足: " + order.getId());
         }
         if (!currentUser.isAdmin()) {
             userMapper.refundOrPay(currentUser.getId(), userMapper.getBalance(currentUser.getId()) - total);
@@ -148,7 +148,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         for (OrderInfo order : rows) {
             int affected = productMapper.decrementStock(order.getProd(), order.getProdNum());
             if (affected <= 0) {
-                throw new IllegalArgumentException("Insufficient stock for order " + order.getId());
+                throw new IllegalArgumentException("订单库存不足: " + order.getId());
             }
         }
         String updateTime = payTime == null || payTime.trim().isEmpty()
@@ -274,7 +274,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     public OrderInfo transitionOrder(CurrentUser currentUser, String orderId, int targetState, String complain, String complainReason, String refundReason) {
         List<OrderInfo> rows = orderInfoMapper.getOrdersById(orderId);
         if (rows == null || rows.isEmpty()) {
-            throw new IllegalArgumentException("Order does not exist.");
+            throw new IllegalArgumentException("订单不存在");
         }
         OrderInfo first = rows.get(0);
         int currentState = first.getState();
@@ -283,52 +283,62 @@ public class OrderInfoServiceImpl implements OrderInfoService {
 
         if (targetState == 4) {
             if (!currentUser.isMerchant() || !currentUser.getId().equals(first.getMer()) || currentState != 0) {
-                throw new IllegalArgumentException("Only the merchant can accept a paid order for preparation.");
+                throw new IllegalArgumentException("仅商家可将已支付订单流转为备餐中");
             }
         } else if (targetState == 3) {
             if (currentUser.isMerchant()) {
                 if (!currentUser.getId().equals(first.getMer()) || currentState != 4) {
-                    throw new IllegalArgumentException("Only the merchant can send a preparing order to drivers.");
+                    throw new IllegalArgumentException("仅商家可将备餐中订单派发给骑手");
                 }
             } else if (currentUser.isDriver()) {
                 if (currentState != 1 || first.getDriverId() == null || !currentUser.getId().equals(first.getDriverId())) {
-                    throw new IllegalArgumentException("Only the assigned driver can reject a delivering order.");
+                    throw new IllegalArgumentException("仅当前配送骑手可退回该订单");
                 }
-                clearDriverId = true;
+                String now = String.valueOf(LocalDateTime.now());
+                int affected = orderInfoMapper.returnDriverOrderToPool(orderId, currentUser.getId(), now);
+                if (affected <= 0) {
+                    throw new IllegalArgumentException("订单状态已变更，请刷新后重试");
+                }
+                return orderInfoMapper.getOrdersById(orderId).get(0);
             } else {
-                throw new IllegalArgumentException("Only merchant or driver can move order to waiting delivery.");
+                throw new IllegalArgumentException("仅商家或骑手可将订单流转为待骑手接单");
             }
         } else if (targetState == 1) {
             if (!currentUser.isDriver() || currentState != 3) {
-                throw new IllegalArgumentException("Only a driver can take a waiting delivery order.");
+                throw new IllegalArgumentException("仅骑手可接取待骑手接单订单");
             }
             if (orderInfoMapper.countDriverDeliveringOrders(currentUser.getId()) > 0) {
-                throw new IllegalArgumentException("Driver already has an active delivery order.");
+                throw new IllegalArgumentException("当前还有配送中的订单");
             }
-            driverId = currentUser.getId();
+            String now = String.valueOf(LocalDateTime.now());
+            int affected = orderInfoMapper.takeDriverOrder(orderId, currentUser.getId(), now);
+            if (affected <= 0) {
+                throw new IllegalArgumentException("订单已被其他骑手接单，请刷新后重试");
+            }
+            return orderInfoMapper.getOrdersById(orderId).get(0);
         } else if (targetState == 2) {
             if (!currentUser.isCustomer() || !currentUser.getId().equals(first.getCus()) || currentState != 1) {
-                throw new IllegalArgumentException("Only the customer can receive a delivering order.");
+                throw new IllegalArgumentException("仅顾客可确认收货");
             }
         } else if (targetState == -2) {
             if (!currentUser.isCustomer() || !currentUser.getId().equals(first.getCus()) || !(currentState == 1 || currentState == 2)) {
-                throw new IllegalArgumentException("Only the customer can request refund after delivery starts.");
+                throw new IllegalArgumentException("仅顾客可在配送开始后申请退款");
             }
         } else if (targetState == -3) {
             if (!(currentUser.isMerchant() && currentUser.getId().equals(first.getMer())) && !currentUser.isAdmin()) {
-                throw new IllegalArgumentException("Only merchant or admin can confirm refund.");
+                throw new IllegalArgumentException("仅商家或管理员可确认退款");
             }
             if (currentState != -2 && currentState != 0 && currentState != 4) {
-                throw new IllegalArgumentException("Only paid, preparing or refunding orders can be refunded.");
+                throw new IllegalArgumentException("仅已支付、备餐中或退款中的订单可退款");
             }
             if ((currentState == 0 || currentState == 4) && (refundReason == null || refundReason.trim().isEmpty())) {
-                throw new IllegalArgumentException("Merchant cancellation requires a refund reason.");
+                throw new IllegalArgumentException("商家取消订单时必须填写退款原因");
             }
             refundAndRestoreOrder(orderId, rows, first);
         } else if (targetState == -1 || targetState == 0) {
-            throw new IllegalArgumentException("Use order creation or payment endpoint for this state.");
+            throw new IllegalArgumentException("该状态请使用下单或支付接口处理");
         } else {
-            throw new IllegalArgumentException("Invalid order state.");
+            throw new IllegalArgumentException("非法订单状态");
         }
 
         String now = String.valueOf(LocalDateTime.now());
@@ -442,14 +452,14 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     private List<OrderInfo> collectPayableRows(CurrentUser currentUser, List<String> orderIdList, boolean lockStock) {
         List<String> normalizedIds = normalizeOrderIds(orderIdList);
         if (normalizedIds.isEmpty()) {
-            throw new IllegalArgumentException("Order list is empty.");
+            throw new IllegalArgumentException("订单列表不能为空");
         }
         List<OrderInfo> rows = new ArrayList<>();
         Set<String> seenRows = new HashSet<>();
         for (String orderId : normalizedIds) {
             List<OrderInfo> orderRows = orderInfoMapper.getOrdersById(orderId);
             if (orderRows == null || orderRows.isEmpty()) {
-                throw new IllegalArgumentException("Order does not exist: " + orderId);
+                throw new IllegalArgumentException("订单不存在: " + orderId);
             }
             for (OrderInfo order : orderRows) {
                 String rowKey = order.getId() + ":" + order.getProd();
@@ -458,19 +468,19 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 }
                 seenRows.add(rowKey);
                 if (!currentUser.isAdmin() && !currentUser.getId().equals(order.getCus())) {
-                    throw new IllegalArgumentException("No permission to pay this order.");
+                    throw new IllegalArgumentException("无权支付该订单");
                 }
                 if (order.getState() != null && order.getState() == 0) {
                     continue;
                 }
                 if (order.getState() == null || order.getState() != -1) {
-                    throw new IllegalArgumentException("Only unpaid orders can be paid.");
+                    throw new IllegalArgumentException("仅待支付订单可发起支付");
                 }
                 Product product = lockStock
                         ? productMapper.getOneProductByIdForUpdate(order.getProd())
                         : productMapper.getOneProductById(order.getProd());
                 if (product == null || product.getNumber() == null || product.getNumber() < order.getProdNum()) {
-                    throw new IllegalArgumentException("Insufficient stock for order " + orderId);
+                    throw new IllegalArgumentException("订单库存不足: " + orderId);
                 }
                 rows.add(order);
             }

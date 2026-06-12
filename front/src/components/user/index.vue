@@ -2,36 +2,36 @@
   <div class="user-admin glass-panel">
     <div class="section-heading">
       <div>
-        <span class="micro-tag">User Governance</span>
+        <span class="micro-tag">用户治理</span>
         <h3>用户管理面板</h3>
         <p>通过统一筛选与状态标签管理顾客、商家、骑手和管理员账号。</p>
       </div>
     </div>
     <div class="toolbar">
-      <el-select v-model="type" clearable placeholder="role" style="width: 160px">
-        <el-option label="customer" value="cus" />
-        <el-option label="merchant" value="mer" />
-        <el-option label="driver" value="driver" />
-        <el-option label="admin" value="admin" />
+      <el-select v-model="type" clearable placeholder="角色类型" style="width: 160px">
+        <el-option label="顾客" value="cus" />
+        <el-option label="商家" value="mer" />
+        <el-option label="骑手" value="driver" />
+        <el-option label="管理员" value="admin" />
       </el-select>
-      <el-button type="primary" @click="fetchUsers">Refresh</el-button>
+      <el-button type="primary" @click="fetchUsers">刷新列表</el-button>
     </div>
     <el-table :data="users" border>
       <el-table-column prop="id" label="ID" width="90" />
-      <el-table-column prop="name" label="Name" />
-      <el-table-column prop="type" label="Role" width="120" />
-      <el-table-column prop="phone" label="Phone" />
-      <el-table-column prop="disabled" label="Status" width="120">
+      <el-table-column prop="name" label="用户名" />
+      <el-table-column prop="type" label="角色" width="120" />
+      <el-table-column prop="phone" label="手机号" />
+      <el-table-column prop="disabled" label="状态" width="120">
         <template #default="{ row }">
           <el-tag :type="row.disabled === 1 ? 'danger' : 'success'">
-            {{ row.disabled === 1 ? "Disabled" : "Active" }}
+            {{ row.disabled === 1 ? "已停用" : "正常" }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="Action" width="140">
+      <el-table-column label="操作" width="140">
         <template #default="{ row }">
           <el-button size="small" @click="toggleDisabled(row)">
-            {{ row.disabled === 1 ? "Enable" : "Disable" }}
+            {{ row.disabled === 1 ? "启用" : "停用" }}
           </el-button>
         </template>
       </el-table-column>
@@ -59,7 +59,7 @@ const toggleDisabled = (row) => {
     id: row.id,
     disabled: row.disabled === 1 ? 0 : 1,
   }).then(() => {
-    ElMessage.success("Update user status successfully");
+    ElMessage.success("用户状态更新成功");
     fetchUsers();
   });
 };

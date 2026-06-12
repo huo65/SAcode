@@ -3,7 +3,7 @@
     <section class="search glass-panel">
       <div class="section-heading">
         <div>
-          <span class="micro-tag">Goods Workspace</span>
+          <span class="micro-tag">商品工作台</span>
           <h3>{{ curStatus === "merchant" ? "商品经营面板" : "商品浏览与审核面板" }}</h3>
           <p>按分类、名称、价格区间和状态快速筛选商品，并通过卡片化布局提升列表可读性。</p>
         </div>
@@ -73,7 +73,7 @@
           <!-- <img :src="imageUrlMap[item.image_list[0]]" class="image" /> -->
         </div>
         <div class="info">
-          <span class="goods-caption">{{ item.category || "课堂展示商品" }}</span>
+          <span class="goods-caption">{{ item.category || "精选商品" }}</span>
           <h3>{{ item.name }}</h3>
           <p>{{ item.description }}</p>
         </div>
@@ -102,7 +102,6 @@
     />
     <CartDrawer
       :visible="cartVisible"
-      @open="getCartInfo"
       @close="closeCart"
       @change="saveCart"
     />

@@ -29,6 +29,12 @@ public interface OrderInfoMapper {
     @Update("<script>UPDATE order_info SET state = #{newState}, time = #{updateTime}, driver_id = NULL<if test='payTime != null'>, pay_time = #{payTime}</if><if test='complain != null'>, complain = #{complain}</if><if test='complainReason != null'>, complain_reason = #{complainReason}</if><if test='refundReason != null'>, refund_reason = #{refundReason}</if> WHERE id = #{orderId}</script>")
     int updateOrderStateAndClearDriver(@Param("orderId") String orderId, @Param("newState") int newState, @Param("updateTime") String updateTime, @Param("payTime") String payTime, @Param("complain") String complain, @Param("complainReason") String complainReason, @Param("refundReason") String refundReason);
 
+    @Update("UPDATE order_info SET state = 1, time = #{updateTime}, driver_id = #{driverId} WHERE id = #{orderId} AND state = 3 AND (driver_id IS NULL OR driver_id = '')")
+    int takeDriverOrder(@Param("orderId") String orderId, @Param("driverId") String driverId, @Param("updateTime") String updateTime);
+
+    @Update("UPDATE order_info SET state = 3, time = #{updateTime}, driver_id = NULL WHERE id = #{orderId} AND state = 1 AND driver_id = #{driverId}")
+    int returnDriverOrderToPool(@Param("orderId") String orderId, @Param("driverId") String driverId, @Param("updateTime") String updateTime);
+
     @Select("SELECT * FROM order_info")
     List<OrderInfo> getAllOrders();
 

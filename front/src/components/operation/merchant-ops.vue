@@ -2,10 +2,10 @@
   <div class="merchant-ops">
     <section class="hero">
       <div>
-        <p class="eyebrow">Merchant Analytics</p>
-        <h3>课堂展示版门店经营分析台</h3>
+        <p class="eyebrow">经营分析</p>
+        <h3>门店经营分析台</h3>
         <p class="hero-desc">
-          聚合门店 GMV、订单趋势、热销商品、售后结构和操作日志，方便课堂上展示“经营看板 + 导出报表 + 操作留痕”的商家侧闭环。
+          聚合门店 GMV、订单趋势、热销商品、售后结构和操作日志，帮助商家快速掌握门店经营情况。
         </p>
       </div>
       <div class="hero-actions">
@@ -26,7 +26,7 @@
       <article class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">Sales Trend</p>
+            <p class="panel-kicker">销售趋势</p>
             <h4>近 7 天门店经营走势</h4>
           </div>
         </div>
@@ -50,7 +50,7 @@
       <article class="panel dark-panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">After-Sale Mix</p>
+            <p class="panel-kicker">售后概览</p>
             <h4>售后与操作状态</h4>
           </div>
         </div>
@@ -87,7 +87,7 @@
       <article class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">Top Products</p>
+            <p class="panel-kicker">热销商品</p>
             <h4>热销商品排行</h4>
           </div>
         </div>
@@ -108,7 +108,7 @@
       <article class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">Recent Orders</p>
+            <p class="panel-kicker">近期订单</p>
             <h4>近期订单样本</h4>
           </div>
         </div>
@@ -143,7 +143,7 @@ const summaryCards = computed(() => {
     {
       label: "有效订单",
       value: overview.paidOrders || 0,
-      tip: "课堂展示版已支付至完成的订单数",
+      tip: "已支付至完成状态的订单数",
     },
     {
       label: "平均客单价",
@@ -158,7 +158,7 @@ const summaryCards = computed(() => {
     {
       label: "退款订单",
       value: overview.refundOrders || 0,
-      tip: "用于课堂说明异常经营场景",
+      tip: "用于分析异常经营场景",
     },
     {
       label: "在售商品",
@@ -197,7 +197,7 @@ const exportReport = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = data?.fileName || "merchant-operation-report.csv";
+      link.download = data?.fileName || "商家经营报表.csv";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

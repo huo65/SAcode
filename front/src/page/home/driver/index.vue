@@ -4,10 +4,10 @@
     <div class="driver">
       <section class="driver-hero">
         <div>
-          <span class="micro-tag">Driver Delivery Board</span>
+          <span class="micro-tag">骑手配送中心</span>
           <h2>配送链路、收入与异常反馈集中展示</h2>
           <p>
-            通过大盘式布局集中呈现接单状态、运力负载、收入估算和服务区域，让骑手端更具“运营驾驶舱”而不是简单表单页。
+            通过大盘式布局集中呈现接单状态、运力负载、收入估算和服务区域，让骑手工作信息一目了然。
           </p>
         </div>
         <div class="status-bar">
@@ -69,14 +69,14 @@
           </div>
         </div>
         <div class="summary-card">
-          <div class="summary-label">展示评分</div>
+          <div class="summary-label">平均评分</div>
           <div class="summary-value">{{ orderSummary.avgScore }}</div>
-          <div class="summary-desc">基于已完成订单评价的课堂展示版评分</div>
+          <div class="summary-desc">基于已完成订单评价生成</div>
         </div>
         <div class="summary-card">
           <div class="summary-label">异常上报</div>
           <div class="summary-value">{{ orderSummary.issueCount }}</div>
-          <div class="summary-desc">配送异常、联系不上顾客等本地记录</div>
+          <div class="summary-desc">配送异常、联系不上顾客等记录数量</div>
         </div>
       </div>
 
@@ -86,7 +86,7 @@
       </div>
 
       <div class="dashboard-tip">
-        课堂展示版收入规则：每单配送收入按 `max(4, 订单金额 × 10%)` 估算；超时 10 分钟的待接单会进入优先重派展示队列
+        收入按 `max(4, 订单金额 × 10%)` 估算；超时 10 分钟的待接单会进入优先重派队列。
       </div>
 
       <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
@@ -96,7 +96,7 @@
 
       <el-drawer v-model="incomeVisible" title="骑手收入明细" size="48%">
         <div class="drawer-tip">
-          已完成订单展示结算收入，配送中订单展示预计收入，供课堂讲解使用。
+          已完成订单展示结算收入，配送中订单展示预计收入。
         </div>
         <el-table :data="incomeDetails" style="width: 100%">
           <el-table-column prop="orderId" label="订单号" min-width="120" />
@@ -118,14 +118,14 @@
           <el-descriptions-item label="等级说明">
             {{ performanceSummary.levelDesc }}
           </el-descriptions-item>
-          <el-descriptions-item label="课堂展示版激励">
+          <el-descriptions-item label="激励规则">
             {{ performanceSummary.rewardRule }}
           </el-descriptions-item>
           <el-descriptions-item label="本期预估奖励">
             ￥{{ performanceSummary.estimatedBonus }}
           </el-descriptions-item>
           <el-descriptions-item label="异常说明">
-            已上报异常 {{ orderSummary.issueCount }} 单，演示时可说明系统已保留配送异常记录。
+            已上报异常 {{ orderSummary.issueCount }} 单，可在配送记录中查看详情。
           </el-descriptions-item>
         </el-descriptions>
       </el-dialog>
@@ -143,6 +143,10 @@ import $store, { refreshDataFnMap } from "@/store";
 import { userInfo } from "@/store";
 import fetch from "@/api/fetch";
 import { Order as OrderApi } from "@/api/apis";
+import {
+  isDriverOwnedOrder,
+  normalizeOrderItems,
+} from "@/lib/orderDriverHelper";
 
 const { t } = useI18n();
 const activeName = ref("first");
@@ -180,7 +184,7 @@ const isDispatchTimedOut = (item) => {
 
 const matchesDriverServiceArea = (item) => {
   if (!driverServiceArea.value) return true;
-  if (item?.orderInfo?.driverId === userInfo.value.id) return true;
+  if (isDriverOwnedOrder(item, userInfo.value.id)) return true;
   const keyword = driverServiceArea.value.toLowerCase();
   const haystack = [item?.delivery, item?.receive, item?.cusName, item?.merName]
     .filter(Boolean)
@@ -209,7 +213,7 @@ const isSameDay = (timeText) => {
 };
 
 const ownOrders = computed(() =>
-  driverOrders.value.filter((item) => item?.orderInfo?.driverId === userInfo.value.id)
+  driverOrders.value.filter((item) => isDriverOwnedOrder(item, userInfo.value.id))
 );
 
 const completedOrders = computed(() =>
@@ -235,7 +239,7 @@ const performanceSummary = computed(() => {
   if (completedCount >= 12 || avgScore >= 4.8) {
     return {
       level: "金牌骑手",
-      levelDesc: "完成单量和展示评分较高，适合课堂展示高绩效骑手。",
+      levelDesc: "完成单量和评分较高，当前属于高绩效骑手。",
       rewardRule: "每个已完成订单额外奖励 2 元。",
       estimatedBonus: (completedCount * 2).toFixed(0),
     };
@@ -243,14 +247,14 @@ const performanceSummary = computed(() => {
   if (completedCount >= 5 || avgScore >= 4.5) {
     return {
       level: "稳定骑手",
-      levelDesc: "具备稳定接单与配送能力，课堂展示中可解释为骨干运力。",
+      levelDesc: "具备稳定接单与配送能力，属于门店配送骨干。",
       rewardRule: "每个已完成订单额外奖励 1 元。",
       estimatedBonus: completedCount.toFixed(0),
     };
   }
   return {
     level: "新手骑手",
-    levelDesc: "刚完成基础配送闭环，适合演示新人培养阶段。",
+    levelDesc: "当前处于起步阶段，继续完成订单可提升等级。",
     rewardRule: "完成 5 单后进入稳定骑手档。",
     estimatedBonus: "0",
   };
@@ -315,7 +319,7 @@ const refreshDashboard = () => {
     usrId: userInfo.value.id,
     timeOrder: 1,
   }).then((data) => {
-    driverOrders.value = data?.driverList || [];
+    driverOrders.value = normalizeOrderItems(data?.driverList || []);
   });
 };
 

@@ -3,7 +3,7 @@
     <section class="header glass-panel">
       <div class="section-heading">
         <div>
-          <span class="micro-tag">Order Timeline</span>
+          <span class="micro-tag">订单时间轴</span>
           <h3>订单状态、流转节点与异常反馈</h3>
           <p>以卡片化订单时间轴替代生硬表单组合，强化状态标签、配送节点与售后信息的可扫描性。</p>
         </div>
@@ -36,15 +36,15 @@
     >
       <div class="content">
         <div class="title">
-          <span>Order-{{ item.orderInfo.id }}</span>
+          <span>订单号 {{ item.orderInfo.id }}</span>
           <el-tag :type="stateType[item.orderInfo.state]"
-            >state: {{ stateLabel[item.orderInfo.state] }}</el-tag
+            >状态：{{ stateLabel[item.orderInfo.state] }}</el-tag
           >
           <el-tag
             v-if="isDispatchTimedOut(item)"
             type="danger"
           >
-            dispatch timeout
+            派单超时
           </el-tag>
         </div>
         <div class="info">
@@ -52,38 +52,38 @@
           <el-descriptions class="detail" :column="2" :border="true">
             <el-descriptions-item label-align="center" :span="2">
               <template #label>
-                <div>Customer</div>
+                <div>顾客</div>
               </template>                  
               {{ item.cusName }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center" :span="2">
               <template #label>
-                <div>Merchant</div>
+                <div>商家</div>
               </template>
               {{ item.merName }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>Receive_Addr</div>
+                <div>收货地址</div>
               </template>
               {{ item.receive }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>Deliver_Addr</div>
+                <div>出餐地址</div>
               </template>
               {{ item.delivery }}
             </el-descriptions-item>
 
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>UpdateTime</div>
+                <div>更新时间</div>
               </template>
               {{ item.orderInfo.time }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>CurrentPlace</div>
+                <div>当前节点</div>
               </template>
               {{ getRouteCurrentPlace(item) }}
             </el-descriptions-item>
@@ -92,7 +92,7 @@
               label-align="center"
             >
               <template #label>
-                <div>Dispatch SLA</div>
+                <div>派单时效</div>
               </template>
               {{ getDispatchStatusText(item) }}
             </el-descriptions-item>
@@ -101,7 +101,7 @@
               label-align="center"
             >
               <template #label>
-                <div>Route Stage</div>
+                <div>配送阶段</div>
               </template>
               {{ getRouteStageText(item) }}
             </el-descriptions-item>
@@ -110,7 +110,7 @@
               label-align="center"
             >
               <template #label>
-                <div>ETA / Distance</div>
+                <div>预计送达 / 距离</div>
               </template>
               {{ getEtaText(item) }} / {{ getDistanceText(item) }}
             </el-descriptions-item>
@@ -119,38 +119,38 @@
               label-align="center"
             >
               <template #label>
-                <div>Redispatch</div>
+                <div>重派轮次</div>
               </template>
               第 {{ getRedispatchRound(item) }} 轮优先派发
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>ProductName</div>
+                <div>商品名称</div>
               </template>
               {{ item.productList[0].name }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>Bill</div>
+                <div>订单金额</div>
               </template>
               <span class="price">{{ item.orderInfo.account }}￥</span>
-              <span>for {{ item.productList.reduce((sum, product) => sum + Number(product.prodNum || 0), 0) }} item(s)</span>
+              <span>共 {{ item.productList.reduce((sum, product) => sum + Number(product.prodNum || 0), 0) }} 件商品</span>
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>Remark</div>
+                <div>订单备注</div>
               </template>
               {{ item.orderInfo.remark || "-" }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>Expected Delivery</div>
+                <div>期望送达</div>
               </template>
               {{ item.orderInfo.expectedDeliveryTime || "-" }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
-                <div>Refund Reason</div>
+                <div>退款原因</div>
               </template>
               {{ item.orderInfo.refundReason || "-" }}
             </el-descriptions-item>
@@ -160,7 +160,7 @@
               :span="2"
             >
               <template #label>
-                <div>After-Sale</div>
+                <div>售后工单</div>
               </template>
               <div class="review-block">
                 <div>
@@ -187,7 +187,7 @@
               :span="2"
             >
               <template #label>
-                <div>Review</div>
+                <div>顾客评价</div>
               </template>
               <div class="review-block">
                 <div>
@@ -195,17 +195,17 @@
                   <span>{{ item.review?.content || "-" }}</span>
                 </div>
                 <div v-if="item.review?.replyContent" class="reply-text">
-                  Reply: {{ item.review.replyContent }}
+                  商家回复：{{ item.review.replyContent }}
                 </div>
               </div>
             </el-descriptions-item>
             <el-descriptions-item
-              v-if="userInfo.type === 'driver' && item.orderInfo.driverId === userInfo.id"
+              v-if="userInfo.type === 'driver' && isDriverOwnedOrder(item, userInfo.id)"
               label-align="center"
               :span="2"
             >
               <template #label>
-                <div>Delivery Feedback</div>
+                <div>配送反馈</div>
               </template>
               <div class="review-block">
                 <div>
@@ -228,7 +228,7 @@
             item.orderInfo.state == stateEnum.toPay && userInfo.type === 'cus'
           "
           @click="updateOrder(item, 0)"
-          >Pay</el-button
+          >去支付</el-button
         >
         <el-button
           type="primary"
@@ -237,7 +237,7 @@
             userInfo.type === 'mer'
           "
           @click="updateOrder(item, 4)"
-          >Accept Order</el-button
+          >开始备餐</el-button
         >
         <el-button
           type="danger"
@@ -246,7 +246,7 @@
             userInfo.type === 'mer'
           "
           @click="rejectPaidOrder(item)"
-          >Reject Order</el-button
+          >拒绝接单</el-button
         >
         <!--木吱吱-->
         <el-button
@@ -256,7 +256,7 @@
             userInfo.type === 'mer'
           "
           @click="updateOrder(item, 3)"
-          >Ready for Driver</el-button
+          >呼叫骑手</el-button
         >
         <el-button
           type="danger"
@@ -265,7 +265,7 @@
             userInfo.type === 'mer'
           "
           @click="cancelPreparingOrder(item)"
-          >Cancel Order</el-button
+          >取消订单</el-button
         >
         <el-button
           :type="isDispatchTimedOut(item) ? 'danger' : 'primary'"
@@ -276,27 +276,27 @@
             !isDriverBusy
           "
           @click="updateOrder(item, 1)"
-          >Take-Order</el-button
+          >立即接单</el-button
         >
         <el-button
           type="danger"
           v-if="
             item.orderInfo.state == stateEnum.delivering &&
             userInfo.type === 'driver' &&
-            item.orderInfo.driverId === userInfo.id
+            isDriverOwnedOrder(item, userInfo.id)
           "
           @click="rejectDriverOrder(item)"
-          >Reject Order</el-button
+          >退回待接单</el-button
         >
         <el-button
           type="warning"
           v-if="
             item.orderInfo.state == stateEnum.delivering &&
             userInfo.type === 'driver' &&
-            item.orderInfo.driverId === userInfo.id
+            isDriverOwnedOrder(item, userInfo.id)
           "
           @click="openIssueDialog(item)"
-          >Report Issue</el-button
+          >上报异常</el-button
         >
         <el-button
           v-if="
@@ -304,7 +304,7 @@
             userInfo.type === 'cus'
           "
           @click="updateOrder(item, 2)"
-          >Receive</el-button
+          >确认收货</el-button
         >
         <el-button
           type="success"
@@ -314,7 +314,7 @@
             !item.reviewed
           "
           @click="openReviewDialog(item)"
-          >Review</el-button
+          >评价订单</el-button
         >
         <el-button
           type="primary"
@@ -325,7 +325,7 @@
             !item.review?.replyContent
           "
           @click="openReplyDialog(item)"
-          >Reply Review</el-button
+          >回复评价</el-button
         >
         <el-button
           type="danger"
@@ -335,7 +335,7 @@
             userInfo.type === 'cus'
           "
           @click="updateOrder(item, -2)"
-          >Ask For Returning</el-button
+          >申请退款</el-button
         >
         <el-button
           type="warning"
@@ -344,7 +344,7 @@
             canOpenAfterSale(item)
           "
           @click="openAfterSaleDialog(item)"
-          >After-Sale</el-button
+          >申请售后</el-button
         >
         <el-button
           v-if="
@@ -352,7 +352,7 @@
             userInfo.type === 'mer'
           "
           @click="updateOrder(item, -3)"
-          >Returned</el-button
+          >确认退款</el-button
         >
       </div>
     </div>
@@ -366,61 +366,61 @@
 
     <el-dialog
       :model-value="reviewVisible"
-      title="Review Order"
+      title="评价订单"
       width="520px"
       @close="closeReviewDialog"
     >
       <el-form label-width="110px">
-        <el-form-item label="Order">
+        <el-form-item label="订单号">
           <span>{{ reviewForm.orderId || "-" }}</span>
         </el-form-item>
-        <el-form-item label="Score" required>
+        <el-form-item label="评分" required>
           <el-rate v-model="reviewForm.score" />
         </el-form-item>
-        <el-form-item label="Content" required>
+        <el-form-item label="评价内容" required>
           <el-input
             v-model="reviewForm.content"
             type="textarea"
             :rows="4"
             maxlength="300"
             show-word-limit
-            placeholder="share your dining experience"
+            placeholder="请输入本次用餐体验"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="closeReviewDialog">Cancel</el-button>
-        <el-button type="primary" @click="submitReview">Submit Review</el-button>
+        <el-button @click="closeReviewDialog">取消</el-button>
+        <el-button type="primary" @click="submitReview">提交评价</el-button>
       </template>
     </el-dialog>
 
     <el-dialog
       :model-value="replyVisible"
-      title="Reply Review"
+      title="回复评价"
       width="520px"
       @close="closeReplyDialog"
     >
       <el-form label-width="110px">
-        <el-form-item label="Order">
+        <el-form-item label="订单号">
           <span>{{ replyForm.orderId || "-" }}</span>
         </el-form-item>
-        <el-form-item label="Review">
+        <el-form-item label="顾客评价">
           <span>{{ replyForm.reviewContent || "-" }}</span>
         </el-form-item>
-        <el-form-item label="Reply" required>
+        <el-form-item label="回复内容" required>
           <el-input
             v-model="replyForm.replyContent"
             type="textarea"
             :rows="4"
             maxlength="300"
             show-word-limit
-            placeholder="reply to customer feedback"
+            placeholder="请输入对顾客评价的回复"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="closeReplyDialog">Cancel</el-button>
-        <el-button type="primary" @click="submitReply">Submit Reply</el-button>
+        <el-button @click="closeReplyDialog">取消</el-button>
+        <el-button type="primary" @click="submitReply">提交回复</el-button>
       </template>
     </el-dialog>
 
@@ -431,10 +431,10 @@
       @close="closeIssueDialog"
     >
       <el-form label-width="110px">
-        <el-form-item label="Order">
+        <el-form-item label="订单号">
           <span>{{ issueForm.orderId || "-" }}</span>
         </el-form-item>
-        <el-form-item label="Type" required>
+        <el-form-item label="异常类型" required>
           <el-select v-model="issueForm.type" style="width: 100%">
             <el-option label="联系不上顾客" value="联系不上顾客" />
             <el-option label="商家出餐延迟" value="商家出餐延迟" />
@@ -442,20 +442,20 @@
             <el-option label="交通拥堵" value="交通拥堵" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Note">
+        <el-form-item label="异常说明">
           <el-input
             v-model="issueForm.note"
             type="textarea"
             :rows="4"
             maxlength="200"
             show-word-limit
-            placeholder="记录当前配送异常，课堂展示版会保存在本地会话中"
+            placeholder="记录当前配送异常，便于后续跟进处理"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="closeIssueDialog">Cancel</el-button>
-        <el-button type="primary" @click="submitIssue">Submit</el-button>
+        <el-button @click="closeIssueDialog">取消</el-button>
+        <el-button type="primary" @click="submitIssue">提交上报</el-button>
       </template>
     </el-dialog>
 
@@ -466,10 +466,10 @@
       @close="closeAfterSaleDialog"
     >
       <el-form label-width="110px">
-        <el-form-item label="Order">
+        <el-form-item label="订单号">
           <span>{{ afterSaleForm.orderId || "-" }}</span>
         </el-form-item>
-        <el-form-item label="Type" required>
+        <el-form-item label="问题类型" required>
           <el-select v-model="afterSaleForm.type" style="width: 100%">
             <el-option label="投诉反馈" value="投诉反馈" />
             <el-option label="退款问题" value="退款问题" />
@@ -477,7 +477,7 @@
             <el-option label="商品问题" value="商品问题" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Description" required>
+        <el-form-item label="问题描述" required>
           <el-input
             v-model="afterSaleForm.content"
             type="textarea"
@@ -489,20 +489,25 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="closeAfterSaleDialog">Cancel</el-button>
-        <el-button type="primary" @click="submitAfterSale">Submit Ticket</el-button>
+        <el-button @click="closeAfterSaleDialog">取消</el-button>
+        <el-button type="primary" @click="submitAfterSale">提交工单</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, reactive, onMounted } from "vue";
+import { computed, ref, reactive, onMounted, onUnmounted } from "vue";
 import { AfterSale, Order, Review } from "@/api/apis.js";
 import fetch from "@/api/fetch.js";
 import $store, { userInfo } from "@/store";
 import { ElMessage, ElMessageBox } from "element-plus";
 import Detail from "../goods/detail.vue";
+import {
+  filterDriverVisibleOrders,
+  isDriverOwnedOrder,
+  normalizeOrderItems,
+} from "@/lib/orderDriverHelper";
 
 const orderList = ref([]);
 const afterSaleMap = ref({});
@@ -524,35 +529,35 @@ const stateEnum = {
 };
 const stateOptions = [
   {
-    label: "returned",
+    label: "已退款",
     value: -3,
   },
   {
-    label: "returning",
+    label: "退款中",
     value: -2,
   },
   {
-    label: "toPay",
+    label: "待支付",
     value: -1,
   },
   {
-    label: "toDeliver",
+    label: "待商家处理",
     value: 0,
   },
   {
-    label: "preparing",
+    label: "备餐中",
     value: 4,
   },
   {
-    label: "waiting driver",
+    label: "待骑手接单",
     value: 3,
   },
   {
-    label: "delivering",
+    label: "配送中",
     value: 1,
   },
   {
-    label: "received",
+    label: "已完成",
     value: 2,
   },
 ];
@@ -568,10 +573,16 @@ const stateType = {
   [stateEnum.received]: "success",
 };
 
-const stateLabel = Object.keys(stateEnum).reduce((cur, text) => {
-  const key = stateEnum[text];
-  return { ...cur, [key]: text };
-}, {});
+const stateLabel = {
+  [stateEnum.returned]: "已退款",
+  [stateEnum.returning]: "退款中",
+  [stateEnum.toPay]: "待支付",
+  [stateEnum.toDeliver]: "待商家处理",
+  [stateEnum.preparing]: "备餐中",
+  [stateEnum.missOrder]: "待骑手接单",
+  [stateEnum.delivering]: "配送中",
+  [stateEnum.received]: "已完成",
+};
 const isDriverOnline = computed(
   () => userInfo.value.driverWorkStatus !== "rest"
 );
@@ -579,7 +590,7 @@ const isDriverBusy = computed(() =>
   orderList.value.some(
     (item) =>
       item?.orderInfo?.state === stateEnum.delivering &&
-      item?.orderInfo?.driverId === userInfo.value.id
+      isDriverOwnedOrder(item, userInfo.value.id)
   )
 );
 const driverServiceArea = computed(() =>
@@ -614,9 +625,9 @@ const isDispatchTimedOut = (item) =>
 const getDispatchStatusText = (item) => {
   const waitMinutes = getDispatchWaitMinutes(item);
   if (waitMinutes >= DISPATCH_TIMEOUT_MINUTES) {
-    return `timeout ${waitMinutes - DISPATCH_TIMEOUT_MINUTES} min`;
+    return `已超时 ${waitMinutes - DISPATCH_TIMEOUT_MINUTES} 分钟`;
   }
-  return `${DISPATCH_TIMEOUT_MINUTES - waitMinutes} min left`;
+  return `剩余 ${DISPATCH_TIMEOUT_MINUTES - waitMinutes} 分钟`;
 };
 
 const getRedispatchRound = (item) =>
@@ -672,7 +683,7 @@ const getEtaText = (item) => {
 
 const matchesDriverServiceArea = (item) => {
   if (!driverServiceArea.value) return true;
-  if (item?.orderInfo?.driverId === userInfo.value.id) return true;
+  if (isDriverOwnedOrder(item, userInfo.value.id)) return true;
   const haystack = [item?.delivery, item?.receive, item?.cusName, item?.merName]
     .filter(Boolean)
     .join(" ")
@@ -682,22 +693,13 @@ const matchesDriverServiceArea = (item) => {
 
 const displayedOrderList = computed(() => {
   if (userInfo.value.type !== "driver") return orderList.value;
-  return [...orderList.value]
-    .filter((item) => {
-    if (item?.orderInfo?.driverId === userInfo.value.id) return true;
-    if (item?.orderInfo?.state === stateEnum.missOrder) {
-      return matchesDriverServiceArea(item);
-    }
-    return false;
-    })
+  return [...filterDriverVisibleOrders(orderList.value, userInfo.value.id, matchesDriverServiceArea, stateEnum.missOrder)]
     .sort((a, b) => {
       const timeoutDiff = Number(isDispatchTimedOut(b)) - Number(isDispatchTimedOut(a));
       if (timeoutDiff !== 0) return timeoutDiff;
       return new Date(b?.orderInfo?.time || 0).getTime() - new Date(a?.orderInfo?.time || 0).getTime();
     });
 });
-
-console.log("###stateOptions", stateOptions);
 
 const getOrderList = () => {
   fetch(Order.getOrderList, {
@@ -711,20 +713,12 @@ const getOrderList = () => {
     } else if (userInfo.value.type === "driver") {
       key = "driver";
     }
-    orderList.value = data[key + "List"];
-    console.log(`orderList ${key}List`, data[key + "List"]);
+    orderList.value = normalizeOrderItems(data[key + "List"] || []);
   });
 };
 
 const updateOrder = (order, wantedState, extraPayload = {}) => {
   curOrder.value = order.orderInfo;
-  console.log("curOrder", curOrder.value, "wantedState", wantedState);
-  console.log(
-    "@@@curOrder.value.state",
-    curOrder.value.state,
-    "stateEnum.toPay",
-    stateEnum.toPay
-  );
   if (curOrder.value.state === stateEnum.toPay) {
     detailVisible.value = true;
     return;
@@ -734,7 +728,7 @@ const updateOrder = (order, wantedState, extraPayload = {}) => {
     wantedState === stateEnum.delivering &&
     !isDriverOnline.value
   ) {
-    ElMessage.warning("Driver is resting now. Switch to online before taking orders.");
+    ElMessage.warning("当前为休息状态，请先切换为在线接单。");
     return;
   }
   if (
@@ -742,7 +736,7 @@ const updateOrder = (order, wantedState, extraPayload = {}) => {
     wantedState === stateEnum.delivering &&
     isDriverBusy.value
   ) {
-    ElMessage.warning("Driver is busy delivering another order.");
+    ElMessage.warning("当前还有配送中的订单，请先完成后再接新单。");
     return;
   }
 
@@ -751,23 +745,22 @@ const updateOrder = (order, wantedState, extraPayload = {}) => {
     targetState: wantedState,
     ...extraPayload,
   }).then((data) => {
-    console.log("after update order", data.order_info);
     getOrderList();
-    ElMessage.success("Update Order Successfully");
+    ElMessage.success("订单状态更新成功");
   });
 };
 
 const rejectPaidOrder = async (order) => {
   try {
     const { value } = await ElMessageBox.prompt(
-      "Please enter a reject reason",
-      "Reject Order",
+      "请填写拒绝接单原因",
+      "拒绝接单",
       {
-        confirmButtonText: "Confirm",
-        cancelButtonText: "Cancel",
-        inputPlaceholder: "sold out / store closed / unable to deliver...",
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        inputPlaceholder: "例如：商品售罄、门店暂停营业、无法配送等",
         inputValidator: (input) =>
-          input && input.trim() ? true : "Reject reason is required",
+          input && input.trim() ? true : "请填写拒绝原因",
       }
     );
     updateOrder(order, -3, {
@@ -783,14 +776,14 @@ const rejectPaidOrder = async (order) => {
 const cancelPreparingOrder = async (order) => {
   try {
     const { value } = await ElMessageBox.prompt(
-      "Please enter a cancel reason",
-      "Cancel Preparing Order",
+      "请填写取消订单原因",
+      "取消订单",
       {
-        confirmButtonText: "Confirm",
-        cancelButtonText: "Cancel",
-        inputPlaceholder: "ingredients unavailable / kitchen issue / store closed...",
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        inputPlaceholder: "例如：原料不足、后厨异常、门店临时关闭等",
         inputValidator: (input) =>
-          input && input.trim() ? true : "Cancel reason is required",
+          input && input.trim() ? true : "请填写取消原因",
       }
     );
     updateOrder(order, -3, {
@@ -806,11 +799,11 @@ const cancelPreparingOrder = async (order) => {
 const rejectDriverOrder = async (order) => {
   try {
     await ElMessageBox.confirm(
-      "Reject this delivery and return it to the waiting driver pool?",
-      "Reject Delivery",
+      "确认将该订单退回待骑手接单池吗？",
+      "退回待接单",
       {
-        confirmButtonText: "Confirm",
-        cancelButtonText: "Cancel",
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
         type: "warning",
       }
     );
@@ -870,15 +863,15 @@ const closeReviewDialog = () => {
 
 const submitReview = () => {
   if (!reviewForm.orderId) {
-    ElMessage.error("Order is required");
+    ElMessage.error("缺少订单号");
     return;
   }
   if (!reviewForm.score) {
-    ElMessage.error("Score is required");
+    ElMessage.error("请选择评分");
     return;
   }
   if (!reviewForm.content.trim()) {
-    ElMessage.error("Review content is required");
+    ElMessage.error("请填写评价内容");
     return;
   }
   fetch(Review.add, {
@@ -886,7 +879,7 @@ const submitReview = () => {
     score: reviewForm.score,
     content: reviewForm.content.trim(),
   }).then(() => {
-    ElMessage.success("Review submitted successfully");
+    ElMessage.success("评价提交成功");
     closeReviewDialog();
     getOrderList();
   });
@@ -941,18 +934,18 @@ const closeReplyDialog = () => {
 
 const submitReply = () => {
   if (!replyForm.orderId) {
-    ElMessage.error("Order is required");
+    ElMessage.error("缺少订单号");
     return;
   }
   if (!replyForm.replyContent.trim()) {
-    ElMessage.error("Reply content is required");
+    ElMessage.error("请填写回复内容");
     return;
   }
   fetch(Review.reply, {
     orderId: replyForm.orderId,
     replyContent: replyForm.replyContent.trim(),
   }).then(() => {
-    ElMessage.success("Reply submitted successfully");
+    ElMessage.success("回复提交成功");
     closeReplyDialog();
     getOrderList();
   });
@@ -978,7 +971,7 @@ const closeIssueDialog = () => {
 
 const submitIssue = () => {
   if (!issueForm.orderId) {
-    ElMessage.error("Order is required");
+    ElMessage.error("缺少订单号");
     return;
   }
   const nextReports = {
@@ -1017,11 +1010,11 @@ const closeAfterSaleDialog = () => {
 
 const submitAfterSale = () => {
   if (!afterSaleForm.orderId) {
-    ElMessage.error("Order is required");
+    ElMessage.error("缺少订单号");
     return;
   }
   if (!afterSaleForm.content.trim()) {
-    ElMessage.error("Description is required");
+    ElMessage.error("请填写问题描述");
     return;
   }
   fetch(AfterSale.create, {
@@ -1029,7 +1022,7 @@ const submitAfterSale = () => {
     type: afterSaleForm.type,
     content: afterSaleForm.content.trim(),
   }).then(() => {
-    ElMessage.success("After-sale ticket submitted");
+    ElMessage.success("售后工单已提交");
     closeAfterSaleDialog();
     loadAfterSaleTickets();
     getOrderList();
@@ -1041,12 +1034,33 @@ const initOrderData = () => {
   loadAfterSaleTickets();
 };
 
+let driverOrderTimer = null;
+
+const startDriverAutoRefresh = () => {
+  if (userInfo.value.type !== "driver" || driverOrderTimer) return;
+  driverOrderTimer = window.setInterval(() => {
+    if (document.hidden) return;
+    getOrderList();
+  }, 10000);
+};
+
+const stopDriverAutoRefresh = () => {
+  if (!driverOrderTimer) return;
+  window.clearInterval(driverOrderTimer);
+  driverOrderTimer = null;
+};
+
 onMounted(() => {
   $store.commit("updataRefreshDataFnMap", {
     tabLabel: "Order",
     fn: initOrderData,
   });
   initOrderData();
+  startDriverAutoRefresh();
+});
+
+onUnmounted(() => {
+  stopDriverAutoRefresh();
 });
 </script>
 

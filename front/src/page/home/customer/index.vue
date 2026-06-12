@@ -4,26 +4,26 @@
     <div class="customer">
       <section class="customer-hero">
         <div>
-          <span class="micro-tag">{{ curStatus === "guest" ? "Guest Preview" : "Customer Flow" }}</span>
-          <h2>更贴近真实外卖平台的点餐首页</h2>
+          <span class="micro-tag">{{ curStatus === "guest" ? "游客预览" : "顾客中心" }}</span>
+          <h2>发现附近好店，轻松点餐下单</h2>
           <p>
-            将门店浏览、订单查看和个人信息收纳到统一工作区中，强化视觉分区、留白和操作反馈，便于课堂展示完整下单闭环。
+            在同一工作区内快速完成门店浏览、订单查看和个人信息管理，点餐流程更清晰顺手。
           </p>
         </div>
         <div class="hero-stats">
           <article class="hero-stat">
             <span>当前模式</span>
-            <strong>{{ curStatus === "guest" ? "游客浏览" : "顾客下单" }}</strong>
+            <strong>{{ curStatus === "guest" ? "游客浏览" : "顾客点餐" }}</strong>
           </article>
           <article class="hero-stat">
             <span>核心入口</span>
-            <strong>{{ curStatus === "guest" ? "门店广场" : "门店 + 订单 + 资料" }}</strong>
+            <strong>{{ curStatus === "guest" ? "门店列表" : "门店 + 订单 + 资料" }}</strong>
           </article>
         </div>
       </section>
 
       <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
-        <el-tab-pane label="Restaurants" name="first"><Restaurant /></el-tab-pane>
+        <el-tab-pane label="店铺" name="first"><Restaurant /></el-tab-pane>
         <el-tab-pane v-if="curStatus === 'customer'" :label="t('common.order')" name="second">
           <Order />
         </el-tab-pane>
@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { onMounted, onBeforeUnmount, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Restaurant from "@/components/restaurant/index.vue";
 import Order from "@/components/order/index.vue";
@@ -57,6 +57,20 @@ const handleClick = (tab, event) => {
   const key = tabNameMap[tab.props.name] || tab.props.label;
   refreshDataFnMap.value?.[key]?.();
 };
+
+const openOrderTab = () => {
+  if (curStatus.value !== "customer") return;
+  activeName.value = "second";
+  refreshDataFnMap.value?.Order?.();
+};
+
+onMounted(() => {
+  window.addEventListener("navigate-orders", openOrderTab);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("navigate-orders", openOrderTab);
+});
 </script>
 
 <style lang="less" scoped>

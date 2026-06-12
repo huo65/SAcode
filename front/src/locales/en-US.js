@@ -1,6 +1,6 @@
 export default {
   login: {
-    title: 'Welcome to DBTake-Out',
+    title: 'Welcome to Xidian Takeout',
     name: 'name',
     password: 'password',
     login: 'Log in',

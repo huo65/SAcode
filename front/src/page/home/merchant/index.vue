@@ -4,10 +4,10 @@
     <div class="merchant">
       <div class="merchant-hero">
         <div>
-          <p class="eyebrow">Merchant Console</p>
-          <h2>课堂展示版门店运营中心</h2>
+          <p class="eyebrow">商家工作台</p>
+          <h2>门店运营中心</h2>
           <p class="hero-desc">
-            统一查看商品、订单、门店资料与经营分析，让顾客端看到的门店形象和商家端维护的运营信息、经营数据保持一致。
+            统一查看商品、订单、门店资料与经营分析，让顾客端展示内容与商家端维护信息始终保持一致。
           </p>
         </div>
         <div class="hero-stats">
@@ -43,14 +43,14 @@
         <el-tab-pane v-if="hasMenu('merchant.menu.afterSale')" name="third">
           <template #label>
             <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
-              <span>After-Sale</span>
+              <span>售后</span>
             </el-badge>
           </template>
           <AfterSaleBoard scope="merchant" />
         </el-tab-pane>
-        <el-tab-pane v-if="hasMenu('merchant.menu.store')" label="Store" name="fourth"><StoreManage /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('merchant.menu.store')" label="店铺" name="fourth"><StoreManage /></el-tab-pane>
         <el-tab-pane v-if="hasMenu('merchant.menu.info')" :label="t('common.info')" name="fifth"><Info /></el-tab-pane>
-        <el-tab-pane v-if="hasMenu('merchant.menu.ops')" label="Ops" name="sixth"><MerchantOps /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('merchant.menu.ops')" label="运营" name="sixth"><MerchantOps /></el-tab-pane>
       </el-tabs>
     </div>
   </div>
@@ -85,10 +85,10 @@ let initialized = false;
 const tabKeyMap = {
   [t("common.goods")]: "Goods",
   [t("common.order")]: "Order",
-  "After-Sale": "AfterSale",
-  Store: "Store",
+  售后: "AfterSale",
+  店铺: "Store",
   [t("common.info")]: "Info",
-  Ops: "Ops",
+  运营: "Ops",
 };
 
 const tabNameMap = {
@@ -172,8 +172,8 @@ const pollPendingOrders = () => {
     const nextCount = data?.merList?.length || 0;
     if (initialized && nextCount > pendingOrderCount.value) {
       ElNotification({
-        title: "New Order",
-        message: `You have ${nextCount} paid order(s) waiting for action.`,
+        title: "新订单提醒",
+        message: `当前有 ${nextCount} 笔已支付订单等待处理。`,
         type: "success",
         duration: 3000,
       });

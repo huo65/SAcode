@@ -1,7 +1,7 @@
 <template>
   <el-drawer
     :model-value="visible"
-    title="Cart"
+    title="购物车"
     :before-close="close"
     style="min-width: 400px"
   >
@@ -9,7 +9,7 @@
       <div class="header">
         <el-select
           v-model="receiveAddr"
-          placeholder="select your receive address"
+          placeholder="请选择收货地址"
         >
           <el-option
             v-for="item in userInfo.addr_list"
@@ -21,7 +21,7 @@
         <el-date-picker
           v-model="expectedDeliveryTime"
           type="datetime"
-          placeholder="expected delivery time"
+          placeholder="请选择期望送达时间"
           value-format="YYYY-MM-DDTHH:mm:ss"
         />
         <el-input
@@ -30,7 +30,7 @@
           :rows="2"
           maxlength="200"
           show-word-limit
-          placeholder="remark for all selected orders"
+          placeholder="填写本次结算订单的统一备注"
         />
       </div>
       <div class="content">
@@ -40,10 +40,10 @@
           </div>
           <div class="info-box">
             <p class="title">{{ item.name }}</p>
-            <p class="mer">From {{ item.mer_name }}</p>
+            <p class="mer">来自 {{ item.mer_name }}</p>
             <p class="price">{{ item.price }}￥</p>
             <div class="number-box">
-              <el-checkbox v-model="item.checked">selected</el-checkbox>
+              <el-checkbox v-model="item.checked">已选中</el-checkbox>
               <el-button type="danger" @click="changeItemNum(item, 0)"
                 ><el-icon><Delete /></el-icon
               ></el-button>
@@ -60,13 +60,13 @@
       </div>
       <div class="footer">
         <div>
-          Total Account: <span class="price">{{ totalAccount }} ￥</span>
+          合计金额：<span class="price">{{ totalAccount }} ￥</span>
         </div>
         <el-button type="primary" @click="generateOrders"
-          >Generate Orders</el-button
+          >生成订单</el-button
         >
-        <el-button @click="toggleSelectAll">Select All</el-button>
-        <el-button type="danger" @click="clearOut">Clear Out</el-button>
+        <el-button @click="toggleSelectAll">全选</el-button>
+        <el-button type="danger" @click="clearOut">清空购物车</el-button>
       </div>
     </div>
   </el-drawer>
@@ -119,18 +119,21 @@ const finishPay = async (payWay) => {
   fetch(Order.payOrder2, {
     orderIdList: currentOrderIdList.value,
   }).then(() => {
-    ElMessage.success("Pay the bill successfully");
+    ElMessage.success("支付成功");
+    window.dispatchEvent(new CustomEvent("navigate-orders"));
     payResolver();
     payResolver = null;
+    payRejecter = null;
     paymentVisible.value = false;
   });
 };
 
 const cancelPay = () => {
   if (!payRejecter) return;
-  ElMessage.error("Cancel to pay");
+  ElMessage.error("已取消支付");
   payRejecter();
   payRejecter = null;
+  payResolver = null;
   paymentVisible.value = false;
 };
 
@@ -140,7 +143,7 @@ const getOrderIdsParam = () =>
 const startAlipayPayment = async () => {
   const orderIds = getOrderIdsParam();
   if (!orderIds) {
-    ElMessage.error("No orders available for payment");
+    ElMessage.error("没有可支付的订单");
     return;
   }
 
@@ -150,7 +153,7 @@ const startAlipayPayment = async () => {
     "width=1200,height=800"
   );
   if (!popup) {
-    ElMessage.error("Please allow pop-up windows to continue payment");
+    ElMessage.error("请允许弹出支付窗口后重试");
     return;
   }
 
@@ -165,7 +168,7 @@ const startAlipayPayment = async () => {
           if (!popup.closed) {
             popup.close();
           }
-          ElMessage.success("Pay the bill successfully");
+          ElMessage.success("支付成功");
           payResolver?.();
           payResolver = null;
           payRejecter = null;
@@ -184,7 +187,7 @@ const startAlipayPayment = async () => {
 const generateOrders = () => {
   console.log("generateOrders");
   if (!receiveAddr.value) {
-    ElMessage.error("Please choose your receive address");
+    ElMessage.error("请选择收货地址");
     return;
   }
 
@@ -194,7 +197,7 @@ const generateOrders = () => {
     (item.checked ? selectedList : unSelectedList).push({ ...item }); // 浅拷贝
   });
   if (!selectedList.length) {
-    ElMessage.error("Please select the products");
+    ElMessage.error("请选择要结算的商品");
     return;
   }
 
@@ -210,7 +213,7 @@ const generateOrders = () => {
   }));
 
   fetch(Cart.submitOrderList, { orderList }).then((data) => {
-    ElMessage.success("Generate orders successfully");
+    ElMessage.success("订单已生成");
     currentOrderIdList.value = data || [];
     paymentVisible.value = true;
     new Promise((resolve, reject) => {

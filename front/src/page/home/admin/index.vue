@@ -4,10 +4,10 @@
     <div class="admin">
       <div class="admin-hero">
         <div>
-          <p class="eyebrow">Platform Command</p>
-          <h2>课堂展示版平台治理中心</h2>
+          <p class="eyebrow">平台中枢</p>
+          <h2>平台治理中心</h2>
           <p class="hero-desc">
-            统一查看商品、订单、用户、售后与经营分析，让管理端在课堂展示中同时承担平台治理、问题处理、权限配置和审计追踪的角色。
+            统一查看商品、订单、用户、售后与经营分析，集中处理平台治理、权限配置与审计追踪事项。
           </p>
         </div>
         <div class="hero-stats">
@@ -32,13 +32,13 @@
         <el-tab-pane v-if="hasMenu('admin.menu.afterSale')" name="fourth">
           <template #label>
             <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
-              <span>After-Sale</span>
+              <span>售后</span>
             </el-badge>
           </template>
           <AfterSaleBoard scope="admin" />
         </el-tab-pane>
         <el-tab-pane v-if="hasMenu('admin.menu.user')" :label="t('common.user')" name="fifth"><User /></el-tab-pane>
-        <el-tab-pane v-if="hasMenu('admin.menu.ops')" label="Ops" name="sixth"><AdminOps /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('admin.menu.ops')" label="运营" name="sixth"><AdminOps /></el-tab-pane>
       </el-tabs>
     </div>
   </div>
@@ -71,9 +71,9 @@ const tabKeyMap = {
   [t('common.goods')]: 'Goods',
   [t('common.order')]: 'Order',
   [t('common.category')]: 'Category',
-  "After-Sale": 'AfterSale',
+  售后: 'AfterSale',
   [t('common.user')]: 'User',
-  Ops: "Ops",
+  运营: "Ops",
 };
 
 const tabNameMap = {

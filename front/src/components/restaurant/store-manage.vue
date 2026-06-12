@@ -2,10 +2,10 @@
   <div class="store-manage">
     <div class="hero-panel">
       <div>
-        <p class="eyebrow">Store Studio</p>
+        <p class="eyebrow">店铺工作台</p>
         <h2>门店展示资料中心</h2>
         <p class="hero-desc">
-          统一维护门店封面、营业状态、公告、配送规则和菜单分类，让课堂展示时顾客端与商家端看到的是同一套门店资料。
+          统一维护门店封面、营业状态、公告、配送规则和菜单分类，让顾客端与商家端看到的是同一套门店资料。
         </p>
       </div>
       <div class="hero-metrics">
@@ -52,13 +52,33 @@
 
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="Logo URL">
-                <el-input v-model="form.logo" placeholder="支持填写门店Logo地址" />
+              <el-form-item label="门店 Logo">
+                <el-upload
+                  v-model:file-list="logoFileList"
+                  :auto-upload="false"
+                  :limit="1"
+                  list-type="picture-card"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  :before-upload="beforeImageUpload"
+                  :on-change="handleLogoChange"
+                >
+                  <el-icon><Plus /></el-icon>
+                </el-upload>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="封面 URL">
-                <el-input v-model="form.cover" placeholder="支持填写门店封面地址" />
+              <el-form-item label="门店封面">
+                <el-upload
+                  v-model:file-list="coverFileList"
+                  :auto-upload="false"
+                  :limit="1"
+                  list-type="picture-card"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  :before-upload="beforeImageUpload"
+                  :on-change="handleCoverChange"
+                >
+                  <el-icon><Plus /></el-icon>
+                </el-upload>
               </el-form-item>
             </el-col>
           </el-row>
@@ -68,7 +88,7 @@
           </el-form-item>
 
           <el-form-item label="门店地址">
-            <el-input v-model="form.addressText" placeholder="填写课堂展示使用的门店地址" />
+            <el-input v-model="form.addressText" placeholder="请输入门店地址" />
           </el-form-item>
 
           <el-form-item label="门店简介">
@@ -163,7 +183,7 @@
 
         <div class="preview-cover">
           <img v-if="form.cover || form.logo" :src="form.cover || form.logo" alt="cover" />
-          <div v-else class="preview-empty">Store Cover</div>
+          <div v-else class="preview-empty">店铺封面</div>
         </div>
         <div class="preview-content">
           <div class="preview-title-row">
@@ -203,11 +223,17 @@
 </template>
 
 <script setup>
-import { onMounted, reactive } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
+import { Plus } from "@element-plus/icons-vue";
 import { Restaurant } from "@/api/apis";
 import fetch from "@/api/fetch";
 import $store from "@/store";
+import {
+  getFileNameFromUrl,
+  uploadImageFromRawFile,
+  validateImageFile,
+} from "@/lib/imageHelper";
 
 const form = reactive({
   id: "",
@@ -230,19 +256,99 @@ const form = reactive({
   promoText: "",
 });
 
+const logoFileList = ref([]);
+const coverFileList = ref([]);
+
+const sanitizeText = (value = "") =>
+  String(value || "")
+    .replace(/课堂展示版/g, "")
+    .replace(/课堂展示/g, "")
+    .replace(/演示/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
 const splitCsv = (value) =>
   String(value || "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
 
+const buildUploadFileList = (url = "") =>
+  url
+    ? [
+        {
+          name: getFileNameFromUrl(url),
+          url,
+          status: "success",
+        },
+      ]
+    : [];
+
+const beforeImageUpload = (file) => {
+  const { valid, message } = validateImageFile(file);
+  if (!valid) {
+    ElMessage.error(message);
+    return false;
+  }
+  return false;
+};
+
+const handleSingleImageChange = (filesRef, file, fileList) => {
+  const { valid, message } = validateImageFile(file);
+  if (!valid) {
+    ElMessage.error(message);
+    filesRef.value = fileList.filter((item) => item.uid !== file.uid);
+    return;
+  }
+  filesRef.value = fileList.slice(-1);
+};
+
+const handleLogoChange = (file, fileList) => {
+  handleSingleImageChange(logoFileList, file, fileList);
+};
+
+const handleCoverChange = (file, fileList) => {
+  handleSingleImageChange(coverFileList, file, fileList);
+};
+
 const loadStoreInfo = () => {
   fetch(Restaurant.manageInfo).then((data) => {
     Object.assign(form, data?.restaurant_manage_info || {});
+    form.description = sanitizeText(form.description);
+    form.notice = sanitizeText(form.notice);
+    form.addressText = sanitizeText(form.addressText);
+    form.deliveryPolicy = sanitizeText(form.deliveryPolicy);
+    form.promoText = sanitizeText(form.promoText);
+    form.featureTags = splitCsv(form.featureTags).map((item) => sanitizeText(item)).join(",");
+    form.menuCategories = splitCsv(form.menuCategories).map((item) => sanitizeText(item)).join(",");
+    logoFileList.value = buildUploadFileList(form.logo);
+    coverFileList.value = buildUploadFileList(form.cover);
   });
 };
 
-const submitStoreInfo = () => {
+const submitStoreInfo = async () => {
+  try {
+    const nextLogo =
+      logoFileList.value.find((item) => item.raw)?.raw || null;
+    const nextCover =
+      coverFileList.value.find((item) => item.raw)?.raw || null;
+
+    if (nextLogo) {
+      form.logo = await uploadImageFromRawFile(nextLogo, "restaurant");
+    } else if (!logoFileList.value.length) {
+      form.logo = "";
+    }
+
+    if (nextCover) {
+      form.cover = await uploadImageFromRawFile(nextCover, "restaurant");
+    } else if (!coverFileList.value.length) {
+      form.cover = "";
+    }
+  } catch (error) {
+    ElMessage.error(error?.message || "图片上传失败");
+    return;
+  }
+
   fetch(Restaurant.manageUpdate, { ...form }).then(() => {
     ElMessage.success("门店资料已保存");
     loadStoreInfo();
