@@ -58,16 +58,67 @@
           配送中预计再收入 ￥{{ orderSummary.deliveringIncome }}
         </div>
       </div>
+      <div class="summary-card">
+        <div class="summary-label">展示评分</div>
+        <div class="summary-value">{{ orderSummary.avgScore }}</div>
+        <div class="summary-desc">基于已完成订单评价的课堂展示版评分</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">异常上报</div>
+        <div class="summary-value">{{ orderSummary.issueCount }}</div>
+        <div class="summary-desc">配送异常、联系不上顾客等本地记录</div>
+      </div>
+    </div>
+
+    <div class="dashboard-actions">
+      <el-button type="primary" @click="incomeVisible = true">收入明细</el-button>
+      <el-button @click="performanceVisible = true">绩效与激励</el-button>
     </div>
 
     <div class="dashboard-tip">
-      课堂展示版收入规则：每单配送收入按 `max(4, 订单金额 × 10%)` 估算
+      课堂展示版收入规则：每单配送收入按 `max(4, 订单金额 × 10%)` 估算；超时 10 分钟的待接单会进入优先重派展示队列
     </div>
 
     <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
       <el-tab-pane :label="t('common.order')" name="first"><Order /></el-tab-pane>
       <el-tab-pane :label="t('common.info')" name="second"><Info /></el-tab-pane>
     </el-tabs>
+
+    <el-drawer v-model="incomeVisible" title="骑手收入明细" size="48%">
+      <div class="drawer-tip">
+        已完成订单展示结算收入，配送中订单展示预计收入，供课堂讲解使用。
+      </div>
+      <el-table :data="incomeDetails" style="width: 100%">
+        <el-table-column prop="orderId" label="订单号" min-width="120" />
+        <el-table-column prop="statusText" label="状态" min-width="100" />
+        <el-table-column prop="finishTime" label="时间" min-width="170" />
+        <el-table-column prop="account" label="订单金额" min-width="100" />
+        <el-table-column prop="deliveryFee" label="配送费" min-width="90" />
+        <el-table-column prop="bonus" label="奖励" min-width="80" />
+        <el-table-column prop="scoreText" label="评分" min-width="80" />
+        <el-table-column prop="reportStatus" label="异常状态" min-width="120" />
+      </el-table>
+    </el-drawer>
+
+    <el-dialog v-model="performanceVisible" title="绩效与激励" width="560px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="当前等级">
+          {{ performanceSummary.level }}
+        </el-descriptions-item>
+        <el-descriptions-item label="等级说明">
+          {{ performanceSummary.levelDesc }}
+        </el-descriptions-item>
+        <el-descriptions-item label="课堂展示版激励">
+          {{ performanceSummary.rewardRule }}
+        </el-descriptions-item>
+        <el-descriptions-item label="本期预估奖励">
+          ￥{{ performanceSummary.estimatedBonus }}
+        </el-descriptions-item>
+        <el-descriptions-item label="异常说明">
+          已上报异常 {{ orderSummary.issueCount }} 单，演示时可说明系统已保留配送异常记录。
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 
@@ -85,6 +136,8 @@ import { Order as OrderApi } from "@/api/apis";
 const { t } = useI18n();
 const activeName = ref("first");
 const driverOrders = ref([]);
+const incomeVisible = ref(false);
+const performanceVisible = ref(false);
 let dashboardTimer = null;
 
 const DELIVERY_RATE = 0.1;
@@ -98,6 +151,7 @@ const driverServiceArea = computed(
   () => (userInfo.value.driverServiceArea || "").trim()
 );
 const serviceAreaInput = ref(userInfo.value.driverServiceArea || "");
+const driverIssueReports = computed(() => userInfo.value.driverIssueReports || {});
 
 const parseOrderTime = (timeText) => {
   if (!timeText) return null;
@@ -129,6 +183,8 @@ const calcDeliveryIncome = (item) => {
   return Math.max(MIN_DELIVERY_FEE, Math.round(amount * DELIVERY_RATE));
 };
 
+const getReviewScore = (item) => Number(item?.review?.score || 0);
+
 const isSameDay = (timeText) => {
   if (!timeText) return false;
   const date = new Date(timeText);
@@ -141,17 +197,85 @@ const isSameDay = (timeText) => {
   );
 };
 
-const orderSummary = computed(() => {
-  const ownOrders = driverOrders.value.filter(
-    (item) => item?.orderInfo?.driverId === userInfo.value.id
-  );
-  const deliveringOrders = ownOrders.filter(
-    (item) => item?.orderInfo?.state === 1
-  );
-  const completedOrders = ownOrders.filter(
-    (item) => item?.orderInfo?.state === 2
-  );
+const ownOrders = computed(() =>
+  driverOrders.value.filter((item) => item?.orderInfo?.driverId === userInfo.value.id)
+);
 
+const completedOrders = computed(() =>
+  ownOrders.value.filter((item) => item?.orderInfo?.state === 2)
+);
+
+const deliveringOrders = computed(() =>
+  ownOrders.value.filter((item) => item?.orderInfo?.state === 1)
+);
+
+const avgReviewScore = computed(() => {
+  const reviewedOrders = completedOrders.value.filter((item) => getReviewScore(item) > 0);
+  if (!reviewedOrders.length) return "4.8";
+  return (
+    reviewedOrders.reduce((sum, item) => sum + getReviewScore(item), 0) /
+    reviewedOrders.length
+  ).toFixed(1);
+});
+
+const performanceSummary = computed(() => {
+  const completedCount = completedOrders.value.length;
+  const avgScore = Number(avgReviewScore.value);
+  if (completedCount >= 12 || avgScore >= 4.8) {
+    return {
+      level: "金牌骑手",
+      levelDesc: "完成单量和展示评分较高，适合课堂展示高绩效骑手。",
+      rewardRule: "每个已完成订单额外奖励 2 元。",
+      estimatedBonus: (completedCount * 2).toFixed(0),
+    };
+  }
+  if (completedCount >= 5 || avgScore >= 4.5) {
+    return {
+      level: "稳定骑手",
+      levelDesc: "具备稳定接单与配送能力，课堂展示中可解释为骨干运力。",
+      rewardRule: "每个已完成订单额外奖励 1 元。",
+      estimatedBonus: completedCount.toFixed(0),
+    };
+  }
+  return {
+    level: "新手骑手",
+    levelDesc: "刚完成基础配送闭环，适合演示新人培养阶段。",
+    rewardRule: "完成 5 单后进入稳定骑手档。",
+    estimatedBonus: "0",
+  };
+});
+
+const incomeDetails = computed(() =>
+  [...ownOrders.value]
+    .sort(
+      (a, b) =>
+        new Date(b?.orderInfo?.time || 0).getTime() -
+        new Date(a?.orderInfo?.time || 0).getTime()
+    )
+    .map((item) => {
+      const fee = calcDeliveryIncome(item);
+      const report = driverIssueReports.value?.[item?.orderInfo?.id];
+      const bonusUnit =
+        performanceSummary.value.level === "金牌骑手"
+          ? 2
+          : performanceSummary.value.level === "稳定骑手"
+            ? 1
+            : 0;
+      const score = getReviewScore(item);
+      return {
+        orderId: item?.orderInfo?.id,
+        statusText: item?.orderInfo?.state === 2 ? "已完成" : "配送中",
+        finishTime: item?.orderInfo?.time || "-",
+        account: `￥${Number(item?.orderInfo?.account || 0).toFixed(0)}`,
+        deliveryFee: `￥${fee}`,
+        bonus: `￥${item?.orderInfo?.state === 2 ? bonusUnit : 0}`,
+        scoreText: score ? `${score}/5` : "待评价",
+        reportStatus: report ? `${report.type} / ${report.status}` : "正常",
+      };
+    })
+);
+
+const orderSummary = computed(() => {
   return {
     waiting: driverOrders.value.filter(
       (item) =>
@@ -159,16 +283,18 @@ const orderSummary = computed(() => {
     ).length,
     timeoutWaiting: driverOrders.value.filter((item) => isDispatchTimedOut(item))
       .filter((item) => matchesDriverServiceArea(item)).length,
-    delivering: deliveringOrders.length,
-    todayCompleted: completedOrders.filter((item) =>
+    delivering: deliveringOrders.value.length,
+    todayCompleted: completedOrders.value.filter((item) =>
       isSameDay(item?.orderInfo?.time)
     ).length,
-    completedIncome: completedOrders
+    completedIncome: completedOrders.value
       .reduce((sum, item) => sum + calcDeliveryIncome(item), 0)
       .toFixed(0),
-    deliveringIncome: deliveringOrders
+    deliveringIncome: deliveringOrders.value
       .reduce((sum, item) => sum + calcDeliveryIncome(item), 0)
       .toFixed(0),
+    avgScore: avgReviewScore.value,
+    issueCount: Object.keys(driverIssueReports.value).length,
   };
 });
 
@@ -266,7 +392,7 @@ onUnmounted(() => {
 
 .dashboard {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -301,6 +427,18 @@ onUnmounted(() => {
 
 .dashboard-tip {
   margin-bottom: 16px;
+  color: #606266;
+  font-size: 13px;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.drawer-tip {
+  margin-bottom: 12px;
   color: #606266;
   font-size: 13px;
 }

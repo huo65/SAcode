@@ -50,6 +50,13 @@ const modifyData = reactive({
   description: "",
   ...userInfo.value, // 初始化赋值为login获取到的用户信息
 });
+const isDriverUser = computed(() => userInfo.value?.type === "driver");
+const driverProfileFields = computed(() => ({
+  driverIdCard: modifyData.driverIdCard || "",
+  driverVehicle: modifyData.driverVehicle || "",
+  driverEmergencyContact: modifyData.driverEmergencyContact || "",
+  driverServiceArea: modifyData.driverServiceArea || userInfo.value.driverServiceArea || "",
+}));
 
 const addressData = ref([]);
 const currentUserType = computed(() => {
@@ -97,7 +104,16 @@ const handleAdd = () => {
 };
 
 const modifyUserInfo = () => {
-  fetch(User.updateInfo, { ...modifyData })
+  const payload = {
+    id: modifyData.id,
+    type: modifyData.type,
+    name: modifyData.name,
+    portrait: modifyData.portrait,
+    password: modifyData.password,
+    phone: modifyData.phone,
+    description: modifyData.description,
+  };
+  fetch(User.updateInfo, payload)
     .then((data) => {
       ElMessage.success("Update user info successfully");
       fetch(User.getInfo, { id: userInfo.value.id }).then((data) => {
@@ -108,6 +124,9 @@ const modifyUserInfo = () => {
           type: userInfo.value.type, // mock的时候才不会因为随机而改变当前的身份
         };
         $store.commit("setUserInfo", newInfo);
+        if (isDriverUser.value) {
+          $store.commit("patchUserInfo", driverProfileFields.value);
+        }
       });
     })
     .finally(() => {
@@ -160,6 +179,36 @@ onMounted(() => {
       <el-form-item label="PhoneNumber" :label-width="formLabelWidth">
         <el-input v-model="modifyData.phone" autocomplete="off" />
       </el-form-item>
+        <template v-if="isDriverUser">
+          <el-form-item label="ID Card" :label-width="formLabelWidth">
+            <el-input
+              v-model="modifyData.driverIdCard"
+              autocomplete="off"
+              placeholder="课堂展示版补录"
+            />
+          </el-form-item>
+          <el-form-item label="Vehicle" :label-width="formLabelWidth">
+            <el-input
+              v-model="modifyData.driverVehicle"
+              autocomplete="off"
+              placeholder="电动车 / 摩托车 / 自行车"
+            />
+          </el-form-item>
+          <el-form-item label="Service Area" :label-width="formLabelWidth">
+            <el-input
+              v-model="modifyData.driverServiceArea"
+              autocomplete="off"
+              placeholder="例如：大学城 / 科技园"
+            />
+          </el-form-item>
+          <el-form-item label="Emergency Contact" :label-width="formLabelWidth">
+            <el-input
+              v-model="modifyData.driverEmergencyContact"
+              autocomplete="off"
+              placeholder="紧急联系人电话"
+            />
+          </el-form-item>
+        </template>
       <el-form-item label="Password" :label-width="formLabelWidth">
         <el-input
           v-model="modifyData.password"
@@ -288,6 +337,36 @@ onMounted(() => {
             {{ userInfo.password }}
           </el-descriptions-item>
         </el-descriptions>
+
+        <template v-if="isDriverUser">
+          <br />
+          <el-descriptions class="margin-top" title="DriverProfile" :column="2" border>
+            <el-descriptions-item>
+              <template v-slot:label> Work Status </template>
+              {{ userInfo.driverWorkStatus === "rest" ? "休息中" : "在线接单" }}
+            </el-descriptions-item>
+            <el-descriptions-item>
+              <template v-slot:label> Service Area </template>
+              {{ userInfo.driverServiceArea || modifyData.driverServiceArea || "全城接单" }}
+            </el-descriptions-item>
+            <el-descriptions-item>
+              <template v-slot:label> Vehicle </template>
+              {{ userInfo.driverVehicle || modifyData.driverVehicle || "-" }}
+            </el-descriptions-item>
+            <el-descriptions-item>
+              <template v-slot:label> ID Card </template>
+              {{
+                userInfo.driverIdCard || modifyData.driverIdCard
+                  ? `${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(0, 4)}********${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(-4)}`
+                  : "-"
+              }}
+            </el-descriptions-item>
+            <el-descriptions-item :span="2">
+              <template v-slot:label> Emergency Contact </template>
+              {{ userInfo.driverEmergencyContact || modifyData.driverEmergencyContact || "-" }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </template>
 
         <br />
         <!-- 地址展示 -->

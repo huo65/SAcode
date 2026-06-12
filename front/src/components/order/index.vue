@@ -83,7 +83,7 @@
               <template #label>
                 <div>CurrentPlace</div>
               </template>
-              {{ genPlace(item) }}
+              {{ getRouteCurrentPlace(item) }}
             </el-descriptions-item>
             <el-descriptions-item
               v-if="item.orderInfo.state === stateEnum.missOrder"
@@ -93,6 +93,33 @@
                 <div>Dispatch SLA</div>
               </template>
               {{ getDispatchStatusText(item) }}
+            </el-descriptions-item>
+            <el-descriptions-item
+              v-if="userInfo.type === 'driver'"
+              label-align="center"
+            >
+              <template #label>
+                <div>Route Stage</div>
+              </template>
+              {{ getRouteStageText(item) }}
+            </el-descriptions-item>
+            <el-descriptions-item
+              v-if="userInfo.type === 'driver'"
+              label-align="center"
+            >
+              <template #label>
+                <div>ETA / Distance</div>
+              </template>
+              {{ getEtaText(item) }} / {{ getDistanceText(item) }}
+            </el-descriptions-item>
+            <el-descriptions-item
+              v-if="userInfo.type === 'driver' && isDispatchTimedOut(item)"
+              label-align="center"
+            >
+              <template #label>
+                <div>Redispatch</div>
+              </template>
+              第 {{ getRedispatchRound(item) }} 轮优先派发
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
@@ -140,6 +167,24 @@
                 </div>
                 <div v-if="item.review?.replyContent" class="reply-text">
                   Reply: {{ item.review.replyContent }}
+                </div>
+              </div>
+            </el-descriptions-item>
+            <el-descriptions-item
+              v-if="userInfo.type === 'driver' && item.orderInfo.driverId === userInfo.id"
+              label-align="center"
+              :span="2"
+            >
+              <template #label>
+                <div>Delivery Feedback</div>
+              </template>
+              <div class="review-block">
+                <div>
+                  <strong>{{ getDriverFeedbackText(item) }}</strong>
+                </div>
+                <div v-if="getIssueReport(item)" class="reply-text">
+                  异常上报: {{ getIssueReport(item).type }} / {{ getIssueReport(item).status }}
+                  <span v-if="getIssueReport(item).note"> - {{ getIssueReport(item).note }}</span>
                 </div>
               </div>
             </el-descriptions-item>
@@ -213,6 +258,16 @@
           "
           @click="rejectDriverOrder(item)"
           >Reject Order</el-button
+        >
+        <el-button
+          type="warning"
+          v-if="
+            item.orderInfo.state == stateEnum.delivering &&
+            userInfo.type === 'driver' &&
+            item.orderInfo.driverId === userInfo.id
+          "
+          @click="openIssueDialog(item)"
+          >Report Issue</el-button
         >
         <el-button
           v-if="
@@ -330,6 +385,41 @@
         <el-button type="primary" @click="submitReply">Submit Reply</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      :model-value="issueVisible"
+      title="配送异常上报"
+      width="520px"
+      @close="closeIssueDialog"
+    >
+      <el-form label-width="110px">
+        <el-form-item label="Order">
+          <span>{{ issueForm.orderId || "-" }}</span>
+        </el-form-item>
+        <el-form-item label="Type" required>
+          <el-select v-model="issueForm.type" style="width: 100%">
+            <el-option label="联系不上顾客" value="联系不上顾客" />
+            <el-option label="商家出餐延迟" value="商家出餐延迟" />
+            <el-option label="地址定位困难" value="地址定位困难" />
+            <el-option label="交通拥堵" value="交通拥堵" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Note">
+          <el-input
+            v-model="issueForm.note"
+            type="textarea"
+            :rows="4"
+            maxlength="200"
+            show-word-limit
+            placeholder="记录当前配送异常，课堂展示版会保存在本地会话中"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="closeIssueDialog">Cancel</el-button>
+        <el-button type="primary" @click="submitIssue">Submit</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -343,14 +433,6 @@ import Detail from "../goods/detail.vue";
 
 const orderList = ref([]);
 const curOrder = ref({});
-const randomPlaces = [
-  "Beijing",
-  "Shanghai",
-  "Guangzhou",
-  "Shenzhen",
-  "Hangzhou",
-  "Chengdu",
-];
 const orderCondition = reactive({
   state: null,
   timeOrder: 0, // 0正序，1逆序
@@ -429,6 +511,7 @@ const isDriverBusy = computed(() =>
 const driverServiceArea = computed(() =>
   (userInfo.value.driverServiceArea || "").trim().toLowerCase()
 );
+const driverIssueReports = computed(() => userInfo.value.driverIssueReports || {});
 const DISPATCH_TIMEOUT_MINUTES = 10;
 
 const parseOrderTime = (timeText) => {
@@ -456,6 +539,57 @@ const getDispatchStatusText = (item) => {
   return `${DISPATCH_TIMEOUT_MINUTES - waitMinutes} min left`;
 };
 
+const getRedispatchRound = (item) =>
+  Math.max(1, Math.floor(getDispatchWaitMinutes(item) / DISPATCH_TIMEOUT_MINUTES));
+
+const calcDistanceValue = (item) => {
+  const source = `${item?.delivery || ""}${item?.receive || ""}${item?.orderInfo?.id || ""}`;
+  const total = source
+    .split("")
+    .reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return (1.2 + (total % 48) / 10).toFixed(1);
+};
+
+const getDistanceText = (item) => `${calcDistanceValue(item)} km`;
+
+const getRouteStageText = (item) => {
+  const state = item?.orderInfo?.state;
+  if (state === stateEnum.missOrder) return "待接单，系统正在派发给合适骑手";
+  if (state === stateEnum.delivering) return "已取餐，正在前往顾客地址";
+  if (state === stateEnum.received) return "已送达并完成签收";
+  if (state === stateEnum.preparing) return "商家备餐中，等待取餐";
+  if (state === stateEnum.returned) return "退款完成，配送任务结束";
+  return "待处理";
+};
+
+const getRouteCurrentPlace = (item) => {
+  const state = item?.orderInfo?.state;
+  if (state === stateEnum.delivering) {
+    return `从 ${item?.delivery || "商家"} 前往 ${item?.receive || "顾客地址"}`;
+  }
+  if (state === stateEnum.received) {
+    return item?.receive || "顾客已签收";
+  }
+  if (state === stateEnum.missOrder || state === stateEnum.preparing) {
+    return item?.delivery || "商家待出餐点";
+  }
+  if (state === stateEnum.returned) {
+    return item?.delivery || "商家侧退款结束";
+  }
+  return item?.receive || item?.delivery || "-";
+};
+
+const getEtaText = (item) => {
+  const state = item?.orderInfo?.state;
+  if (state === stateEnum.received) return "已送达";
+  if (state === stateEnum.delivering) return `约 ${Math.max(6, Math.round(Number(calcDistanceValue(item)) * 4))} 分钟`;
+  if (state === stateEnum.missOrder) {
+    return isDispatchTimedOut(item) ? "系统优先重派中" : "待骑手接单";
+  }
+  if (state === stateEnum.preparing) return "待商家出餐";
+  return "-";
+};
+
 const matchesDriverServiceArea = (item) => {
   if (!driverServiceArea.value) return true;
   if (item?.orderInfo?.driverId === userInfo.value.id) return true;
@@ -468,27 +602,22 @@ const matchesDriverServiceArea = (item) => {
 
 const displayedOrderList = computed(() => {
   if (userInfo.value.type !== "driver") return orderList.value;
-  return orderList.value.filter((item) => {
+  return [...orderList.value]
+    .filter((item) => {
     if (item?.orderInfo?.driverId === userInfo.value.id) return true;
     if (item?.orderInfo?.state === stateEnum.missOrder) {
       return matchesDriverServiceArea(item);
     }
     return false;
-  });
+    })
+    .sort((a, b) => {
+      const timeoutDiff = Number(isDispatchTimedOut(b)) - Number(isDispatchTimedOut(a));
+      if (timeoutDiff !== 0) return timeoutDiff;
+      return new Date(b?.orderInfo?.time || 0).getTime() - new Date(a?.orderInfo?.time || 0).getTime();
+    });
 });
 
 console.log("###stateOptions", stateOptions);
-
-const genPlace = (item) => {
-  if (item.orderInfo.state === stateEnum.received) {
-    return item.receive;
-  } else if (item.orderInfo.state === stateEnum.returned) {
-    return item.delivery;
-  }
-  // 随机返回一个地址
-  const idx = Math.floor(Math.random() * randomPlaces.length);
-  return randomPlaces[idx];
-};
 
 const getOrderList = () => {
   fetch(Order.getOrderList, {
@@ -613,6 +742,20 @@ const rejectDriverOrder = async (order) => {
   }
 };
 
+const getIssueReport = (item) =>
+  driverIssueReports.value?.[item?.orderInfo?.id] || null;
+
+const getDriverFeedbackText = (item) => {
+  const score = Number(item?.review?.score || 0);
+  if (score > 0) {
+    return `顾客评分 ${score}/5${item?.review?.content ? `，评价：${item.review.content}` : ""}`;
+  }
+  if (getIssueReport(item)) {
+    return "已记录配送异常，待人工跟进";
+  }
+  return "当前无差评或异常记录";
+};
+
 const changeTimeOrder = () => {
   const map = {
     0: 1,
@@ -704,6 +847,45 @@ const submitReply = () => {
     closeReplyDialog();
     getOrderList();
   });
+};
+
+const issueVisible = ref(false);
+const issueForm = reactive({
+  orderId: "",
+  type: "联系不上顾客",
+  note: "",
+});
+
+const openIssueDialog = (item) => {
+  issueForm.orderId = item?.orderInfo?.id || "";
+  issueForm.type = "联系不上顾客";
+  issueForm.note = "";
+  issueVisible.value = true;
+};
+
+const closeIssueDialog = () => {
+  issueVisible.value = false;
+};
+
+const submitIssue = () => {
+  if (!issueForm.orderId) {
+    ElMessage.error("Order is required");
+    return;
+  }
+  const nextReports = {
+    ...driverIssueReports.value,
+    [issueForm.orderId]: {
+      type: issueForm.type,
+      note: issueForm.note.trim(),
+      status: "已上报",
+      time: new Date().toISOString(),
+    },
+  };
+  $store.commit("patchUserInfo", {
+    driverIssueReports: nextReports,
+  });
+  ElMessage.success("配送异常已记录");
+  closeIssueDialog();
 };
 
 const initOrderData = () => {

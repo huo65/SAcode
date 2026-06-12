@@ -77,6 +77,13 @@ const store = createStore({
             };
             sessionStorage.setItem("userInfo", JSON.stringify(state.userInfo));
         },
+        patchUserInfo(state, payload) {
+            state.userInfo = {
+                ...state.userInfo,
+                ...payload,
+            };
+            sessionStorage.setItem("userInfo", JSON.stringify(state.userInfo));
+        },
     },
 });
 
