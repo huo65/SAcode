@@ -1,5 +1,14 @@
 <template>
-  <router-view></router-view>
+  <div class="app-root">
+    <router-view />
+  </div>
 </template>
+
 <script setup></script>
-<style scoped></style>
+
+<style scoped>
+.app-root {
+  min-height: 100vh;
+  position: relative;
+}
+</style>

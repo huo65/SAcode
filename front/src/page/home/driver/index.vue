@@ -1,124 +1,135 @@
 <template>
   <!-- driver 身份 -->
-  <div class="driver">
-    <div class="status-bar">
-      <div class="status-text">
-        <span>接单状态</span>
-        <el-tag :type="isDriverOnline ? 'success' : 'info'">
-          {{ isDriverOnline ? "在线接单" : "休息中" }}
-        </el-tag>
-        <el-tag v-if="isDriverBusy" type="warning">忙碌配送中</el-tag>
-        <el-tag v-if="driverServiceArea" type="primary">
-          服务区域: {{ driverServiceArea }}
-        </el-tag>
-      </div>
-      <div class="status-actions">
-        <el-input
-          v-model="serviceAreaInput"
-          placeholder="输入服务区域关键词"
-          clearable
-          style="width: 220px"
-          @keyup.enter="applyServiceArea"
-        />
-        <el-button @click="applyServiceArea">保存区域</el-button>
-        <el-button v-if="driverServiceArea" @click="clearServiceArea">
-          清空区域
-        </el-button>
-        <el-button
-          :type="isDriverOnline ? 'warning' : 'primary'"
-          @click="toggleDriverWorkStatus"
-        >
-          {{ isDriverOnline ? "切换为休息" : "切换为在线" }}
-        </el-button>
-      </div>
-    </div>
+  <div class="page-shell">
+    <div class="driver">
+      <section class="driver-hero">
+        <div>
+          <span class="micro-tag">Driver Delivery Board</span>
+          <h2>配送链路、收入与异常反馈集中展示</h2>
+          <p>
+            通过大盘式布局集中呈现接单状态、运力负载、收入估算和服务区域，让骑手端更具“运营驾驶舱”而不是简单表单页。
+          </p>
+        </div>
+        <div class="status-bar">
+          <div class="status-text">
+            <span>接单状态</span>
+            <el-tag :type="isDriverOnline ? 'success' : 'info'">
+              {{ isDriverOnline ? "在线接单" : "休息中" }}
+            </el-tag>
+            <el-tag v-if="isDriverBusy" type="warning">忙碌配送中</el-tag>
+            <el-tag v-if="driverServiceArea" type="primary">
+              服务区域: {{ driverServiceArea }}
+            </el-tag>
+          </div>
+          <div class="status-actions">
+            <el-input
+              v-model="serviceAreaInput"
+              placeholder="输入服务区域关键词"
+              clearable
+              style="width: 220px"
+              @keyup.enter="applyServiceArea"
+            />
+            <el-button @click="applyServiceArea">保存区域</el-button>
+            <el-button v-if="driverServiceArea" @click="clearServiceArea">
+              清空区域
+            </el-button>
+            <el-button
+              :type="isDriverOnline ? 'warning' : 'primary'"
+              @click="toggleDriverWorkStatus"
+            >
+              {{ isDriverOnline ? "切换为休息" : "切换为在线" }}
+            </el-button>
+          </div>
+        </div>
+      </section>
 
-    <div class="dashboard">
-      <div class="summary-card">
-        <div class="summary-label">待抢单</div>
-        <div class="summary-value">{{ orderSummary.waiting }}</div>
-        <div class="summary-desc">
-          当前待骑手接单的订单，超时 {{ orderSummary.timeoutWaiting }} 单
+      <div class="dashboard">
+        <div class="summary-card">
+          <div class="summary-label">待抢单</div>
+          <div class="summary-value">{{ orderSummary.waiting }}</div>
+          <div class="summary-desc">
+            当前待骑手接单的订单，超时 {{ orderSummary.timeoutWaiting }} 单
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">配送中</div>
+          <div class="summary-value">{{ orderSummary.delivering }}</div>
+          <div class="summary-desc">属于当前骑手的进行中配送</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">今日完成</div>
+          <div class="summary-value">{{ orderSummary.todayCompleted }}</div>
+          <div class="summary-desc">按订单更新时间统计今日完成单</div>
+        </div>
+        <div class="summary-card income-card">
+          <div class="summary-label">累计配送收入</div>
+          <div class="summary-value">￥{{ orderSummary.completedIncome }}</div>
+          <div class="summary-desc">
+            配送中预计再收入 ￥{{ orderSummary.deliveringIncome }}
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">展示评分</div>
+          <div class="summary-value">{{ orderSummary.avgScore }}</div>
+          <div class="summary-desc">基于已完成订单评价的课堂展示版评分</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">异常上报</div>
+          <div class="summary-value">{{ orderSummary.issueCount }}</div>
+          <div class="summary-desc">配送异常、联系不上顾客等本地记录</div>
         </div>
       </div>
-      <div class="summary-card">
-        <div class="summary-label">配送中</div>
-        <div class="summary-value">{{ orderSummary.delivering }}</div>
-        <div class="summary-desc">属于当前骑手的进行中配送</div>
+
+      <div class="dashboard-actions">
+        <el-button type="primary" @click="incomeVisible = true">收入明细</el-button>
+        <el-button @click="performanceVisible = true">绩效与激励</el-button>
       </div>
-      <div class="summary-card">
-        <div class="summary-label">今日完成</div>
-        <div class="summary-value">{{ orderSummary.todayCompleted }}</div>
-        <div class="summary-desc">按订单更新时间统计今日完成单</div>
+
+      <div class="dashboard-tip">
+        课堂展示版收入规则：每单配送收入按 `max(4, 订单金额 × 10%)` 估算；超时 10 分钟的待接单会进入优先重派展示队列
       </div>
-      <div class="summary-card income-card">
-        <div class="summary-label">累计配送收入</div>
-        <div class="summary-value">￥{{ orderSummary.completedIncome }}</div>
-        <div class="summary-desc">
-          配送中预计再收入 ￥{{ orderSummary.deliveringIncome }}
+
+      <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
+        <el-tab-pane :label="t('common.order')" name="first"><Order /></el-tab-pane>
+        <el-tab-pane :label="t('common.info')" name="second"><Info /></el-tab-pane>
+      </el-tabs>
+
+      <el-drawer v-model="incomeVisible" title="骑手收入明细" size="48%">
+        <div class="drawer-tip">
+          已完成订单展示结算收入，配送中订单展示预计收入，供课堂讲解使用。
         </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">展示评分</div>
-        <div class="summary-value">{{ orderSummary.avgScore }}</div>
-        <div class="summary-desc">基于已完成订单评价的课堂展示版评分</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">异常上报</div>
-        <div class="summary-value">{{ orderSummary.issueCount }}</div>
-        <div class="summary-desc">配送异常、联系不上顾客等本地记录</div>
-      </div>
+        <el-table :data="incomeDetails" style="width: 100%">
+          <el-table-column prop="orderId" label="订单号" min-width="120" />
+          <el-table-column prop="statusText" label="状态" min-width="100" />
+          <el-table-column prop="finishTime" label="时间" min-width="170" />
+          <el-table-column prop="account" label="订单金额" min-width="100" />
+          <el-table-column prop="deliveryFee" label="配送费" min-width="90" />
+          <el-table-column prop="bonus" label="奖励" min-width="80" />
+          <el-table-column prop="scoreText" label="评分" min-width="80" />
+          <el-table-column prop="reportStatus" label="异常状态" min-width="120" />
+        </el-table>
+      </el-drawer>
+
+      <el-dialog v-model="performanceVisible" title="绩效与激励" width="560px">
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="当前等级">
+            {{ performanceSummary.level }}
+          </el-descriptions-item>
+          <el-descriptions-item label="等级说明">
+            {{ performanceSummary.levelDesc }}
+          </el-descriptions-item>
+          <el-descriptions-item label="课堂展示版激励">
+            {{ performanceSummary.rewardRule }}
+          </el-descriptions-item>
+          <el-descriptions-item label="本期预估奖励">
+            ￥{{ performanceSummary.estimatedBonus }}
+          </el-descriptions-item>
+          <el-descriptions-item label="异常说明">
+            已上报异常 {{ orderSummary.issueCount }} 单，演示时可说明系统已保留配送异常记录。
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-dialog>
     </div>
-
-    <div class="dashboard-actions">
-      <el-button type="primary" @click="incomeVisible = true">收入明细</el-button>
-      <el-button @click="performanceVisible = true">绩效与激励</el-button>
-    </div>
-
-    <div class="dashboard-tip">
-      课堂展示版收入规则：每单配送收入按 `max(4, 订单金额 × 10%)` 估算；超时 10 分钟的待接单会进入优先重派展示队列
-    </div>
-
-    <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
-      <el-tab-pane :label="t('common.order')" name="first"><Order /></el-tab-pane>
-      <el-tab-pane :label="t('common.info')" name="second"><Info /></el-tab-pane>
-    </el-tabs>
-
-    <el-drawer v-model="incomeVisible" title="骑手收入明细" size="48%">
-      <div class="drawer-tip">
-        已完成订单展示结算收入，配送中订单展示预计收入，供课堂讲解使用。
-      </div>
-      <el-table :data="incomeDetails" style="width: 100%">
-        <el-table-column prop="orderId" label="订单号" min-width="120" />
-        <el-table-column prop="statusText" label="状态" min-width="100" />
-        <el-table-column prop="finishTime" label="时间" min-width="170" />
-        <el-table-column prop="account" label="订单金额" min-width="100" />
-        <el-table-column prop="deliveryFee" label="配送费" min-width="90" />
-        <el-table-column prop="bonus" label="奖励" min-width="80" />
-        <el-table-column prop="scoreText" label="评分" min-width="80" />
-        <el-table-column prop="reportStatus" label="异常状态" min-width="120" />
-      </el-table>
-    </el-drawer>
-
-    <el-dialog v-model="performanceVisible" title="绩效与激励" width="560px">
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="当前等级">
-          {{ performanceSummary.level }}
-        </el-descriptions-item>
-        <el-descriptions-item label="等级说明">
-          {{ performanceSummary.levelDesc }}
-        </el-descriptions-item>
-        <el-descriptions-item label="课堂展示版激励">
-          {{ performanceSummary.rewardRule }}
-        </el-descriptions-item>
-        <el-descriptions-item label="本期预估奖励">
-          ￥{{ performanceSummary.estimatedBonus }}
-        </el-descriptions-item>
-        <el-descriptions-item label="异常说明">
-          已上报异常 {{ orderSummary.issueCount }} 单，演示时可说明系统已保留配送异常记录。
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-dialog>
   </div>
 </template>
 
@@ -354,26 +365,51 @@ onUnmounted(() => {
 
 <style lang="less" scoped>
 .driver {
-  margin: 20px;
-  padding: 10px 20px;
-
-  border-radius: 10px;
-  background-color: #fff;
+  padding: 18px 20px 24px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(68, 146, 255, 0.16), transparent 24%),
+    radial-gradient(circle at right center, rgba(255, 200, 87, 0.18), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 250, 255, 0.88));
+  border: 1px solid rgba(37, 68, 112, 0.08);
+  box-shadow: var(--shadow-card);
 
   &-tab {
-    padding: 16px;
+    padding: 12px 4px 4px;
   }
+}
+
+.driver-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+
+.driver-hero h2 {
+  margin-top: 14px;
+  color: var(--text-strong);
+  font-size: clamp(30px, 4vw, 44px);
+  font-family: var(--font-display);
+}
+
+.driver-hero p {
+  max-width: 760px;
+  margin-top: 12px;
+  color: var(--text-soft);
+  line-height: 1.8;
 }
 
 .status-bar {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #ebeef5;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(37, 68, 112, 0.08);
 }
 
 .status-text {
@@ -399,9 +435,10 @@ onUnmounted(() => {
 
 .summary-card {
   padding: 16px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-  border: 1px solid #ebeef5;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(245, 250, 255, 0.96) 0%, rgba(255, 255, 255, 0.88) 100%);
+  border: 1px solid rgba(37, 68, 112, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .summary-label {
@@ -422,7 +459,7 @@ onUnmounted(() => {
 }
 
 .income-card {
-  background: linear-gradient(135deg, #ecf5ff 0%, #ffffff 100%);
+  background: linear-gradient(135deg, rgba(222, 238, 255, 0.98) 0%, rgba(255, 255, 255, 0.88) 100%);
 }
 
 .dashboard-tip {
@@ -433,6 +470,7 @@ onUnmounted(() => {
 
 .dashboard-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -441,5 +479,35 @@ onUnmounted(() => {
   margin-bottom: 12px;
   color: #606266;
   font-size: 13px;
+}
+
+@media (max-width: 1240px) {
+  .dashboard {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .driver {
+    padding: 18px 14px 20px;
+  }
+
+  .driver-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .status-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .status-text {
+    flex-wrap: wrap;
+  }
 }
 </style>

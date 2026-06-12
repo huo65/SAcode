@@ -1,104 +1,70 @@
 <template>
   <div class="goods">
-    <!-- 搜索条件 -->
-    <div class="search">
-      <el-form :inline="true">
-        <!-- 基于商品分类查询 -->
+    <section class="search glass-panel">
+      <div class="section-heading">
+        <div>
+          <span class="micro-tag">Goods Workspace</span>
+          <h3>{{ curStatus === "merchant" ? "商品经营面板" : "商品浏览与审核面板" }}</h3>
+          <p>按分类、名称、价格区间和状态快速筛选商品，并通过卡片化布局提升列表可读性。</p>
+        </div>
+        <div class="toolbar-actions">
+          <el-button v-if="searchCondition.priceOrder == 0" type="primary" @click="order(1)">
+            {{ t('goods.lowToHigh') }}
+          </el-button>
+          <el-button v-else type="primary" @click="order(0)">
+            {{ t('goods.highToLow') }}
+          </el-button>
+          <el-button type="primary" @click="clickSearchGoods">
+            <el-icon><Search /></el-icon>{{ t('goods.search') }}
+          </el-button>
+          <el-button v-if="curStatus === 'merchant'" @click="openEditModal">
+            <el-icon><Plus /></el-icon>{{ t('goods.add') }}
+          </el-button>
+          <el-button v-if="curStatus === 'customer'" @click="toggleCart">
+            <el-icon><ShoppingCart /></el-icon>{{ t('goods.cart') }}
+          </el-button>
+        </div>
+      </div>
+
+      <el-form class="search-form">
         <el-form-item :label="t('goods.goodsCategory')">
-          <el-select
-            v-model="searchCondition.category"
-            clearable
-            style="width: 120px"
-          >
+          <el-select v-model="searchCondition.category" clearable>
             <el-option
               v-for="category in productCategories"
+              :key="category.value"
               :label="category.label"
               :value="category.value"
             ></el-option>
           </el-select>
         </el-form-item>
-        <!-- 基于商品名查询 -->
         <el-form-item :label="t('goods.goodsName')">
-          <el-input
-            v-model="searchCondition.name"
-            clearable
-            style="width: 220px"
-          ></el-input>
+          <el-input v-model="searchCondition.name" clearable></el-input>
         </el-form-item>
         <el-form-item :label="t('goods.minPrice')">
-          <el-input
-            v-model="searchCondition.min_price"
-            clearable
-            style="width: 120px"
-          ></el-input>
+          <el-input v-model="searchCondition.min_price" clearable></el-input>
         </el-form-item>
         <el-form-item :label="t('goods.maxPrice')">
-          <el-input
-            v-model="searchCondition.max_price"
-            clearable
-            style="width: 120px"
-          ></el-input>
+          <el-input v-model="searchCondition.max_price" clearable></el-input>
         </el-form-item>
-        <!-- 基于商品状态查询 -->
-        <el-form-item :label="t('goods.goodsState')" v-if="curStatus === 'admin'">
-          <el-select
-            v-model="searchCondition.state"
-            clearable
-            style="width: 120px"
-          >
+        <el-form-item v-if="curStatus === 'admin'" :label="t('goods.goodsState')">
+          <el-select v-model="searchCondition.state" clearable>
             <el-option :label="t('goods.notPassed')" :value="-1"></el-option>
             <el-option :label="t('goods.pendingReview')" :value="0"></el-option>
-            <el-option :label="t('goods.passed')" :value="1"></el-option> </el-select
-        ></el-form-item>
-
-        <!-- 基于商品状态查询 -->
-        <el-form-item :label="t('goods.goodsState')" v-if="curStatus === 'admin'">
-          <el-select
-            v-model="searchCondition.state"
-            clearable
-            style="width: 120px"
-          >
-            <el-option :label="t('goods.notPassed')" :value="-1"></el-option>
-            <el-option :label="t('goods.pendingReview')" :value="0"></el-option>
-            <el-option :label="t('goods.passed')" :value="1"></el-option> </el-select
-        ></el-form-item>
-
-        <el-form-item>
-          <el-button
-            v-if="searchCondition.priceOrder == 0"
-            @click="order(1)"
-            type="primary"
-            >{{ t('goods.lowToHigh') }}</el-button
-          >
-          <el-button
-            v-if="searchCondition.priceOrder == 1"
-            @click="order(0)"
-            type="primary"
-            >{{ t('goods.highToLow') }}</el-button
-          >
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" @click="clickSearchGoods"
-            ><el-icon><Search /></el-icon>{{ t('goods.search') }}</el-button
-          >
-        </el-form-item>
-        <el-form-item v-if="curStatus === 'merchant'">
-          <el-button type="primary" @click="openEditModal"
-            ><el-icon><Plus /></el-icon>{{ t('goods.add') }}</el-button
-          >
-        </el-form-item>
-        <el-form-item v-if="curStatus === 'customer'">
-          <el-button type="primary" @click="toggleCart"
-            ><el-icon><ShoppingCart /></el-icon>{{ t('goods.cart') }}</el-button
-          >
+            <el-option :label="t('goods.passed')" :value="1"></el-option>
+          </el-select>
         </el-form-item>
       </el-form>
-    </div>
+    </section>
+
+    <section class="result-bar">
+      <strong>共 {{ goodsList.length }} 个商品结果</strong>
+      <span>卡片支持快速查看商品图片、描述与价格，点击后进入详情或编辑流。</span>
+    </section>
 
     <div class="list">
       <div
         v-for="item in goodsList"
+        :key="item.id"
         class="good-wrap"
         @click="openDetail(item)"
       >
@@ -107,33 +73,16 @@
           <!-- <img :src="imageUrlMap[item.image_list[0]]" class="image" /> -->
         </div>
         <div class="info">
+          <span class="goods-caption">{{ item.category || "课堂展示商品" }}</span>
           <h3>{{ item.name }}</h3>
           <p>{{ item.description }}</p>
         </div>
         <div class="price">
-          <div class="btn-box">
-            <!-- <el-button
-            v-if="curStatus === 'merchant'"
-            type="primary"
-            size="small"
-            @click.stop="openEditModal(item)"
-            >Edit</el-button> -->
-            <!-- <el-button size="small" @click="openDetail(item)">Detail</el-button> -->
+          <div class="price-meta">
+            <span class="goods-hint">{{ curStatus === "merchant" ? "点击管理商品" : "点击查看详情" }}</span>
+            <strong>{{ item.price }}￥</strong>
           </div>
-          <!-- <el-button
-            v-if="curStatus === 'admin' || curStatus === 'merchant'"
-            type="danger"
-            size="small"
-            style="margin-right: 10px"
-            @click.stop=""
-            >Delete</el-button
-          > -->
-          <span>{{ item.price }}￥</span>
         </div>
-        <!-- <div class="btn-box">
-          <el-button type="primary" @click.stop="">Buy</el-button>
-          <el-button>Detail</el-button>
-        </div> -->
       </div>
     </div>
     <Detail
@@ -151,13 +100,6 @@
       :product-info="curEditItem"
       @close="closeEditModal"
     />
-    <CartDrawer
-      :visible="cartVisible"
-      @open="getCartInfo"
-      @close="closeCart"
-      @change="saveCart"
-    />
-
     <CartDrawer
       :visible="cartVisible"
       @open="getCartInfo"
@@ -371,40 +313,93 @@ onMounted(() => {
 <style lang="less" scoped>
 @import "../../style/theme.less";
 .search {
-  i {
-    margin-right: 6px;
-  }
+  padding: 24px;
+}
+
+.search-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.search-form :deep(.el-form-item__content) {
+  width: 100%;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.toolbar-actions i {
+  margin-right: 6px;
+}
+
+.result-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 0 14px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(92, 46, 20, 0.08);
+}
+
+.result-bar strong {
+  color: var(--text-strong);
+}
+
+.result-bar span {
+  color: var(--text-soft);
 }
 
 .list {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 
   .good-wrap {
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
-    margin: 10px;
-    padding: 10px 5px;
-    width: 30%;
-    height: 280px;
-    // background-color: #bfa;
-    border: 1px #ccc solid;
-    border-radius: 6px;
+    gap: 14px;
+    padding: 16px;
+    min-height: 320px;
+    border: 1px solid rgba(92, 46, 20, 0.08);
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 249, 244, 0.8));
+    box-shadow: var(--shadow-soft);
     cursor: pointer;
+    transition:
+      transform var(--transition-base),
+      box-shadow var(--transition-base),
+      border-color var(--transition-base);
 
     &:hover {
-      border: 1px @main-yellow solid;
+      transform: translateY(-4px);
+      border-color: rgba(218, 106, 42, 0.22);
+      box-shadow: var(--shadow-card);
     }
 
     .good-item {
       display: flex;
       align-items: center;
+      justify-content: center;
+      min-height: 168px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255, 241, 225, 0.7);
+
       .image {
-        width: 150px;
-        height: 150px;
-        margin: 0 auto;
+        width: 100%;
+        height: 168px;
+        object-fit: cover;
       }
     }
 
@@ -412,42 +407,96 @@ onMounted(() => {
       display: flex;
       flex-direction: column;
       flex: 1;
-      padding: 0 8px;
+      gap: 8px;
+      padding: 0 6px;
+
+      .goods-caption {
+        color: var(--brand-600);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
       h3 {
         word-break: break-all;
         display: -webkit-box;
-        /** 对象作为伸缩盒子模型显示 **/
         -webkit-box-orient: vertical;
-        /** 设置或检索伸缩盒对象的子元素的排列方式 **/
         -webkit-line-clamp: 2;
         overflow: hidden;
         text-overflow: ellipsis;
+        color: var(--text-strong);
+        font-size: 24px;
+        font-family: var(--font-display);
       }
       p {
         word-break: break-all;
         text-overflow: ellipsis;
         display: -webkit-box;
-        /** 对象作为伸缩盒子模型显示 **/
         -webkit-box-orient: vertical;
-        /** 设置或检索伸缩盒对象的子元素的排列方式 **/
         -webkit-line-clamp: 2;
-        /** 显示的行数 **/
         overflow: hidden;
-        /** 隐藏超出的内容 **/
         word-wrap: break-word;
-        /*英文强制换行*/
+        color: var(--text-soft);
+        line-height: 1.7;
       }
     }
 
     .price {
-      margin-left: auto;
-      color: @price;
-      font-size: 18px;
-    }
-    .btn-box {
       display: flex;
-      justify-content: space-around;
+      justify-content: flex-end;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid rgba(92, 46, 20, 0.08);
     }
+
+    .price-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .goods-hint {
+      color: var(--text-soft);
+      font-size: 12px;
+    }
+
+    strong {
+      color: @price;
+      font-size: 24px;
+      font-family: var(--font-display);
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .search-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .search {
+    padding: 18px;
+  }
+
+  .search-form,
+  .list {
+    grid-template-columns: 1fr;
+  }
+
+  .result-bar,
+  .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-start;
   }
 }
 </style>

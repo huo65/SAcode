@@ -249,22 +249,24 @@ onMounted(() => {
     </template>
   </el-dialog>
 
-  <el-container>
-    <!-- 头像 -->
-    <el-aside width="200px">
-      <img
-        v-if="previewImageUrl"
-        :src="previewImageUrl"
-        @click="chooseFile"
-        alt="预览"
-        class="preview-image"
-      />
-      <img
-        :src="userInfo.portrait || '/default_avatar.jpg'"
-        v-else
-        @click="chooseFile"
-        class="preview-image"
-      />
+  <div class="profile-shell">
+    <aside class="profile-aside glass-panel">
+      <span class="micro-tag">Profile Center</span>
+      <div class="avatar-wrap">
+        <img
+          v-if="previewImageUrl"
+          :src="previewImageUrl"
+          @click="chooseFile"
+          alt="预览"
+          class="preview-image"
+        />
+        <img
+          v-else
+          :src="userInfo.portrait || '/default_avatar.jpg'"
+          @click="chooseFile"
+          class="preview-image"
+        />
+      </div>
       <input
         type="file"
         ref="fileInput"
@@ -272,147 +274,171 @@ onMounted(() => {
         @change="uploadFile"
         style="display: none"
       />
-      <!-- <el-col :span="12">
-        <div class="demo-basic--circle">
-          <div class="block">
-            <el-avatar
-              shape="square"
-              :size="photo.size"
-              :src="photo.squareUrl"
-            ></el-avatar>
+      <div class="profile-copy">
+        <h3>{{ userInfo.name || "课堂展示账号" }}</h3>
+        <p>{{ currentUserType.value }}</p>
+      </div>
+      <el-button type="primary" @click="chooseFile">更新头像</el-button>
+      <el-button @click="modifyFormVisible = true">编辑资料</el-button>
+    </aside>
+
+    <section class="profile-main">
+      <div class="profile-card glass-panel">
+        <div class="section-heading">
+          <div>
+            <span class="micro-tag">Account Snapshot</span>
+            <h3>账号信息概览</h3>
+            <p>用更清晰的层级展示身份、联系方式与个人描述，减少传统后台表格的压迫感。</p>
           </div>
         </div>
-      </el-col> -->
-      <el-button @click="chooseFile">Edit Avatar</el-button>
-    </el-aside>
 
-    <el-main>
-      <div>
-        <!-- 个人信息展示 -->
-        <el-descriptions
-          class="margin-top"
-          title="UserInformation"
-          :column="3"
-          border
-        >
+        <el-descriptions class="margin-top" title="UserInformation" :column="3" border>
           <template v-slot:extra>
-            <el-button
-              type="primary"
-              size="small"
-              @click="modifyFormVisible = true"
-              >Modify</el-button
-            >
+            <el-button type="primary" size="small" @click="modifyFormVisible = true">Modify</el-button>
           </template>
           <el-descriptions-item>
-            <template v-slot:label>
-              <i class="el-icon-user"></i>
-              UserName
-            </template>
+            <template v-slot:label> UserName </template>
             {{ userInfo.name }}
           </el-descriptions-item>
           <el-descriptions-item>
-            <template v-slot:label>
-              <i class="el-icon-mobile-phone"></i>
-              Tel
-            </template>
+            <template v-slot:label> Tel </template>
             {{ userInfo.phone }}
           </el-descriptions-item>
           <el-descriptions-item>
-            <template v-slot:label>
-              <i class="el-icon-location-outline"></i>
-              Type
-            </template>
+            <template v-slot:label> Type </template>
             {{ currentUserType.value }}
           </el-descriptions-item>
-          <el-descriptions-item>
+          <el-descriptions-item :span="3">
             <template v-slot:label> Description </template>
-            {{ userInfo.description }}
+            {{ userInfo.description || "暂无个人描述，可在编辑资料中补充。" }}
           </el-descriptions-item>
-          <!-- 密码不显示 -->
           <el-descriptions-item v-show="false">
-            <template v-slot:label>
-              <i class="el-icon-office-building"></i>
-              Password
-            </template>
+            <template v-slot:label> Password </template>
             {{ userInfo.password }}
           </el-descriptions-item>
         </el-descriptions>
+      </div>
 
-        <template v-if="isDriverUser">
-          <br />
-          <el-descriptions class="margin-top" title="DriverProfile" :column="2" border>
-            <el-descriptions-item>
-              <template v-slot:label> Work Status </template>
-              {{ userInfo.driverWorkStatus === "rest" ? "休息中" : "在线接单" }}
-            </el-descriptions-item>
-            <el-descriptions-item>
-              <template v-slot:label> Service Area </template>
-              {{ userInfo.driverServiceArea || modifyData.driverServiceArea || "全城接单" }}
-            </el-descriptions-item>
-            <el-descriptions-item>
-              <template v-slot:label> Vehicle </template>
-              {{ userInfo.driverVehicle || modifyData.driverVehicle || "-" }}
-            </el-descriptions-item>
-            <el-descriptions-item>
-              <template v-slot:label> ID Card </template>
-              {{
-                userInfo.driverIdCard || modifyData.driverIdCard
-                  ? `${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(0, 4)}********${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(-4)}`
-                  : "-"
-              }}
-            </el-descriptions-item>
-            <el-descriptions-item :span="2">
-              <template v-slot:label> Emergency Contact </template>
-              {{ userInfo.driverEmergencyContact || modifyData.driverEmergencyContact || "-" }}
-            </el-descriptions-item>
-          </el-descriptions>
-        </template>
+      <div v-if="isDriverUser" class="profile-card glass-panel">
+        <div class="section-heading">
+          <div>
+            <span class="micro-tag">Driver Details</span>
+            <h3>骑手资料与服务配置</h3>
+            <p>补充服务区域、车辆与紧急联系人信息，便于课堂展示配送人员档案。</p>
+          </div>
+        </div>
 
-        <br />
-        <!-- 地址展示 -->
-        <el-descriptions class="margin-top" title="Address" :column="3" border>
+        <el-descriptions class="margin-top" title="DriverProfile" :column="2" border>
+          <el-descriptions-item>
+            <template v-slot:label> Work Status </template>
+            {{ userInfo.driverWorkStatus === "rest" ? "休息中" : "在线接单" }}
+          </el-descriptions-item>
+          <el-descriptions-item>
+            <template v-slot:label> Service Area </template>
+            {{ userInfo.driverServiceArea || modifyData.driverServiceArea || "全城接单" }}
+          </el-descriptions-item>
+          <el-descriptions-item>
+            <template v-slot:label> Vehicle </template>
+            {{ userInfo.driverVehicle || modifyData.driverVehicle || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item>
+            <template v-slot:label> ID Card </template>
+            {{
+              userInfo.driverIdCard || modifyData.driverIdCard
+                ? `${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(0, 4)}********${String(userInfo.driverIdCard || modifyData.driverIdCard).slice(-4)}`
+                : "-"
+            }}
+          </el-descriptions-item>
+          <el-descriptions-item :span="2">
+            <template v-slot:label> Emergency Contact </template>
+            {{ userInfo.driverEmergencyContact || modifyData.driverEmergencyContact || "-" }}
+          </el-descriptions-item>
         </el-descriptions>
-        <el-button
-          type="primary"
-          size="small"
-          @click="modifyAddressVisible = true"
-          >Add Address</el-button
-        >
-        <!-- Address Table -->
+      </div>
+
+      <div class="profile-card glass-panel">
+        <div class="section-heading">
+          <div>
+            <span class="micro-tag">Address Book</span>
+            <h3>地址管理</h3>
+            <p>将常用地址集中管理，支持快速新增与删除，便于下单链路演示。</p>
+          </div>
+          <el-button type="primary" size="small" @click="modifyAddressVisible = true">Add Address</el-button>
+        </div>
+
         <el-table :data="addressData" style="width: 100%">
-          <el-table-column label="Address" width="1200">
+          <el-table-column label="Address">
             <template v-slot="{ row }">
               {{ row.location }}
             </template>
           </el-table-column>
           <el-table-column fixed="right" label="Operations" width="120">
             <template v-slot="scope">
-              <el-button
-                link
-                type="primary"
-                size="small"
-                @click="handleDelete(scope.row)"
-                >Delete</el-button
-              >
+              <el-button link type="primary" size="small" @click="handleDelete(scope.row)">Delete</el-button>
             </template>
           </el-table-column>
         </el-table>
       </div>
-    </el-main>
-  </el-container>
+    </section>
+  </div>
 </template>
 
 <style lang="less" scoped>
+.profile-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.profile-aside,
+.profile-card {
+  padding: 22px;
+}
+
+.profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.avatar-wrap {
+  margin: 20px 0 18px;
+}
+
 .preview-image {
-  width: 200px;
-  height: 200px;
+  width: 100%;
+  aspect-ratio: 1;
   object-fit: cover;
   cursor: pointer;
+  border-radius: 24px;
+  box-shadow: var(--shadow-soft);
+}
+
+.profile-copy h3 {
+  color: var(--text-strong);
+  font-size: 30px;
+  font-family: var(--font-display);
+}
+
+.profile-copy p {
+  margin: 8px 0 18px;
+  color: var(--text-soft);
 }
 
 .upload-icon {
   cursor: pointer;
   width: 50px;
   height: 50px;
+}
+
+.profile-aside :deep(.el-button + .el-button) {
+  margin-left: 0;
+  margin-top: 10px;
+}
+
+@media (max-width: 960px) {
+  .profile-shell {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

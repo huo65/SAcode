@@ -1,5 +1,12 @@
 <template>
-  <div class="user-admin">
+  <div class="user-admin glass-panel">
+    <div class="section-heading">
+      <div>
+        <span class="micro-tag">User Governance</span>
+        <h3>用户管理面板</h3>
+        <p>通过统一筛选与状态标签管理顾客、商家、骑手和管理员账号。</p>
+      </div>
+    </div>
     <div class="toolbar">
       <el-select v-model="type" clearable placeholder="role" style="width: 160px">
         <el-option label="customer" value="cus" />
@@ -62,8 +69,11 @@ onMounted(fetchUsers);
 
 <style lang="less" scoped>
 .user-admin {
+  padding: 22px;
+
   .toolbar {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 16px;
   }

@@ -1,56 +1,58 @@
 <template>
   <!-- merchant 身份 -->
-  <div class="merchant">
-    <div class="merchant-hero">
-      <div>
-        <p class="eyebrow">Merchant Console</p>
-        <h2>课堂展示版门店运营中心</h2>
-        <p class="hero-desc">
-          统一查看商品、订单、门店资料与经营分析，让顾客端看到的门店形象和商家端维护的运营信息、经营数据保持一致。
-        </p>
+  <div class="page-shell">
+    <div class="merchant">
+      <div class="merchant-hero">
+        <div>
+          <p class="eyebrow">Merchant Console</p>
+          <h2>课堂展示版门店运营中心</h2>
+          <p class="hero-desc">
+            统一查看商品、订单、门店资料与经营分析，让顾客端看到的门店形象和商家端维护的运营信息、经营数据保持一致。
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span>待处理订单</span>
+            <strong>{{ pendingOrderCount }}</strong>
+          </div>
+          <div class="hero-stat">
+            <span>待处理售后</span>
+            <strong>{{ pendingTicketCount }}</strong>
+          </div>
+          <div class="hero-stat">
+            <span>当前标签</span>
+            <strong>{{ currentTabTitle }}</strong>
+          </div>
+          <div class="hero-stat">
+            <span>启用权限</span>
+            <strong>{{ enabledPermissionCount }}</strong>
+          </div>
+        </div>
       </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span>待处理订单</span>
-          <strong>{{ pendingOrderCount }}</strong>
-        </div>
-        <div class="hero-stat">
-          <span>待处理售后</span>
-          <strong>{{ pendingTicketCount }}</strong>
-        </div>
-        <div class="hero-stat">
-          <span>当前标签</span>
-          <strong>{{ currentTabTitle }}</strong>
-        </div>
-        <div class="hero-stat">
-          <span>启用权限</span>
-          <strong>{{ enabledPermissionCount }}</strong>
-        </div>
-      </div>
-    </div>
 
-    <el-tabs v-model="activeName" @tab-click="handleClick" class="merchant-tab">
-      <el-tab-pane v-if="hasMenu('merchant.menu.goods')" :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
-      <el-tab-pane v-if="hasMenu('merchant.menu.order')" name="second">
-        <template #label>
-          <el-badge :value="pendingOrderCount" :hidden="pendingOrderCount <= 0" :max="99">
-            <span>{{ t("common.order") }}</span>
-          </el-badge>
-        </template>
-        <Order />
-      </el-tab-pane>
-      <el-tab-pane v-if="hasMenu('merchant.menu.afterSale')" name="third">
-        <template #label>
-          <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
-            <span>After-Sale</span>
-          </el-badge>
-        </template>
-        <AfterSaleBoard scope="merchant" />
-      </el-tab-pane>
-      <el-tab-pane v-if="hasMenu('merchant.menu.store')" label="Store" name="fourth"><StoreManage /></el-tab-pane>
-      <el-tab-pane v-if="hasMenu('merchant.menu.info')" :label="t('common.info')" name="fifth"><Info /></el-tab-pane>
-      <el-tab-pane v-if="hasMenu('merchant.menu.ops')" label="Ops" name="sixth"><MerchantOps /></el-tab-pane>
-    </el-tabs>
+      <el-tabs v-model="activeName" @tab-click="handleClick" class="merchant-tab">
+        <el-tab-pane v-if="hasMenu('merchant.menu.goods')" :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('merchant.menu.order')" name="second">
+          <template #label>
+            <el-badge :value="pendingOrderCount" :hidden="pendingOrderCount <= 0" :max="99">
+              <span>{{ t("common.order") }}</span>
+            </el-badge>
+          </template>
+          <Order />
+        </el-tab-pane>
+        <el-tab-pane v-if="hasMenu('merchant.menu.afterSale')" name="third">
+          <template #label>
+            <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
+              <span>After-Sale</span>
+            </el-badge>
+          </template>
+          <AfterSaleBoard scope="merchant" />
+        </el-tab-pane>
+        <el-tab-pane v-if="hasMenu('merchant.menu.store')" label="Store" name="fourth"><StoreManage /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('merchant.menu.info')" :label="t('common.info')" name="fifth"><Info /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('merchant.menu.ops')" label="Ops" name="sixth"><MerchantOps /></el-tab-pane>
+      </el-tabs>
+    </div>
   </div>
 </template>
 
@@ -205,16 +207,17 @@ onBeforeUnmount(() => {
 
 <style lang="less" scoped>
 .merchant {
-  margin: 20px;
-  padding: 14px 20px 24px;
+  padding: 18px 20px 24px;
   border-radius: 24px;
   background:
-    radial-gradient(circle at top right, rgba(185, 122, 57, 0.12), transparent 28%),
-    linear-gradient(180deg, #fffefb 0%, #f7efe5 100%);
+    radial-gradient(circle at top right, rgba(255, 200, 87, 0.18), transparent 28%),
+    radial-gradient(circle at left center, rgba(185, 122, 57, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(255, 254, 251, 0.92) 0%, rgba(247, 239, 229, 0.9) 100%);
   border: 1px solid rgba(41, 28, 20, 0.08);
+  box-shadow: var(--shadow-card);
 
   &-tab {
-    padding: 16px;
+    padding: 16px 4px 4px;
   }
 }
 

@@ -1,34 +1,36 @@
 <template>
   <div class="list">
-    <div class="header">
-      <span
-        >state:
-        <el-select
-          v-model="orderCondition.state"
-          clearable
-          style="width: 120px"
-        >
+    <section class="header glass-panel">
+      <div class="section-heading">
+        <div>
+          <span class="micro-tag">Order Timeline</span>
+          <h3>订单状态、流转节点与异常反馈</h3>
+          <p>以卡片化订单时间轴替代生硬表单组合，强化状态标签、配送节点与售后信息的可扫描性。</p>
+        </div>
+        <div class="header-actions">
+          <el-button @click="changeTimeOrder">
+            {{ orderCondition.timeOrder == 0 ? "按时间升序" : "按时间降序" }}
+          </el-button>
+          <el-button type="primary" @click="getOrderList">刷新订单列表</el-button>
+        </div>
+      </div>
+
+      <div class="header-filter">
+        <span>状态筛选</span>
+        <el-select v-model="orderCondition.state" clearable style="width: 180px">
           <el-option
             v-for="state in stateOptions"
+            :key="state.value"
             :label="state.label"
             :value="state.value"
-          ></el-option> </el-select
-      ></span>
-      <span>
-        timeOrder:
-        <el-button @click="changeTimeOrder">
-          {{ orderCondition.timeOrder == 0 ? "ascend" : "descend" }}
-        </el-button>
-      </span>
-      <span>
-        <el-button type="primary" @click="getOrderList"
-          >Refresh Order List</el-button
-        >
-      </span>
-    </div>
+          ></el-option>
+        </el-select>
+      </div>
+    </section>
 
     <div
       v-for="item in displayedOrderList"
+      :key="item.orderInfo.id"
       class="item"
       :class="{ 'item-timeout': isDispatchTimedOut(item) }"
     >
@@ -1051,23 +1053,56 @@ onMounted(() => {
 <style lang="less" scoped>
 @import "../../style/theme.less";
 .header {
+  padding: 24px;
+  margin-bottom: 18px;
+}
+
+.header-actions {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.header-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--text-soft);
+  font-weight: 600;
 }
 
 .list {
   .item {
-    margin-top: 20px;
-    padding: 10px;
-    border: 1px #ccc solid;
-    border-radius: 8px;
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid rgba(92, 46, 20, 0.08);
+    border-radius: 26px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 249, 243, 0.8));
+    box-shadow: var(--shadow-soft);
+    transition:
+      transform var(--transition-base),
+      box-shadow var(--transition-base),
+      border-color var(--transition-base);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card);
+    }
 
     .product-img {
       margin: 20px;
+      width: 200px;
+      height: 200px;
+      border-radius: 20px;
+      object-fit: cover;
+      background: rgba(255, 241, 225, 0.7);
     }
 
     .info {
       display: flex;
+      gap: 10px;
 
       & > img {
         width: 200px;
@@ -1081,14 +1116,16 @@ onMounted(() => {
 
     .title {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      margin-top: 10px;
-      font-size: 20px;
-      font-weight: 700;
-      gap: 10px;
+      margin-top: 6px;
+      gap: 12px;
 
       & > span {
-        margin-left: 10px;
+        color: var(--text-strong);
+        font-size: 30px;
+        font-weight: 700;
+        font-family: var(--font-display);
       }
     }
 
@@ -1096,6 +1133,7 @@ onMounted(() => {
       margin: 20px;
       .price {
         color: @price;
+        font-weight: 700;
       }
       .review-block {
         display: flex;
@@ -1109,13 +1147,46 @@ onMounted(() => {
 
     .footer {
       display: flex;
+      flex-wrap: wrap;
       justify-content: flex-end;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(92, 46, 20, 0.08);
     }
   }
 
   .item-timeout {
-    border-color: #f56c6c;
-    box-shadow: 0 0 0 1px rgba(245, 108, 108, 0.12);
+    border-color: rgba(213, 95, 80, 0.36);
+    box-shadow:
+      0 0 0 1px rgba(245, 108, 108, 0.12),
+      var(--shadow-soft);
+  }
+}
+
+@media (max-width: 960px) {
+  .header {
+    padding: 18px;
+  }
+
+  .header-filter,
+  .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+  }
+
+  .list .item .info {
+    flex-direction: column;
+  }
+
+  .list .item .product-img,
+  .list .item .info > img {
+    width: 100%;
+    height: 220px;
+    margin: 0 0 16px;
   }
 }
 </style>

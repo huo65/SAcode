@@ -1,9 +1,9 @@
 <template>
   <Header />
   <div class="home">
-    <span v-if="isTEST"
-      >TEST: This is home {{ msg }} & your status is {{ curStatus }}</span
-    >
+    <div v-if="isTEST" class="page-shell debug-banner">
+      TEST: This is home {{ msg }} & your status is {{ curStatus }}
+    </div>
     <!-- 根据身份展示对应的内容 -->
     <Admin v-if="curStatus === 'admin'" />
     <Customer v-if="curStatus === 'customer' || curStatus === 'guest'" />
@@ -29,4 +29,17 @@ defineProps({
 
 </script>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.home {
+  padding-bottom: 24px;
+}
+
+.debug-banner {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(255, 245, 229, 0.9);
+  border: 1px dashed rgba(181, 78, 31, 0.22);
+  color: var(--text-soft);
+}
+</style>

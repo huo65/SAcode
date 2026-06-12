@@ -1,44 +1,46 @@
 <template>
   <!-- admin 身份 -->
-  <div class="admin">
-    <div class="admin-hero">
-      <div>
-        <p class="eyebrow">Platform Command</p>
-        <h2>课堂展示版平台治理中心</h2>
-        <p class="hero-desc">
-          统一查看商品、订单、用户、售后与经营分析，让管理端在课堂展示中同时承担平台治理、问题处理、权限配置和审计追踪的角色。
-        </p>
+  <div class="page-shell">
+    <div class="admin">
+      <div class="admin-hero">
+        <div>
+          <p class="eyebrow">Platform Command</p>
+          <h2>课堂展示版平台治理中心</h2>
+          <p class="hero-desc">
+            统一查看商品、订单、用户、售后与经营分析，让管理端在课堂展示中同时承担平台治理、问题处理、权限配置和审计追踪的角色。
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span>待处理售后</span>
+            <strong>{{ pendingTicketCount }}</strong>
+          </div>
+          <div class="hero-stat">
+            <span>当前标签</span>
+            <strong>{{ currentTabTitle }}</strong>
+          </div>
+          <div class="hero-stat">
+            <span>启用权限</span>
+            <strong>{{ enabledPermissionCount }}</strong>
+          </div>
+        </div>
       </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span>待处理售后</span>
-          <strong>{{ pendingTicketCount }}</strong>
-        </div>
-        <div class="hero-stat">
-          <span>当前标签</span>
-          <strong>{{ currentTabTitle }}</strong>
-        </div>
-        <div class="hero-stat">
-          <span>启用权限</span>
-          <strong>{{ enabledPermissionCount }}</strong>
-        </div>
-      </div>
+      <el-tabs v-model="activeName" @tab-click="handleClick" class="admin-tab">
+        <el-tab-pane v-if="hasMenu('admin.menu.goods')" :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('admin.menu.order')" :label="t('common.order')" name="second"><Order /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('admin.menu.category')" :label="t('common.category')" name="third"><Category /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('admin.menu.afterSale')" name="fourth">
+          <template #label>
+            <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
+              <span>After-Sale</span>
+            </el-badge>
+          </template>
+          <AfterSaleBoard scope="admin" />
+        </el-tab-pane>
+        <el-tab-pane v-if="hasMenu('admin.menu.user')" :label="t('common.user')" name="fifth"><User /></el-tab-pane>
+        <el-tab-pane v-if="hasMenu('admin.menu.ops')" label="Ops" name="sixth"><AdminOps /></el-tab-pane>
+      </el-tabs>
     </div>
-    <el-tabs v-model="activeName" @tab-click="handleClick" class="admin-tab">
-      <el-tab-pane v-if="hasMenu('admin.menu.goods')" :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
-      <el-tab-pane v-if="hasMenu('admin.menu.order')" :label="t('common.order')" name="second"><Order /></el-tab-pane>
-      <el-tab-pane v-if="hasMenu('admin.menu.category')" :label="t('common.category')" name="third"><Category /></el-tab-pane>
-      <el-tab-pane v-if="hasMenu('admin.menu.afterSale')" name="fourth">
-        <template #label>
-          <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
-            <span>After-Sale</span>
-          </el-badge>
-        </template>
-        <AfterSaleBoard scope="admin" />
-      </el-tab-pane>
-      <el-tab-pane v-if="hasMenu('admin.menu.user')" :label="t('common.user')" name="fifth"><User /></el-tab-pane>
-      <el-tab-pane v-if="hasMenu('admin.menu.ops')" label="Ops" name="sixth"><AdminOps /></el-tab-pane>
-    </el-tabs>
   </div>
 </template>
 
@@ -163,16 +165,17 @@ onBeforeUnmount(() => {
 
 <style lang="less" scoped>
 .admin {
-  margin: 20px;
-  padding: 14px 20px 24px;
+  padding: 18px 20px 24px;
   border-radius: 24px;
   background:
-    radial-gradient(circle at top right, rgba(28, 108, 255, 0.12), transparent 28%),
-    linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
+    radial-gradient(circle at top right, rgba(28, 108, 255, 0.14), transparent 28%),
+    radial-gradient(circle at left center, rgba(95, 162, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(238, 244, 255, 0.88) 100%);
   border: 1px solid rgba(23, 29, 45, 0.08);
+  box-shadow: var(--shadow-card);
 
   &-tab {
-    padding: 16px;
+    padding: 16px 4px 4px;
   }
 }
 

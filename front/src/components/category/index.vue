@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, onMounted } from "vue";
 import $store, { productCategories } from "@/store";
 import fetch from "@/api/fetch";
@@ -79,31 +79,33 @@ onMounted(() => {
     </template>
   </el-dialog>
 
-  <el-descriptions
-    class="margin-top"
-    title="Category Management"
-    :column="3"
-    border
-  >
-  </el-descriptions>
-  <el-button type="primary" size="small" @click="AddCategoryVisible = true"
-    >Add New Category</el-button
-  >
-  <!-- Address Table -->
-  <el-table :data="productCategories" style="width: 100%">
-    <el-table-column label="Category" width="1200">
-      <template v-slot="{ row }">
-        {{ row.value }}
-      </template>
-    </el-table-column>
-    <el-table-column fixed="right" label="Operations" width="120">
-      <template v-slot="{ row }">
-        <el-button @click="deleteRow(row)" link type="primary" size="small"
-          >Delete</el-button
-        >
-      </template>
-    </el-table-column>
-  </el-table>
+  <section class="category-panel glass-panel">
+    <div class="section-heading">
+      <div>
+        <span class="micro-tag">Category Control</span>
+        <h3>分类管理工作台</h3>
+        <p>用更简洁的控制面板维护商品分类，避免页面只剩一张表格的单调感。</p>
+      </div>
+      <el-button type="primary" size="small" @click="AddCategoryVisible = true">Add New Category</el-button>
+    </div>
+
+    <el-table :data="productCategories" style="width: 100%">
+      <el-table-column label="Category">
+        <template v-slot="{ row }">
+          {{ row.value }}
+        </template>
+      </el-table-column>
+      <el-table-column fixed="right" label="Operations" width="120">
+        <template v-slot="{ row }">
+          <el-button @click="deleteRow(row)" link type="primary" size="small">Delete</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </section>
 </template>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.category-panel {
+  padding: 22px;
+}
+</style>

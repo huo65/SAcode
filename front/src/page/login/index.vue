@@ -1,72 +1,136 @@
 <template>
   <div class="login">
     <div class="login-bg"></div>
-    <div class="login-title">{{ t('login.title') }}</div>
-    <div class="login-board">
-      <el-form
-        class="login-form"
-        v-if="curFormCase === 'login'"
-        ref="loginFormRef"
-        :model="loginForm"
-        label-width="auto"
-      >
-        <el-form-item :label="t('login.name')" prop="name" required>
-          <el-input v-model="loginForm.name" />
-        </el-form-item>
-        <el-form-item :label="t('login.password')" prop="password" required>
-          <el-input
-            type="password"
-            show-password
-            v-model="loginForm.password"
-          />
-        </el-form-item>
-      </el-form>
 
-      <el-form
-        v-else
-        ref="registerFormRef"
-        :model="registerForm"
-        :rules="registerFormRules"
-        label-width="auto"
-      >
-        <el-form-item :label="t('login.accountType')" prop="type" required>
-          <el-select v-model="registerForm.type" :placeholder="t('login.selectYourType')">
-            <el-option :label="t('login.customer')" value="cus"></el-option>
-            <el-option :label="t('login.merchant')" value="mer"></el-option>
-            <el-option :label="t('login.driver')" value="driver"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item :label="t('login.name')" prop="name" required>
-          <el-input v-model="registerForm.name" />
-        </el-form-item>
-        <el-form-item :label="t('login.phone')" prop="phone" required>
-          <el-input v-model="registerForm.phone" />
-        </el-form-item>
-        <el-form-item :label="t('login.password')" prop="password" required>
-          <el-input v-model="registerForm.password" show-password />
-        </el-form-item>
-        <el-form-item :label="t('login.confirmPassword')" prop="confirm_password" required>
-          <el-input v-model="registerForm.confirm_password" show-password />
-        </el-form-item>
-      </el-form>
+    <div class="login-shell">
+      <section class="login-brand">
+        <span class="micro-tag">Campus Food Network</span>
+        <h1>{{ t("login.title") }}</h1>
+        <p class="brand-copy">
+          面向课堂展示的外卖系统入口，覆盖顾客下单、商家经营、骑手配送和平台治理四条业务主线。
+        </p>
 
-      <div class="btn-box">
-        <template v-if="curFormCase === 'login'">
-          <el-button @click="clickLogIn(loginFormRef)">{{ t('login.login') }}</el-button>
-          <el-button @click="guestVisit">{{ t('login.haveLook') }}</el-button>
-          <el-button type="primary" @click="() => (curFormCase = 'register')"
-            >{{ t('login.signUp') }}</el-button
+        <div class="brand-grid">
+          <article
+            v-for="item in roleHighlights"
+            :key="item.title"
+            class="brand-card card-hover"
           >
-        </template>
-        <template v-else>
-          <el-button @click="() => (curFormCase = 'login')"
-            >{{ t('login.backToLogin') }}</el-button
+            <span class="brand-card-label">{{ item.tag }}</span>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.desc }}</p>
+          </article>
+        </div>
+
+        <div class="demo-board">
+          <div class="demo-board-head">
+            <strong>演示账号</strong>
+            <span>密码统一为 `123456`</span>
+          </div>
+          <div class="demo-list">
+            <div v-for="item in demoAccounts" :key="item.role" class="demo-item">
+              <span>{{ item.role }}</span>
+              <strong>{{ item.account }}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-board">
+        <div class="board-head">
+          <p class="eyebrow">{{ curFormCase === "login" ? "Sign In" : "Create Account" }}</p>
+          <h2>{{ curFormCase === "login" ? "欢迎回来" : "创建新的演示身份" }}</h2>
+          <p>
+            {{ curFormCase === "login"
+              ? "进入对应角色工作台，继续演示下单、接单、配送与治理流程。"
+              : "支持顾客、商家和骑手注册，便于课堂展示不同业务入口。" }}
+          </p>
+        </div>
+
+        <div class="board-switch">
+          <button
+            type="button"
+            class="switch-chip"
+            :class="{ active: curFormCase === 'login' }"
+            @click="curFormCase = 'login'"
           >
-          <el-button type="primary" @click="clickSignUp(registerFormRef)"
-            >{{ t('login.signUp') }}</el-button
+            登录
+          </button>
+          <button
+            type="button"
+            class="switch-chip"
+            :class="{ active: curFormCase === 'register' }"
+            @click="curFormCase = 'register'"
           >
-        </template>
-      </div>
+            注册
+          </button>
+        </div>
+
+        <el-form
+          v-if="curFormCase === 'login'"
+          ref="loginFormRef"
+          class="login-form"
+          :model="loginForm"
+          label-position="top"
+        >
+          <el-form-item :label="t('login.name')" prop="name" required>
+            <el-input v-model="loginForm.name" placeholder="请输入用户名" />
+          </el-form-item>
+          <el-form-item :label="t('login.password')" prop="password" required>
+            <el-input
+              v-model="loginForm.password"
+              type="password"
+              show-password
+              placeholder="请输入密码"
+            />
+          </el-form-item>
+        </el-form>
+
+        <el-form
+          v-else
+          ref="registerFormRef"
+          class="login-form"
+          :model="registerForm"
+          :rules="registerFormRules"
+          label-position="top"
+        >
+          <el-form-item :label="t('login.accountType')" prop="type" required>
+            <el-select v-model="registerForm.type" :placeholder="t('login.selectYourType')">
+              <el-option :label="t('login.customer')" value="cus"></el-option>
+              <el-option :label="t('login.merchant')" value="mer"></el-option>
+              <el-option :label="t('login.driver')" value="driver"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="t('login.name')" prop="name" required>
+            <el-input v-model="registerForm.name" placeholder="请输入用户名" />
+          </el-form-item>
+          <el-form-item :label="t('login.phone')" prop="phone" required>
+            <el-input v-model="registerForm.phone" placeholder="请输入手机号" />
+          </el-form-item>
+          <el-form-item :label="t('login.password')" prop="password" required>
+            <el-input v-model="registerForm.password" show-password placeholder="请输入密码" />
+          </el-form-item>
+          <el-form-item :label="t('login.confirmPassword')" prop="confirm_password" required>
+            <el-input
+              v-model="registerForm.confirm_password"
+              show-password
+              placeholder="请再次输入密码"
+            />
+          </el-form-item>
+        </el-form>
+
+        <div class="btn-box">
+          <template v-if="curFormCase === 'login'">
+            <el-button type="primary" @click="clickLogIn(loginFormRef)">{{ t('login.login') }}</el-button>
+            <el-button @click="guestVisit">{{ t('login.haveLook') }}</el-button>
+            <el-button @click="curFormCase = 'register'">{{ t('login.signUp') }}</el-button>
+          </template>
+          <template v-else>
+            <el-button @click="curFormCase = 'login'">{{ t('login.backToLogin') }}</el-button>
+            <el-button type="primary" @click="clickSignUp(registerFormRef)">{{ t('login.signUp') }}</el-button>
+          </template>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -149,58 +213,276 @@ const guestVisit = () => {
   sessionStorage.setItem("guestMode", "1");
   $router.push({ path: "/home" });
 };
+
+const roleHighlights = [
+  {
+    tag: "Customer",
+    title: "顾客点餐体验",
+    desc: "浏览门店、查看菜单、下单支付与售后反馈完整串联。",
+  },
+  {
+    tag: "Merchant",
+    title: "商家经营工作台",
+    desc: "集中处理商品、订单、门店资料与课堂展示版经营数据。",
+  },
+  {
+    tag: "Driver",
+    title: "骑手配送大盘",
+    desc: "支持接单、配送状态、收入绩效与异常上报的可视化展示。",
+  },
+  {
+    tag: "Admin",
+    title: "平台治理中心",
+    desc: "统一查看售后、用户状态、权限配置和平台治理视角信息。",
+  },
+];
+
+const demoAccounts = [
+  { role: "管理员", account: "admin" },
+  { role: "顾客", account: "customer" },
+  { role: "商家", account: "merchant" },
+  { role: "骑手", account: "driver" },
+];
 </script>
 
 <style lang="less" scoped>
-
 .login {
+  position: relative;
+  min-height: 100vh;
+  padding: 32px 16px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 100px;
+  justify-content: center;
+
   .login-bg {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('/B.jpg');
-    background-size: cover; 
-    opacity: 0.8; 
-    z-index: -1; 
+    background:
+      linear-gradient(135deg, rgba(35, 15, 7, 0.72), rgba(103, 42, 16, 0.5)),
+      url("/B.jpg") center / cover no-repeat;
+    z-index: 0;
   }
+}
 
+.login-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1200px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.82fr);
+  gap: 24px;
+}
 
-  .el-input {
-    --el-input-width: 220px;
-  }
+.login-brand,
+.login-board {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 32px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 80px rgba(17, 7, 2, 0.24);
+}
 
-  &-title {
-    margin-bottom: 20px;
-  line-height: 50px;
-  text-align: center;
-  font-size: 30px;
-  font-weight: bolder;
+.login-brand {
+  padding: 38px;
+  color: rgba(255, 247, 239, 0.9);
+  background: linear-gradient(180deg, rgba(53, 23, 10, 0.64), rgba(28, 11, 4, 0.48));
+}
+
+.login-brand h1 {
+  margin-top: 18px;
+  color: #fff7ef;
+  font-family: var(--font-display);
+  font-size: clamp(42px, 6vw, 72px);
+  line-height: 0.95;
+}
+
+.brand-copy {
+  max-width: 560px;
+  margin-top: 18px;
+  color: rgba(255, 243, 234, 0.76);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.brand-card {
+  min-height: 150px;
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.brand-card-label {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 244, 231, 0.72);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.brand-card h3 {
+  margin-top: 14px;
+  color: #fff6ee;
+  font-size: 22px;
+  font-family: var(--font-display);
+}
+
+.brand-card p {
+  margin-top: 10px;
+  color: rgba(255, 243, 234, 0.68);
+  line-height: 1.7;
+}
+
+.demo-board {
+  margin-top: 28px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.demo-board-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: rgba(255, 243, 234, 0.78);
+}
+
+.demo-board-head strong {
   color: #fff;
-  text-shadow: 2px 2px 4px #000000;
+  font-size: 18px;
+}
+
+.demo-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.demo-item {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.demo-item span {
+  display: block;
+  color: rgba(255, 243, 234, 0.66);
+  font-size: 13px;
+}
+
+.demo-item strong {
+  display: block;
+  margin-top: 6px;
+  color: #fff8f0;
+  font-size: 20px;
+}
+
+.login-board {
+  padding: 34px 34px 28px;
+  background: linear-gradient(180deg, rgba(255, 252, 249, 0.92), rgba(255, 247, 240, 0.82));
+}
+
+.board-head h2 {
+  margin-top: 8px;
+  color: var(--text-strong);
+  font-size: 38px;
+  font-family: var(--font-display);
+}
+
+.board-head p:last-child {
+  margin-top: 12px;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.eyebrow {
+  color: var(--brand-600);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.board-switch {
+  display: inline-flex;
+  gap: 8px;
+  margin: 24px 0 18px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255, 241, 225, 0.84);
+}
+
+.switch-chip {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.switch-chip.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-400));
+  box-shadow: 0 10px 22px rgba(181, 78, 31, 0.22);
+}
+
+.login-form :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+.btn-box {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-box:has(> :nth-child(2):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1080px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .login {
+    padding: 16px;
   }
 
-  &-board {
-    padding: 40px 60px;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.8);
+  .login-brand,
+  .login-board {
+    padding: 24px;
+  }
 
-    .login-form {
-      padding: 20px;
-      
-    }
+  .brand-grid,
+  .demo-list,
+  .btn-box {
+    grid-template-columns: 1fr;
+  }
+}
 
-    .btn-box {
-      display: flex;
-      justify-content: space-around;
-      padding: 0 16px;
-      
-    }
+@media (prefers-reduced-motion: reduce) {
+  .brand-card,
+  .switch-chip {
+    transition: none;
   }
 }
 </style>
