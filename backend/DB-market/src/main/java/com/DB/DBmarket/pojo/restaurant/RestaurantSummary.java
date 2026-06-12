@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class RestaurantSummary {
     private String id;
+    private String merchantId;
     private String name;
     private String portrait;
     private String description;
@@ -21,5 +22,17 @@ public class RestaurantSummary {
     private Integer minPrice;
     private Double averageScore;
     private Integer reviewCount;
+    private Integer status;
+    private String statusText;
+    private String businessHours;
+    private Integer deliveryFee;
+    private Integer minOrderAmount;
+    private Double distanceKm;
+    private Integer deliveryEtaMinutes;
+    private String notice;
+    private String deliveryPolicy;
+    private String promoText;
     private List<String> categories = new ArrayList<>();
+    private List<String> serviceTags = new ArrayList<>();
+    private List<String> menuCategories = new ArrayList<>();
 }

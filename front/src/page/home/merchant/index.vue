@@ -1,6 +1,26 @@
 <template>
   <!-- merchant 身份 -->
   <div class="merchant">
+    <div class="merchant-hero">
+      <div>
+        <p class="eyebrow">Merchant Console</p>
+        <h2>课堂展示版门店运营中心</h2>
+        <p class="hero-desc">
+          统一查看商品、订单和门店资料，让顾客端看到的门店形象和商家端维护的运营信息保持一致。
+        </p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span>待处理订单</span>
+          <strong>{{ pendingOrderCount }}</strong>
+        </div>
+        <div class="hero-stat">
+          <span>当前标签</span>
+          <strong>{{ currentTabTitle }}</strong>
+        </div>
+      </div>
+    </div>
+
     <el-tabs v-model="activeName" @tab-click="handleClick" class="merchant-tab">
       <el-tab-pane :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
       <el-tab-pane name="second">
@@ -11,17 +31,19 @@
         </template>
         <Order />
       </el-tab-pane>
-      <el-tab-pane :label="t('common.info')" name="third"><Info /></el-tab-pane>
+      <el-tab-pane label="Store" name="third"><StoreManage /></el-tab-pane>
+      <el-tab-pane :label="t('common.info')" name="fourth"><Info /></el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import Goods from "@/components/goods/index.vue";
 import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
+import StoreManage from "@/components/restaurant/store-manage.vue";
 import { ElNotification } from "element-plus";
 import { Order as OrderApi } from "@/api/apis";
 import fetch from "@/api/fetch";
@@ -36,14 +58,26 @@ let initialized = false;
 const tabKeyMap = {
   [t("common.goods")]: "Goods",
   [t("common.order")]: "Order",
+  Store: "Store",
   [t("common.info")]: "Info",
 };
 
 const tabNameMap = {
   first: "Goods",
   second: "Order",
-  third: "Info",
+  third: "Store",
+  fourth: "Info",
 };
+
+const currentTabTitle = computed(() => {
+  const map = {
+    first: "商品管理",
+    second: "订单处理",
+    third: "门店资料",
+    fourth: "账号信息",
+  };
+  return map[activeName.value] || "门店运营";
+});
 
 const handleClick = (tab, event) => {
   const key = tabNameMap[tab.props.name] || tabKeyMap[tab.props.label] || tab.props.label;
@@ -96,13 +130,82 @@ onBeforeUnmount(() => {
 <style lang="less" scoped>
 .merchant {
   margin: 20px;
-  padding: 10px 20px;
-
-  border-radius: 10px;
-  background-color: #fff;
+  padding: 14px 20px 24px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(185, 122, 57, 0.12), transparent 28%),
+    linear-gradient(180deg, #fffefb 0%, #f7efe5 100%);
+  border: 1px solid rgba(41, 28, 20, 0.08);
 
   &-tab {
     padding: 16px;
+  }
+}
+
+.merchant-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 8px 8px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #b76e2b;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.merchant-hero h2 {
+  margin: 0;
+  font-size: 34px;
+  font-family: "Georgia", "Times New Roman", serif;
+  color: #23170f;
+}
+
+.hero-desc {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: rgba(35, 23, 15, 0.72);
+  line-height: 1.8;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 12px;
+  min-width: 320px;
+}
+
+.hero-stat {
+  padding: 18px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(35, 23, 15, 0.08);
+}
+
+.hero-stat span {
+  display: block;
+  color: rgba(35, 23, 15, 0.58);
+  font-size: 13px;
+}
+
+.hero-stat strong {
+  display: block;
+  margin-top: 8px;
+  color: #23170f;
+  font-size: 26px;
+  font-family: "Georgia", "Times New Roman", serif;
+}
+
+@media (max-width: 1100px) {
+  .merchant-hero {
+    flex-direction: column;
+  }
+
+  .hero-stats {
+    min-width: 0;
   }
 }
 </style>

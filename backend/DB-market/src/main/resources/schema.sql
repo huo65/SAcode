@@ -63,6 +63,31 @@ CREATE TABLE IF NOT EXISTS address (
     FOREIGN KEY (usr) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='地址表';
 
+-- Restaurant / Store table
+CREATE TABLE IF NOT EXISTS restaurant (
+    id VARCHAR(64) PRIMARY KEY COMMENT '门店id',
+    merchant_id VARCHAR(64) NOT NULL COMMENT '所属商家id',
+    name VARCHAR(128) NOT NULL COMMENT '门店名称',
+    logo VARCHAR(512) COMMENT '门店logo',
+    cover VARCHAR(512) COMMENT '门店封面',
+    description TEXT COMMENT '门店简介',
+    notice TEXT COMMENT '门店公告',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '营业状态 1营业中 0休息中',
+    business_hours VARCHAR(128) COMMENT '营业时间',
+    delivery_fee INT DEFAULT 0 COMMENT '配送费',
+    min_order_amount INT DEFAULT 0 COMMENT '起送价',
+    service_radius_km DOUBLE DEFAULT 5 COMMENT '配送范围km',
+    delivery_eta_minutes INT DEFAULT 30 COMMENT '预计送达分钟数',
+    feature_tags VARCHAR(500) COMMENT '门店标签，逗号分隔',
+    menu_categories VARCHAR(500) COMMENT '门店菜单分类，逗号分隔',
+    address_text VARCHAR(500) COMMENT '门店地址',
+    delivery_policy TEXT COMMENT '配送说明',
+    promo_text VARCHAR(255) COMMENT '活动文案',
+    UNIQUE KEY uk_restaurant_merchant (merchant_id),
+    INDEX idx_restaurant_status (status),
+    FOREIGN KEY (merchant_id) REFERENCES user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='门店表';
+
 -- Cart table
 CREATE TABLE IF NOT EXISTS cart (
     cus VARCHAR(64) NOT NULL COMMENT '用户id',
@@ -154,3 +179,6 @@ INSERT IGNORE INTO address (addr_id, usr, location) VALUES
     ('1', '2', 'Customer demo address'),
     ('2', '3', 'Merchant demo address'),
     ('3', '4', 'Driver service area');
+
+INSERT IGNORE INTO restaurant (id, merchant_id, name, logo, cover, description, notice, status, business_hours, delivery_fee, min_order_amount, service_radius_km, delivery_eta_minutes, feature_tags, menu_categories, address_text, delivery_policy, promo_text) VALUES
+    ('3', '3', 'merchant精选门店', 'default_avatar', 'default_avatar', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠');

@@ -124,6 +124,16 @@ export const Restaurant = {
         method: "get",
         url: `${host}/restaurant/info`,
     },
+
+    manageInfo: {
+        method: "get",
+        url: `${host}/restaurant/manage/info`,
+    },
+
+    manageUpdate: {
+        method: "post",
+        url: `${host}/restaurant/manage/update`,
+    },
 };
 
 export const Review = {

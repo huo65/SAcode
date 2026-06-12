@@ -17,4 +17,5 @@ import java.util.List;
 public class RestaurantDetail extends RestaurantSummary {
     private List<Product> productList = new ArrayList<>();
     private List<OrderReview> reviewList = new ArrayList<>();
+    private RestaurantStore storeInfo;
 }
