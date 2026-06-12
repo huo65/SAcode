@@ -1,6 +1,35 @@
 <template>
   <!-- driver 身份 -->
   <div class="driver">
+    <div class="dashboard">
+      <div class="summary-card">
+        <div class="summary-label">待抢单</div>
+        <div class="summary-value">{{ orderSummary.waiting }}</div>
+        <div class="summary-desc">当前待骑手接单的订单</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">配送中</div>
+        <div class="summary-value">{{ orderSummary.delivering }}</div>
+        <div class="summary-desc">属于当前骑手的进行中配送</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">今日完成</div>
+        <div class="summary-value">{{ orderSummary.todayCompleted }}</div>
+        <div class="summary-desc">按订单更新时间统计今日完成单</div>
+      </div>
+      <div class="summary-card income-card">
+        <div class="summary-label">累计配送收入</div>
+        <div class="summary-value">￥{{ orderSummary.completedIncome }}</div>
+        <div class="summary-desc">
+          配送中预计再收入 ￥{{ orderSummary.deliveringIncome }}
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-tip">
+      课堂展示版收入规则：每单配送收入按 `max(4, 订单金额 × 10%)` 估算
+    </div>
+
     <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
       <el-tab-pane :label="t('common.order')" name="first"><Order /></el-tab-pane>
       <el-tab-pane :label="t('common.info')" name="second"><Info /></el-tab-pane>
@@ -9,14 +38,76 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
 import { refreshDataFnMap } from "@/store";
+import { userInfo } from "@/store";
+import fetch from "@/api/fetch";
+import { Order as OrderApi } from "@/api/apis";
 
 const { t } = useI18n();
 const activeName = ref("first");
+const driverOrders = ref([]);
+let dashboardTimer = null;
+
+const DELIVERY_RATE = 0.1;
+const MIN_DELIVERY_FEE = 4;
+
+const calcDeliveryIncome = (item) => {
+  const amount = Number(item?.orderInfo?.account || 0);
+  return Math.max(MIN_DELIVERY_FEE, Math.round(amount * DELIVERY_RATE));
+};
+
+const isSameDay = (timeText) => {
+  if (!timeText) return false;
+  const date = new Date(timeText);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+};
+
+const orderSummary = computed(() => {
+  const ownOrders = driverOrders.value.filter(
+    (item) => item?.orderInfo?.driverId === userInfo.value.id
+  );
+  const deliveringOrders = ownOrders.filter(
+    (item) => item?.orderInfo?.state === 1
+  );
+  const completedOrders = ownOrders.filter(
+    (item) => item?.orderInfo?.state === 2
+  );
+
+  return {
+    waiting: driverOrders.value.filter((item) => item?.orderInfo?.state === 3)
+      .length,
+    delivering: deliveringOrders.length,
+    todayCompleted: completedOrders.filter((item) =>
+      isSameDay(item?.orderInfo?.time)
+    ).length,
+    completedIncome: completedOrders
+      .reduce((sum, item) => sum + calcDeliveryIncome(item), 0)
+      .toFixed(0),
+    deliveringIncome: deliveringOrders
+      .reduce((sum, item) => sum + calcDeliveryIncome(item), 0)
+      .toFixed(0),
+  };
+});
+
+const refreshDashboard = () => {
+  if (!userInfo.value?.id) return;
+  fetch(OrderApi.getOrderList, {
+    usrId: userInfo.value.id,
+    timeOrder: 1,
+  }).then((data) => {
+    driverOrders.value = data?.driverList || [];
+  });
+};
 
 const tabKeyMap = {
   [t('common.order')]: 'Order',
@@ -26,7 +117,20 @@ const tabKeyMap = {
 const handleClick = (tab, event) => {
   const key = tabKeyMap[tab.props.label] || tab.props.label;
   refreshDataFnMap.value?.[key]?.();
+  refreshDashboard();
 };
+
+onMounted(() => {
+  refreshDashboard();
+  dashboardTimer = window.setInterval(refreshDashboard, 15000);
+});
+
+onUnmounted(() => {
+  if (dashboardTimer) {
+    window.clearInterval(dashboardTimer);
+    dashboardTimer = null;
+  }
+});
 </script>
 
 <style lang="less" scoped>
@@ -40,5 +144,46 @@ const handleClick = (tab, event) => {
   &-tab {
     padding: 16px;
   }
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.summary-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border: 1px solid #ebeef5;
+}
+
+.summary-label {
+  color: #909399;
+  font-size: 14px;
+}
+
+.summary-value {
+  margin: 10px 0 8px;
+  color: #303133;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.summary-desc {
+  color: #606266;
+  font-size: 13px;
+}
+
+.income-card {
+  background: linear-gradient(135deg, #ecf5ff 0%, #ffffff 100%);
+}
+
+.dashboard-tip {
+  margin-bottom: 16px;
+  color: #606266;
+  font-size: 13px;
 }
 </style>

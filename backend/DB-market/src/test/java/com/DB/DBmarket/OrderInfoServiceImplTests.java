@@ -160,6 +160,26 @@ class OrderInfoServiceImplTests {
     }
 
     @Test
+    void driverCanRejectAssignedOrderBackToDriverPool() {
+        CurrentUser driver = new CurrentUser("driver001", "driver", "driver");
+        OrderInfo deliveringOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 1, 1, 30);
+        deliveringOrder.setDriverId("driver001");
+        OrderInfo waitingOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 3, 1, 30);
+
+        when(orderInfoMapper.getOrdersById("order-1"))
+                .thenReturn(Collections.singletonList(deliveringOrder))
+                .thenReturn(Collections.singletonList(waitingOrder));
+        when(orderInfoMapper.updateOrderStateAndClearDriver(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(1);
+
+        OrderInfo result = orderInfoService.transitionOrder(driver, "order-1", 3, null, null, null);
+
+        assertNotNull(result);
+        assertEquals(Integer.valueOf(3), result.getState());
+        verify(orderInfoMapper).updateOrderStateAndClearDriver(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull());
+    }
+
+    @Test
     void customerCanConfirmDeliveredOrder() {
         CurrentUser customer = new CurrentUser("cus001", "customer", "cus");
         OrderInfo deliveringOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 1, 1, 30);
@@ -345,6 +365,21 @@ class OrderInfoServiceImplTests {
                 () -> orderInfoService.transitionOrder(driver, "order-1", 1, null, null, null));
 
         assertEquals("Only a driver can take a waiting delivery order.", ex.getMessage());
+    }
+
+    @Test
+    void otherDriverCannotRejectAssignedOrder() {
+        CurrentUser driver = new CurrentUser("driver002", "driver", "driver");
+        OrderInfo deliveringOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 1, 1, 30);
+        deliveringOrder.setDriverId("driver001");
+
+        when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(deliveringOrder));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(driver, "order-1", 3, null, null, null));
+
+        assertEquals("Only the assigned driver can reject a delivering order.", ex.getMessage());
+        verify(orderInfoMapper, never()).updateOrderStateAndClearDriver(eq("order-1"), eq(3), anyString(), isNull(), isNull(), isNull(), isNull());
     }
 
     @Test

@@ -184,6 +184,16 @@
           >Take-Order</el-button
         >
         <el-button
+          type="danger"
+          v-if="
+            item.orderInfo.state == stateEnum.delivering &&
+            userInfo.type === 'driver' &&
+            item.orderInfo.driverId === userInfo.id
+          "
+          @click="rejectDriverOrder(item)"
+          >Reject Order</el-button
+        >
+        <el-button
           v-if="
             item.orderInfo.state == stateEnum.delivering &&
             userInfo.type === 'cus'
@@ -215,9 +225,9 @@
         <el-button
           type="danger"
           v-if="
-            item.orderInfo.state == stateEnum.delivering ||
-            (item.orderInfo.state == stateEnum.received &&
-              userInfo.type === 'cus')
+            (item.orderInfo.state == stateEnum.delivering ||
+              item.orderInfo.state == stateEnum.received) &&
+            userInfo.type === 'cus'
           "
           @click="updateOrder(item, -2)"
           >Ask For Returning</el-button
@@ -483,6 +493,25 @@ const cancelPreparingOrder = async (order) => {
   } catch (error) {
     if (error !== "cancel") {
       console.error("cancelPreparingOrder error", error);
+    }
+  }
+};
+
+const rejectDriverOrder = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      "Reject this delivery and return it to the waiting driver pool?",
+      "Reject Delivery",
+      {
+        confirmButtonText: "Confirm",
+        cancelButtonText: "Cancel",
+        type: "warning",
+      }
+    );
+    updateOrder(order, 3);
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("rejectDriverOrder error", error);
     }
   }
 };

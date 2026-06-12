@@ -279,14 +279,24 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         OrderInfo first = rows.get(0);
         int currentState = first.getState();
         String driverId = null;
+        boolean clearDriverId = false;
 
         if (targetState == 4) {
             if (!currentUser.isMerchant() || !currentUser.getId().equals(first.getMer()) || currentState != 0) {
                 throw new IllegalArgumentException("Only the merchant can accept a paid order for preparation.");
             }
         } else if (targetState == 3) {
-            if (!currentUser.isMerchant() || !currentUser.getId().equals(first.getMer()) || currentState != 4) {
-                throw new IllegalArgumentException("Only the merchant can send a preparing order to drivers.");
+            if (currentUser.isMerchant()) {
+                if (!currentUser.getId().equals(first.getMer()) || currentState != 4) {
+                    throw new IllegalArgumentException("Only the merchant can send a preparing order to drivers.");
+                }
+            } else if (currentUser.isDriver()) {
+                if (currentState != 1 || first.getDriverId() == null || !currentUser.getId().equals(first.getDriverId())) {
+                    throw new IllegalArgumentException("Only the assigned driver can reject a delivering order.");
+                }
+                clearDriverId = true;
+            } else {
+                throw new IllegalArgumentException("Only merchant or driver can move order to waiting delivery.");
             }
         } else if (targetState == 1) {
             if (!currentUser.isDriver() || currentState != 3) {
@@ -319,7 +329,9 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         }
 
         String now = String.valueOf(LocalDateTime.now());
-        int affected = orderInfoMapper.updateOrderState(orderId, targetState, now, driverId, null, complain, complainReason, refundReason);
+        int affected = clearDriverId
+                ? orderInfoMapper.updateOrderStateAndClearDriver(orderId, targetState, now, null, complain, complainReason, refundReason)
+                : orderInfoMapper.updateOrderState(orderId, targetState, now, driverId, null, complain, complainReason, refundReason);
         if (affected <= 0) return null;
         return orderInfoMapper.getOrdersById(orderId).get(0);
     }

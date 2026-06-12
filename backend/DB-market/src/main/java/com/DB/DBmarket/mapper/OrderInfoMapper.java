@@ -26,6 +26,9 @@ public interface OrderInfoMapper {
     @Update("<script>UPDATE order_info SET state = #{newState}, time = #{updateTime}<if test='driverId != null'>, driver_id = #{driverId}</if><if test='payTime != null'>, pay_time = #{payTime}</if><if test='complain != null'>, complain = #{complain}</if><if test='complainReason != null'>, complain_reason = #{complainReason}</if><if test='refundReason != null'>, refund_reason = #{refundReason}</if> WHERE id = #{orderId}</script>")
     int updateOrderState(@Param("orderId") String orderId, @Param("newState") int newState, @Param("updateTime") String updateTime, @Param("driverId") String driverId, @Param("payTime") String payTime, @Param("complain") String complain, @Param("complainReason") String complainReason, @Param("refundReason") String refundReason);
 
+    @Update("<script>UPDATE order_info SET state = #{newState}, time = #{updateTime}, driver_id = NULL<if test='payTime != null'>, pay_time = #{payTime}</if><if test='complain != null'>, complain = #{complain}</if><if test='complainReason != null'>, complain_reason = #{complainReason}</if><if test='refundReason != null'>, refund_reason = #{refundReason}</if> WHERE id = #{orderId}</script>")
+    int updateOrderStateAndClearDriver(@Param("orderId") String orderId, @Param("newState") int newState, @Param("updateTime") String updateTime, @Param("payTime") String payTime, @Param("complain") String complain, @Param("complainReason") String complainReason, @Param("refundReason") String refundReason);
+
     @Select("SELECT * FROM order_info")
     List<OrderInfo> getAllOrders();
 
