@@ -10,6 +10,7 @@ front/.cache/
 # Java / Maven build output
 backend/**/target/
 backend/**/.mvn/wrapper/maven-wrapper.jar
+backend/DB-market/.m2/
 
 # Logs
 *.log
