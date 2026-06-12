@@ -156,4 +156,7 @@ public interface OrderInfoMapper {
 
     @Select("select COALESCE(sum(account), 0) from market.order_info where id=#{orderId}")
     Integer getOrderAccount(String orderId);
+
+    @Select("select count(*) from market.order_info where driver_id=#{driverId} and state=1")
+    int countDriverDeliveringOrders(@Param("driverId") String driverId);
 }

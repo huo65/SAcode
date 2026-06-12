@@ -179,7 +179,8 @@
           v-if="
             item.orderInfo.state == stateEnum.missOrder &&
             userInfo.type === 'driver' &&
-            isDriverOnline
+            isDriverOnline &&
+            !isDriverBusy
           "
           @click="updateOrder(item, 1)"
           >Take-Order</el-button
@@ -399,6 +400,13 @@ const stateLabel = Object.keys(stateEnum).reduce((cur, text) => {
 const isDriverOnline = computed(
   () => userInfo.value.driverWorkStatus !== "rest"
 );
+const isDriverBusy = computed(() =>
+  orderList.value.some(
+    (item) =>
+      item?.orderInfo?.state === stateEnum.delivering &&
+      item?.orderInfo?.driverId === userInfo.value.id
+  )
+);
 
 console.log("###stateOptions", stateOptions);
 
@@ -449,6 +457,14 @@ const updateOrder = (order, wantedState, extraPayload = {}) => {
     !isDriverOnline.value
   ) {
     ElMessage.warning("Driver is resting now. Switch to online before taking orders.");
+    return;
+  }
+  if (
+    userInfo.value.type === "driver" &&
+    wantedState === stateEnum.delivering &&
+    isDriverBusy.value
+  ) {
+    ElMessage.warning("Driver is busy delivering another order.");
     return;
   }
 

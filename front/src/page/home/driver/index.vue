@@ -7,6 +7,7 @@
         <el-tag :type="isDriverOnline ? 'success' : 'info'">
           {{ isDriverOnline ? "在线接单" : "休息中" }}
         </el-tag>
+        <el-tag v-if="isDriverBusy" type="warning">忙碌配送中</el-tag>
       </div>
       <el-button
         :type="isDriverOnline ? 'warning' : 'primary'"
@@ -73,6 +74,7 @@ const MIN_DELIVERY_FEE = 4;
 const isDriverOnline = computed(
   () => userInfo.value.driverWorkStatus !== "rest"
 );
+const isDriverBusy = computed(() => orderSummary.value.delivering > 0);
 
 const calcDeliveryIncome = (item) => {
   const amount = Number(item?.orderInfo?.account || 0);

@@ -302,6 +302,9 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             if (!currentUser.isDriver() || currentState != 3) {
                 throw new IllegalArgumentException("Only a driver can take a waiting delivery order.");
             }
+            if (orderInfoMapper.countDriverDeliveringOrders(currentUser.getId()) > 0) {
+                throw new IllegalArgumentException("Driver already has an active delivery order.");
+            }
             driverId = currentUser.getId();
         } else if (targetState == 2) {
             if (!currentUser.isCustomer() || !currentUser.getId().equals(first.getCus()) || currentState != 1) {

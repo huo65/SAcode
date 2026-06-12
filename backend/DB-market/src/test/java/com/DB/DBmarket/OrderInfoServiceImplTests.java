@@ -149,6 +149,7 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1"))
                 .thenReturn(Collections.singletonList(waitingOrder))
                 .thenReturn(Collections.singletonList(updatedOrder));
+        when(orderInfoMapper.countDriverDeliveringOrders("driver001")).thenReturn(0);
         when(orderInfoMapper.updateOrderState(eq("order-1"), eq(1), anyString(), eq("driver001"), isNull(), isNull(), isNull(), isNull()))
                 .thenReturn(1);
 
@@ -157,6 +158,21 @@ class OrderInfoServiceImplTests {
         assertNotNull(result);
         assertEquals("driver001", result.getDriverId());
         assertEquals(Integer.valueOf(1), result.getState());
+    }
+
+    @Test
+    void driverCannotTakeSecondOrderWhileBusyDelivering() {
+        CurrentUser driver = new CurrentUser("driver001", "driver", "driver");
+        OrderInfo waitingOrder = buildOrder("order-2", "cus001", "mer001", "prod001", 3, 1, 30);
+
+        when(orderInfoMapper.getOrdersById("order-2")).thenReturn(Collections.singletonList(waitingOrder));
+        when(orderInfoMapper.countDriverDeliveringOrders("driver001")).thenReturn(1);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(driver, "order-2", 1, null, null, null));
+
+        assertEquals("Driver already has an active delivery order.", ex.getMessage());
+        verify(orderInfoMapper, never()).updateOrderState(eq("order-2"), eq(1), anyString(), eq("driver001"), isNull(), isNull(), isNull(), isNull());
     }
 
     @Test
