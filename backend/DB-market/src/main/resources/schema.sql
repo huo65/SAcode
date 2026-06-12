@@ -161,6 +161,35 @@ CREATE TABLE IF NOT EXISTS after_sale_ticket (
     INDEX idx_after_sale_order (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='售后工单表';
 
+CREATE TABLE IF NOT EXISTS operation_permission (
+    role_code VARCHAR(32) NOT NULL COMMENT '角色编码',
+    permission_key VARCHAR(128) NOT NULL COMMENT '权限键',
+    permission_name VARCHAR(128) NOT NULL COMMENT '权限名称',
+    permission_type VARCHAR(32) NOT NULL COMMENT '权限类型 menu/action',
+    scope_code VARCHAR(32) NOT NULL COMMENT 'admin/merchant',
+    enabled TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0禁用',
+    updated_time DATETIME NOT NULL COMMENT '更新时间',
+    PRIMARY KEY (role_code, permission_key),
+    INDEX idx_operation_permission_scope (scope_code, permission_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='课堂展示版权限配置表';
+
+CREATE TABLE IF NOT EXISTS operation_audit_log (
+    id VARCHAR(64) PRIMARY KEY COMMENT '日志id',
+    actor_id VARCHAR(64) COMMENT '操作人id',
+    actor_name VARCHAR(128) COMMENT '操作人名称',
+    actor_type VARCHAR(32) COMMENT '操作人角色',
+    action_type VARCHAR(64) NOT NULL COMMENT '动作类型',
+    target_type VARCHAR(64) COMMENT '目标类型',
+    target_id VARCHAR(64) COMMENT '目标id',
+    target_name VARCHAR(128) COMMENT '目标名称',
+    detail TEXT COMMENT '动作描述',
+    result VARCHAR(32) NOT NULL COMMENT '处理结果',
+    created_time DATETIME NOT NULL COMMENT '创建时间',
+    INDEX idx_operation_audit_actor (actor_id),
+    INDEX idx_operation_audit_type (action_type),
+    INDEX idx_operation_audit_time (created_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='课堂展示版操作审计日志表';
+
 -- Order Review table
 CREATE TABLE IF NOT EXISTS order_review (
     order_id VARCHAR(64) PRIMARY KEY COMMENT '订单id',
@@ -200,3 +229,29 @@ INSERT IGNORE INTO address (addr_id, usr, location) VALUES
 
 INSERT IGNORE INTO restaurant (id, merchant_id, name, logo, cover, description, notice, status, business_hours, delivery_fee, min_order_amount, service_radius_km, delivery_eta_minutes, feature_tags, menu_categories, address_text, delivery_policy, promo_text) VALUES
     ('3', '3', 'merchant精选门店', 'default_avatar', 'default_avatar', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠');
+
+INSERT IGNORE INTO operation_permission (role_code, permission_key, permission_name, permission_type, scope_code, enabled, updated_time) VALUES
+    ('admin', 'admin.menu.goods', '商品治理', 'menu', 'admin', 1, NOW()),
+    ('admin', 'admin.menu.order', '订单总览', 'menu', 'admin', 1, NOW()),
+    ('admin', 'admin.menu.category', '分类管理', 'menu', 'admin', 1, NOW()),
+    ('admin', 'admin.menu.afterSale', '售后工单', 'menu', 'admin', 1, NOW()),
+    ('admin', 'admin.menu.user', '用户管理', 'menu', 'admin', 1, NOW()),
+    ('admin', 'admin.menu.ops', '治理与经营', 'menu', 'admin', 1, NOW()),
+    ('admin', 'admin.action.dashboard.view', '查看平台看板', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.permission.manage', '维护权限配置', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.user.view', '查看用户列表', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.user.disable', '启停用户账号', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.product.audit', '审核商品', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.afterSale.handle', '处理售后工单', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.audit.view', '查看审计日志', 'action', 'admin', 1, NOW()),
+    ('mer', 'merchant.menu.goods', '商品管理', 'menu', 'merchant', 1, NOW()),
+    ('mer', 'merchant.menu.order', '订单处理', 'menu', 'merchant', 1, NOW()),
+    ('mer', 'merchant.menu.afterSale', '售后处理', 'menu', 'merchant', 1, NOW()),
+    ('mer', 'merchant.menu.store', '门店资料', 'menu', 'merchant', 1, NOW()),
+    ('mer', 'merchant.menu.info', '账号信息', 'menu', 'merchant', 1, NOW()),
+    ('mer', 'merchant.menu.ops', '经营分析', 'menu', 'merchant', 1, NOW()),
+    ('mer', 'merchant.action.dashboard.view', '查看经营看板', 'action', 'merchant', 1, NOW()),
+    ('mer', 'merchant.action.report.export', '导出经营报表', 'action', 'merchant', 1, NOW()),
+    ('mer', 'merchant.action.afterSale.handle', '处理售后工单', 'action', 'merchant', 1, NOW()),
+    ('mer', 'merchant.action.store.manage', '维护门店资料', 'action', 'merchant', 1, NOW()),
+    ('mer', 'merchant.action.audit.view', '查看操作日志', 'action', 'merchant', 1, NOW());

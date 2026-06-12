@@ -5,6 +5,7 @@ import com.DB.DBmarket.pojo.Result;
 import com.DB.DBmarket.pojo.SearchProductRequest;
 import com.DB.DBmarket.pojo.utils.CurrentUser;
 import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
+import com.DB.DBmarket.service.OperationsService;
 import com.DB.DBmarket.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,8 @@ public class ProductController {
 
     @Resource(name = "ProductService")
     private ProductService productService;
+    @Resource(name = "OperationsService")
+    private OperationsService operationsService;
 
     @PostMapping("/add")
     public Result addProduct(@RequestBody Product product) {
@@ -116,9 +119,14 @@ public class ProductController {
     public Result checkProduct(@RequestParam("id") String id,@RequestParam("state") Integer state){
         CurrentUser currentUser = CurrentUserHolder.require();
         if (!currentUser.isAdmin()) return Result.error("Only admin can check products.");
+        if (!operationsService.hasPermission(currentUser, "admin.action.product.audit")) {
+            return Result.error("Admin permission denied: admin.action.product.audit");
+        }
         log.info("admin check products");
         if (state < -1 || state > 1) return Result.error("Invalid product state!");
         productService.updateState(id, state);
+        operationsService.recordAudit(currentUser, "PRODUCT_AUDIT", "product", id, id,
+                "商品审核状态更新为 " + state, "SUCCESS");
         return Result.success();
     }
 }

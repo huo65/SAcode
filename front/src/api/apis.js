@@ -166,6 +166,37 @@ export const AfterSale = {
     },
 };
 
+export const Ops = {
+    me: {
+        method: "get",
+        url: `${host}/ops/me`,
+    },
+    permissionList: {
+        method: "get",
+        url: `${host}/ops/permission/list`,
+    },
+    permissionUpdate: {
+        method: "post",
+        url: `${host}/ops/permission/update`,
+    },
+    adminDashboard: {
+        method: "get",
+        url: `${host}/ops/admin/dashboard`,
+    },
+    merchantDashboard: {
+        method: "get",
+        url: `${host}/ops/merchant/dashboard`,
+    },
+    merchantExport: {
+        method: "get",
+        url: `${host}/ops/merchant/export`,
+    },
+    auditList: {
+        method: "get",
+        url: `${host}/ops/audit/list`,
+    },
+};
+
 // 订单相关接口信息
 export const Order = {
     // 创建订单(单个)

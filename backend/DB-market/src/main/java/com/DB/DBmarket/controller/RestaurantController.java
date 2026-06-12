@@ -6,6 +6,7 @@ import com.DB.DBmarket.pojo.restaurant.RestaurantStore;
 import com.DB.DBmarket.pojo.restaurant.RestaurantSummary;
 import com.DB.DBmarket.pojo.utils.CurrentUser;
 import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
+import com.DB.DBmarket.service.OperationsService;
 import com.DB.DBmarket.service.RestaurantService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +28,8 @@ public class RestaurantController {
 
     @Resource(name = "RestaurantService")
     private RestaurantService restaurantService;
+    @Resource(name = "OperationsService")
+    private OperationsService operationsService;
 
     @GetMapping("/list")
     public Result listRestaurants(@RequestParam(required = false) String keyword,
@@ -63,6 +66,9 @@ public class RestaurantController {
         if (!currentUser.isMerchant() && !currentUser.isAdmin()) {
             return Result.error("Only merchant can manage restaurant info.");
         }
+        if (currentUser.isMerchant() && !operationsService.hasPermission(currentUser, "merchant.action.store.manage")) {
+            return Result.error("Merchant permission denied: merchant.action.store.manage");
+        }
         RestaurantStore store = restaurantService.getManageInfo(currentUser.getId());
         if (store == null) {
             return Result.error("restaurant not found");
@@ -78,7 +84,13 @@ public class RestaurantController {
         if (!currentUser.isMerchant() && !currentUser.isAdmin()) {
             return Result.error("Only merchant can update restaurant info.");
         }
+        if (currentUser.isMerchant() && !operationsService.hasPermission(currentUser, "merchant.action.store.manage")) {
+            return Result.error("Merchant permission denied: merchant.action.store.manage");
+        }
         restaurantService.updateRestaurantInfo(currentUser.getId(), store);
+        operationsService.recordAudit(currentUser, "STORE_UPDATE", "restaurant", currentUser.getId(),
+                store == null ? currentUser.getId() : store.getName(),
+                "更新门店资料", "SUCCESS");
         return Result.success();
     }
 }

@@ -7,6 +7,7 @@ import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
 import com.DB.DBmarket.pojo.utils.JwtUtils;
 import com.DB.DBmarket.pojo.utils.PayParmBody;
 import com.DB.DBmarket.service.AddressService;
+import com.DB.DBmarket.service.OperationsService;
 import com.DB.DBmarket.service.OrderInfoService;
 import com.DB.DBmarket.service.UserService;
 import com.alibaba.druid.util.StringUtils;
@@ -32,6 +33,8 @@ public class UserController {
     private AddressService addressService;
     @Resource
     private AddressMapper addressMapper;
+    @Resource(name = "OperationsService")
+    private OperationsService operationsService;
 
     @PostMapping("/order")
     public Result UserInOrder(@RequestBody OrderInfo orderInfo) {
@@ -161,6 +164,9 @@ public class UserController {
     public Result listUsers(@RequestParam(required = false) String type) {
         CurrentUser currentUser = CurrentUserHolder.require();
         if (!currentUser.isAdmin()) return Result.error("Only admin can list users.");
+        if (!operationsService.hasPermission(currentUser, "admin.action.user.view")) {
+            return Result.error("Admin permission denied: admin.action.user.view");
+        }
         return Result.success(userService.listUsers(type));
     }
 
@@ -168,12 +174,21 @@ public class UserController {
     public Result updateDisabled(@RequestBody Map<String, Object> request) {
         CurrentUser currentUser = CurrentUserHolder.require();
         if (!currentUser.isAdmin()) return Result.error("Only admin can update user status.");
+        if (!operationsService.hasPermission(currentUser, "admin.action.user.disable")) {
+            return Result.error("Admin permission denied: admin.action.user.disable");
+        }
         String id = (String) request.get("id");
         Integer disabled = (Integer) request.get("disabled");
         if (id == null || disabled == null || (disabled != 0 && disabled != 1)) {
             return Result.error("Invalid user status request.");
         }
-        return userService.updateDisabled(id, disabled) ? Result.success() : Result.error("Update user status failed.");
+        boolean success = userService.updateDisabled(id, disabled);
+        if (success) {
+            operationsService.recordAudit(currentUser, "USER_STATUS_UPDATE", "user", id, id,
+                    "账号状态切换为 " + disabled, "SUCCESS");
+            return Result.success();
+        }
+        return Result.error("Update user status failed.");
     }
 
 }

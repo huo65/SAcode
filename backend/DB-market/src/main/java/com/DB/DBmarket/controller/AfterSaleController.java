@@ -5,6 +5,7 @@ import com.DB.DBmarket.pojo.afterSale.AfterSaleTicketView;
 import com.DB.DBmarket.pojo.utils.CurrentUser;
 import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
 import com.DB.DBmarket.service.AfterSaleService;
+import com.DB.DBmarket.service.OperationsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,8 @@ import java.util.Map;
 public class AfterSaleController {
     @Resource
     private AfterSaleService afterSaleService;
+    @Resource(name = "OperationsService")
+    private OperationsService operationsService;
 
     @PostMapping("/create")
     public Result create(@RequestBody Map<String, String> request) {
@@ -55,6 +58,12 @@ public class AfterSaleController {
     @PostMapping("/update")
     public Result update(@RequestBody Map<String, String> request) {
         CurrentUser currentUser = CurrentUserHolder.require();
+        if (currentUser.isAdmin() && !operationsService.hasPermission(currentUser, "admin.action.afterSale.handle")) {
+            return Result.error("Admin permission denied: admin.action.afterSale.handle");
+        }
+        if (currentUser.isMerchant() && !operationsService.hasPermission(currentUser, "merchant.action.afterSale.handle")) {
+            return Result.error("Merchant permission denied: merchant.action.afterSale.handle");
+        }
         try {
             AfterSaleTicketView ticket = afterSaleService.updateTicket(
                     currentUser,
@@ -62,6 +71,9 @@ public class AfterSaleController {
                     request.get("status"),
                     request.get("handlerNote")
             );
+            operationsService.recordAudit(currentUser, "AFTER_SALE_UPDATE", "after_sale_ticket",
+                    request.get("id"), ticket == null ? request.get("id") : ticket.getId(),
+                    "售后状态更新为 " + request.get("status"), "SUCCESS");
             return Result.success(ticket, "After-sale ticket updated.");
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());

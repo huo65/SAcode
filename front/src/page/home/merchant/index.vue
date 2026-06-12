@@ -6,7 +6,7 @@
         <p class="eyebrow">Merchant Console</p>
         <h2>课堂展示版门店运营中心</h2>
         <p class="hero-desc">
-          统一查看商品、订单和门店资料，让顾客端看到的门店形象和商家端维护的运营信息保持一致。
+          统一查看商品、订单、门店资料与经营分析，让顾客端看到的门店形象和商家端维护的运营信息、经营数据保持一致。
         </p>
       </div>
       <div class="hero-stats">
@@ -22,12 +22,16 @@
           <span>当前标签</span>
           <strong>{{ currentTabTitle }}</strong>
         </div>
+        <div class="hero-stat">
+          <span>启用权限</span>
+          <strong>{{ enabledPermissionCount }}</strong>
+        </div>
       </div>
     </div>
 
     <el-tabs v-model="activeName" @tab-click="handleClick" class="merchant-tab">
-      <el-tab-pane :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
-      <el-tab-pane name="second">
+      <el-tab-pane v-if="hasMenu('merchant.menu.goods')" :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('merchant.menu.order')" name="second">
         <template #label>
           <el-badge :value="pendingOrderCount" :hidden="pendingOrderCount <= 0" :max="99">
             <span>{{ t("common.order") }}</span>
@@ -35,7 +39,7 @@
         </template>
         <Order />
       </el-tab-pane>
-      <el-tab-pane name="third">
+      <el-tab-pane v-if="hasMenu('merchant.menu.afterSale')" name="third">
         <template #label>
           <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
             <span>After-Sale</span>
@@ -43,8 +47,9 @@
         </template>
         <AfterSaleBoard scope="merchant" />
       </el-tab-pane>
-      <el-tab-pane label="Store" name="fourth"><StoreManage /></el-tab-pane>
-      <el-tab-pane :label="t('common.info')" name="fifth"><Info /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('merchant.menu.store')" label="Store" name="fourth"><StoreManage /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('merchant.menu.info')" :label="t('common.info')" name="fifth"><Info /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('merchant.menu.ops')" label="Ops" name="sixth"><MerchantOps /></el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -57,8 +62,9 @@ import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
 import StoreManage from "@/components/restaurant/store-manage.vue";
 import AfterSaleBoard from "@/components/after-sale/index.vue";
+import MerchantOps from "@/components/operation/merchant-ops.vue";
 import { ElNotification } from "element-plus";
-import { AfterSale, Order as OrderApi } from "@/api/apis";
+import { AfterSale, Ops, Order as OrderApi } from "@/api/apis";
 import fetch from "@/api/fetch";
 import { refreshDataFnMap, userInfo } from "@/store";
 
@@ -66,6 +72,11 @@ const { t } = useI18n();
 const activeName = ref("first");
 const pendingOrderCount = ref(0);
 const pendingTicketCount = ref(0);
+const permissionSnapshot = ref({
+  menuMap: {},
+  menuKeys: [],
+  actionKeys: [],
+});
 let pollTimer = null;
 let initialized = false;
 
@@ -75,6 +86,7 @@ const tabKeyMap = {
   "After-Sale": "AfterSale",
   Store: "Store",
   [t("common.info")]: "Info",
+  Ops: "Ops",
 };
 
 const tabNameMap = {
@@ -83,6 +95,16 @@ const tabNameMap = {
   third: "AfterSale",
   fourth: "Store",
   fifth: "Info",
+  sixth: "Ops",
+};
+
+const tabPermissionMap = {
+  first: "merchant.menu.goods",
+  second: "merchant.menu.order",
+  third: "merchant.menu.afterSale",
+  fourth: "merchant.menu.store",
+  fifth: "merchant.menu.info",
+  sixth: "merchant.menu.ops",
 };
 
 const currentTabTitle = computed(() => {
@@ -92,13 +114,44 @@ const currentTabTitle = computed(() => {
     third: "售后处理",
     fourth: "门店资料",
     fifth: "账号信息",
+    sixth: "经营分析",
   };
   return map[activeName.value] || "门店运营";
 });
 
+const enabledPermissionCount = computed(
+  () =>
+    (permissionSnapshot.value?.menuKeys?.length || 0) +
+    (permissionSnapshot.value?.actionKeys?.length || 0)
+);
+
+const hasMenu = (permissionKey) =>
+  permissionSnapshot.value?.menuMap?.[permissionKey] !== false;
+
+const ensureActiveTab = () => {
+  const candidate = Object.keys(tabPermissionMap).find((name) =>
+    hasMenu(tabPermissionMap[name])
+  );
+  if (!candidate) return;
+  if (!hasMenu(tabPermissionMap[activeName.value])) {
+    activeName.value = candidate;
+  }
+};
+
 const handleClick = (tab, event) => {
   const key = tabNameMap[tab.props.name] || tabKeyMap[tab.props.label] || tab.props.label;
   refreshDataFnMap.value?.[key]?.();
+};
+
+const loadPermissions = () => {
+  fetch(Ops.me).then((data) => {
+    permissionSnapshot.value = data || {
+      menuMap: {},
+      menuKeys: [],
+      actionKeys: [],
+    };
+    ensureActiveTab();
+  });
 };
 
 const refreshMerchantOrders = () => {
@@ -135,8 +188,10 @@ const pollPendingOrders = () => {
 };
 
 onMounted(() => {
+  loadPermissions();
   pollPendingOrders();
   pollTimer = window.setInterval(pollPendingOrders, 15000);
+  window.addEventListener("ops-permission-updated", loadPermissions);
 });
 
 onBeforeUnmount(() => {
@@ -144,6 +199,7 @@ onBeforeUnmount(() => {
     window.clearInterval(pollTimer);
     pollTimer = null;
   }
+  window.removeEventListener("ops-permission-updated", loadPermissions);
 });
 </script>
 
@@ -193,9 +249,9 @@ onBeforeUnmount(() => {
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
   gap: 12px;
-  min-width: 480px;
+  min-width: 620px;
 }
 
 .hero-stat {

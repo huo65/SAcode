@@ -6,7 +6,7 @@
         <p class="eyebrow">Platform Command</p>
         <h2>课堂展示版平台治理中心</h2>
         <p class="hero-desc">
-          统一查看商品、订单、用户和售后工单，让管理端在课堂展示中同时承担平台治理、问题处理和流程闭环的角色。
+          统一查看商品、订单、用户、售后与经营分析，让管理端在课堂展示中同时承担平台治理、问题处理、权限配置和审计追踪的角色。
         </p>
       </div>
       <div class="hero-stats">
@@ -18,13 +18,17 @@
           <span>当前标签</span>
           <strong>{{ currentTabTitle }}</strong>
         </div>
+        <div class="hero-stat">
+          <span>启用权限</span>
+          <strong>{{ enabledPermissionCount }}</strong>
+        </div>
       </div>
     </div>
     <el-tabs v-model="activeName" @tab-click="handleClick" class="admin-tab">
-      <el-tab-pane :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
-      <el-tab-pane :label="t('common.order')" name="second"><Order /></el-tab-pane>
-      <el-tab-pane :label="t('common.category')" name="third"><Category /></el-tab-pane>
-      <el-tab-pane name="fourth">
+      <el-tab-pane v-if="hasMenu('admin.menu.goods')" :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('admin.menu.order')" :label="t('common.order')" name="second"><Order /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('admin.menu.category')" :label="t('common.category')" name="third"><Category /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('admin.menu.afterSale')" name="fourth">
         <template #label>
           <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
             <span>After-Sale</span>
@@ -32,7 +36,8 @@
         </template>
         <AfterSaleBoard scope="admin" />
       </el-tab-pane>
-      <el-tab-pane :label="t('common.user')" name="fifth"><User /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('admin.menu.user')" :label="t('common.user')" name="fifth"><User /></el-tab-pane>
+      <el-tab-pane v-if="hasMenu('admin.menu.ops')" label="Ops" name="sixth"><AdminOps /></el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -45,13 +50,19 @@ import Order from "@/components/order/index.vue";
 import Category from "@/components/category/index.vue";
 import User from "@/components/user/index.vue";
 import AfterSaleBoard from "@/components/after-sale/index.vue";
-import { AfterSale } from "@/api/apis";
+import AdminOps from "@/components/operation/admin-ops.vue";
+import { AfterSale, Ops } from "@/api/apis";
 import fetch from "@/api/fetch";
-import { curStatus, refreshDataFnMap } from "@/store";
+import { refreshDataFnMap } from "@/store";
 
 const { t } = useI18n();
 const activeName = ref("first");
 const pendingTicketCount = ref(0);
+const permissionSnapshot = ref({
+  menuMap: {},
+  menuKeys: [],
+  actionKeys: [],
+});
 let pollTimer = null;
 
 const tabKeyMap = {
@@ -59,7 +70,8 @@ const tabKeyMap = {
   [t('common.order')]: 'Order',
   [t('common.category')]: 'Category',
   "After-Sale": 'AfterSale',
-  [t('common.user')]: 'User'
+  [t('common.user')]: 'User',
+  Ops: "Ops",
 };
 
 const tabNameMap = {
@@ -68,6 +80,16 @@ const tabNameMap = {
   third: "Category",
   fourth: "AfterSale",
   fifth: "User",
+  sixth: "Ops",
+};
+
+const tabPermissionMap = {
+  first: "admin.menu.goods",
+  second: "admin.menu.order",
+  third: "admin.menu.category",
+  fourth: "admin.menu.afterSale",
+  fifth: "admin.menu.user",
+  sixth: "admin.menu.ops",
 };
 
 const currentTabTitle = computed(() => {
@@ -77,13 +99,44 @@ const currentTabTitle = computed(() => {
     third: "分类管理",
     fourth: "售后工单",
     fifth: "用户管理",
+    sixth: "治理与经营",
   };
   return map[activeName.value] || "平台治理";
 });
 
+const enabledPermissionCount = computed(
+  () =>
+    (permissionSnapshot.value?.menuKeys?.length || 0) +
+    (permissionSnapshot.value?.actionKeys?.length || 0)
+);
+
+const hasMenu = (permissionKey) =>
+  permissionSnapshot.value?.menuMap?.[permissionKey] !== false;
+
+const ensureActiveTab = () => {
+  const candidate = Object.keys(tabPermissionMap).find((name) =>
+    hasMenu(tabPermissionMap[name])
+  );
+  if (!candidate) return;
+  if (!hasMenu(tabPermissionMap[activeName.value])) {
+    activeName.value = candidate;
+  }
+};
+
 const handleClick = (tab, event) => {
   const key = tabNameMap[tab.props.name] || tabKeyMap[tab.props.label] || tab.props.label;
   refreshDataFnMap.value?.[key]?.();
+};
+
+const loadPermissions = () => {
+  fetch(Ops.me).then((data) => {
+    permissionSnapshot.value = data || {
+      menuMap: {},
+      menuKeys: [],
+      actionKeys: [],
+    };
+    ensureActiveTab();
+  });
 };
 
 const pollTicketStats = () => {
@@ -93,8 +146,10 @@ const pollTicketStats = () => {
 };
 
 onMounted(() => {
+  loadPermissions();
   pollTicketStats();
   pollTimer = window.setInterval(pollTicketStats, 15000);
+  window.addEventListener("ops-permission-updated", loadPermissions);
 });
 
 onBeforeUnmount(() => {
@@ -102,6 +157,7 @@ onBeforeUnmount(() => {
     window.clearInterval(pollTimer);
     pollTimer = null;
   }
+  window.removeEventListener("ops-permission-updated", loadPermissions);
 });
 </script>
 
@@ -151,9 +207,9 @@ onBeforeUnmount(() => {
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
   gap: 12px;
-  min-width: 320px;
+  min-width: 480px;
 }
 
 .hero-stat {

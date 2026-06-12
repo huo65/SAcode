@@ -17,6 +17,7 @@ const store = createStore({
                 Restaurant: null,
                 Order: null,
                 Info: null,
+                Ops: null,
             },
         };
     },
