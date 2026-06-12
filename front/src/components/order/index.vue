@@ -178,7 +178,8 @@
           type="primary"
           v-if="
             item.orderInfo.state == stateEnum.missOrder &&
-            userInfo.type === 'driver'
+            userInfo.type === 'driver' &&
+            isDriverOnline
           "
           @click="updateOrder(item, 1)"
           >Take-Order</el-button
@@ -313,7 +314,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { computed, ref, reactive, onMounted } from "vue";
 import { Order, Review } from "@/api/apis.js";
 import fetch from "@/api/fetch.js";
 import $store, { userInfo } from "@/store";
@@ -395,6 +396,9 @@ const stateLabel = Object.keys(stateEnum).reduce((cur, text) => {
   const key = stateEnum[text];
   return { ...cur, [key]: text };
 }, {});
+const isDriverOnline = computed(
+  () => userInfo.value.driverWorkStatus !== "rest"
+);
 
 console.log("###stateOptions", stateOptions);
 
@@ -437,6 +441,14 @@ const updateOrder = (order, wantedState, extraPayload = {}) => {
   );
   if (curOrder.value.state === stateEnum.toPay) {
     detailVisible.value = true;
+    return;
+  }
+  if (
+    userInfo.value.type === "driver" &&
+    wantedState === stateEnum.delivering &&
+    !isDriverOnline.value
+  ) {
+    ElMessage.warning("Driver is resting now. Switch to online before taking orders.");
     return;
   }
 

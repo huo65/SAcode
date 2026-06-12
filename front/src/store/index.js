@@ -38,6 +38,9 @@ const store = createStore({
                 driver: "driver"
             };
             info.status = map[info.type] || "guest";
+            if (info.type === "driver" && !info.driverWorkStatus && !state.userInfo.driverWorkStatus) {
+                info.driverWorkStatus = "online";
+            }
             state.userInfo = {
                 ...state.userInfo,
                 ...info,
@@ -59,6 +62,13 @@ const store = createStore({
         },
         updataRefreshDataFnMap(state, { tabLabel, fn }) {
             state.refreshDataFnMap[tabLabel] = fn;
+        },
+        setDriverWorkStatus(state, status) {
+            state.userInfo = {
+                ...state.userInfo,
+                driverWorkStatus: status,
+            };
+            sessionStorage.setItem("userInfo", JSON.stringify(state.userInfo));
         },
     },
 });

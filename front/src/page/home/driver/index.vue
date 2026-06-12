@@ -1,6 +1,21 @@
 <template>
   <!-- driver 身份 -->
   <div class="driver">
+    <div class="status-bar">
+      <div class="status-text">
+        <span>接单状态</span>
+        <el-tag :type="isDriverOnline ? 'success' : 'info'">
+          {{ isDriverOnline ? "在线接单" : "休息中" }}
+        </el-tag>
+      </div>
+      <el-button
+        :type="isDriverOnline ? 'warning' : 'primary'"
+        @click="toggleDriverWorkStatus"
+      >
+        {{ isDriverOnline ? "切换为休息" : "切换为在线" }}
+      </el-button>
+    </div>
+
     <div class="dashboard">
       <div class="summary-card">
         <div class="summary-label">待抢单</div>
@@ -40,9 +55,10 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { ElMessage } from "element-plus";
 import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
-import { refreshDataFnMap } from "@/store";
+import $store, { refreshDataFnMap } from "@/store";
 import { userInfo } from "@/store";
 import fetch from "@/api/fetch";
 import { Order as OrderApi } from "@/api/apis";
@@ -54,6 +70,9 @@ let dashboardTimer = null;
 
 const DELIVERY_RATE = 0.1;
 const MIN_DELIVERY_FEE = 4;
+const isDriverOnline = computed(
+  () => userInfo.value.driverWorkStatus !== "rest"
+);
 
 const calcDeliveryIncome = (item) => {
   const amount = Number(item?.orderInfo?.account || 0);
@@ -109,6 +128,14 @@ const refreshDashboard = () => {
   });
 };
 
+const toggleDriverWorkStatus = () => {
+  const nextStatus = isDriverOnline.value ? "rest" : "online";
+  $store.commit("setDriverWorkStatus", nextStatus);
+  ElMessage.success(
+    nextStatus === "online" ? "已切换为在线接单" : "已切换为休息中"
+  );
+};
+
 const tabKeyMap = {
   [t('common.order')]: 'Order',
   [t('common.info')]: 'Info'
@@ -144,6 +171,25 @@ onUnmounted(() => {
   &-tab {
     padding: 16px;
   }
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #ebeef5;
+}
+
+.status-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #303133;
+  font-size: 14px;
 }
 
 .dashboard {
