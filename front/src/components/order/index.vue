@@ -27,13 +27,23 @@
       </span>
     </div>
 
-    <div v-for="item in orderList" class="item">
+    <div
+      v-for="item in orderList"
+      class="item"
+      :class="{ 'item-timeout': isDispatchTimedOut(item) }"
+    >
       <div class="content">
         <div class="title">
           <span>Order-{{ item.orderInfo.id }}</span>
           <el-tag :type="stateType[item.orderInfo.state]"
             >state: {{ stateLabel[item.orderInfo.state] }}</el-tag
           >
+          <el-tag
+            v-if="isDispatchTimedOut(item)"
+            type="danger"
+          >
+            dispatch timeout
+          </el-tag>
         </div>
         <div class="info">
           <img class="product-img" :src="item.imgList?.[0]" />
@@ -74,6 +84,15 @@
                 <div>CurrentPlace</div>
               </template>
               {{ genPlace(item) }}
+            </el-descriptions-item>
+            <el-descriptions-item
+              v-if="item.orderInfo.state === stateEnum.missOrder"
+              label-align="center"
+            >
+              <template #label>
+                <div>Dispatch SLA</div>
+              </template>
+              {{ getDispatchStatusText(item) }}
             </el-descriptions-item>
             <el-descriptions-item label-align="center">
               <template #label>
@@ -175,7 +194,7 @@
           >Cancel Order</el-button
         >
         <el-button
-          type="primary"
+          :type="isDispatchTimedOut(item) ? 'danger' : 'primary'"
           v-if="
             item.orderInfo.state == stateEnum.missOrder &&
             userInfo.type === 'driver' &&
@@ -407,6 +426,32 @@ const isDriverBusy = computed(() =>
       item?.orderInfo?.driverId === userInfo.value.id
   )
 );
+const DISPATCH_TIMEOUT_MINUTES = 10;
+
+const parseOrderTime = (timeText) => {
+  if (!timeText) return null;
+  const normalized = String(timeText).replace(" ", "T");
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getDispatchWaitMinutes = (item) => {
+  if (item?.orderInfo?.state !== stateEnum.missOrder) return 0;
+  const date = parseOrderTime(item?.orderInfo?.time);
+  if (!date) return 0;
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+};
+
+const isDispatchTimedOut = (item) =>
+  getDispatchWaitMinutes(item) >= DISPATCH_TIMEOUT_MINUTES;
+
+const getDispatchStatusText = (item) => {
+  const waitMinutes = getDispatchWaitMinutes(item);
+  if (waitMinutes >= DISPATCH_TIMEOUT_MINUTES) {
+    return `timeout ${waitMinutes - DISPATCH_TIMEOUT_MINUTES} min`;
+  }
+  return `${DISPATCH_TIMEOUT_MINUTES - waitMinutes} min left`;
+};
 
 console.log("###stateOptions", stateOptions);
 
@@ -687,6 +732,7 @@ onMounted(() => {
       margin-top: 10px;
       font-size: 20px;
       font-weight: 700;
+      gap: 10px;
 
       & > span {
         margin-left: 10px;
@@ -712,6 +758,11 @@ onMounted(() => {
       display: flex;
       justify-content: flex-end;
     }
+  }
+
+  .item-timeout {
+    border-color: #f56c6c;
+    box-shadow: 0 0 0 1px rgba(245, 108, 108, 0.12);
   }
 }
 </style>

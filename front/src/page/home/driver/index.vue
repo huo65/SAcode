@@ -21,7 +21,9 @@
       <div class="summary-card">
         <div class="summary-label">待抢单</div>
         <div class="summary-value">{{ orderSummary.waiting }}</div>
-        <div class="summary-desc">当前待骑手接单的订单</div>
+        <div class="summary-desc">
+          当前待骑手接单的订单，超时 {{ orderSummary.timeoutWaiting }} 单
+        </div>
       </div>
       <div class="summary-card">
         <div class="summary-label">配送中</div>
@@ -71,10 +73,25 @@ let dashboardTimer = null;
 
 const DELIVERY_RATE = 0.1;
 const MIN_DELIVERY_FEE = 4;
+const DISPATCH_TIMEOUT_MINUTES = 10;
 const isDriverOnline = computed(
   () => userInfo.value.driverWorkStatus !== "rest"
 );
 const isDriverBusy = computed(() => orderSummary.value.delivering > 0);
+
+const parseOrderTime = (timeText) => {
+  if (!timeText) return null;
+  const normalized = String(timeText).replace(" ", "T");
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const isDispatchTimedOut = (item) => {
+  if (item?.orderInfo?.state !== 3) return false;
+  const date = parseOrderTime(item?.orderInfo?.time);
+  if (!date) return false;
+  return (Date.now() - date.getTime()) / 60000 >= DISPATCH_TIMEOUT_MINUTES;
+};
 
 const calcDeliveryIncome = (item) => {
   const amount = Number(item?.orderInfo?.account || 0);
@@ -106,6 +123,8 @@ const orderSummary = computed(() => {
 
   return {
     waiting: driverOrders.value.filter((item) => item?.orderInfo?.state === 3)
+      .length,
+    timeoutWaiting: driverOrders.value.filter((item) => isDispatchTimedOut(item))
       .length,
     delivering: deliveringOrders.length,
     todayCompleted: completedOrders.filter((item) =>
