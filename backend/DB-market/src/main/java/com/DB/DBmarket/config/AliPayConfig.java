@@ -2,18 +2,30 @@ package com.DB.DBmarket.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 
 @Data
 @Component
-//@ConfigurationProperties(prefix = "alipay")
-@Configuration
+@ConfigurationProperties(prefix = "alipay")
 public class AliPayConfig {
-    private String appId="9021000137650695";
-    private String appPrivateKey="MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQChi8lxALQqgv+rPAm/xmDAgBunLLN1G5FxwmKeQ8rdkIiyhXdtZRcBj7ZugsavUfYICGOvuzkjIarifeZX2AYbFSnXtKHyITrFaZ3XICVuLGiXoIpkASa4c4QmNvMxFqqmRRog0MI4x+9YnjB7CYSBnszgSFPysEpOwUSVjfT5tuJD7DCzx+R/bVNP+3avLNAqWM2dB/qqT172KAqn4uy9gX8xCz3+t7xjwhDa5VLryJ4YYtexVcJ/Df6dgd6htICLbTXiI6uNxRF8yerEqNhrykxTa47pfCpYXoTDEj/D0EH9U1t7lHL07UNzkFq/fZQ9ftocwnj9+t/fP9csJQjTAgMBAAECggEAO6WnfUfrPf8cc5c5akvPEYS7sSA6KrVBIKXLT/BsCR8Cuhe5nvTCZ9suWuOChN1YYGLom8wfLq+RrwsZb7ndl0ZbKsARQ5utXZK/qty9tU5EWCf4sTAToetVEd8cMDXUUIwXN6Kc8+Yuo6PU9rju6gU+VFmgVW1uImIN9sJxf3nGb7k4jaDLJLaK8O6bRPx45/sL7wcIRFvqS0hpPHCQEGO+7k9HjzfeiGZurQkLfnpPOR/A2bcEChytWnPm3w4CtY4WUn6RW2rjL3WGFwwGZnf7pd55H4DSTG+RHtcWevUbW7/Kyrm3kVfEFfc14BQS2lKKEXfuuiQfGyWZa/txUQKBgQDgUYqDwa1TnNm8ELxhXUmBdcqTOM40WRdgRsf9LFOnYuAmI+eaksGgjGZD7daJXctRe1a5eXElj9IEgwa9v4DGnnKpZkGZQIOOn3MMKhFMI6XN1hkxCAWdfdlrWfq4ZlGH49sESJNl2LUQuGHotIH5Wwx7VpChPY3aj0G14NvvpwKBgQC4XKT/9rkp+VjAfbY/UwiBddzVdp+j9jvsaZCgskdDJLg/s9jShBE3PS+A+L2IM0NA2u0pu/0YqLnFgw410hdFLRo+87eLPtgc6wAaKOeY82BfSCtskK3yK263zQBd+mmxGRO5lQGTu3euN3RQPRvHFL9iTsDfv7f5HJHFHBei9QKBgGJW/Q2UC+N7AO10vNFGb2Ik/KEcJzJF2HypqyUvmKDqNPAjj3ZxXhd/VZn0G7hu+SKImtWHCvZ3nY/CzWLEILVyYzwmix2fbc1J08sCakDh499gO/0F0khgEsAAW20Z1iZn2u1+z7e3kHF7E9lLwStLIia0JYW6kYS+hwUwRdtDAoGBAJA9085773UapEi+UneK9G2tlGDi1ZYH0exuz3wa38x1jz4v7OUP9RQ958vFUSydxvGYF9P+Q9AmOmqA1f5f6Fr0JcO5FRJ50cYWStcsx76QNAd4RJlFPQLq3k4psy7T/BtWXmtlXH2EP+frdTJODUyeO/qjWR32Nu9NXfNUvl19AoGAMXvEqYugkNh10ovH8dUFxv8KdyO4MqH2wOIPcblge7AgV5RKyKOoBMWh1JEqxnTN7keKRn2TZmTzD95K/MelsRhsBUvHFLy0FQCXwquTcVyXcnpawI8Wd6xCYZuhq+ruPx2G4fQ51Hbq8MvpgkfD2elSiBI8NEVeqb3HqOof82E=";
-    private String alipayPublicKey =  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnqAV+4k1JKj9Q3YQvXuV/iouUz5BFA9RUzqpFl4J1Y6Als1LGiaVBPmxnwDPH1asiDGHXhduRrfPwbQZzGpK+J1Y7s64aPIV5KWmRazC15RUfVpCQ48JJF7nJodJtsxAcb10/ZstvGgusxr/T+wFV/wiEFjtXSKhQ4CH5BsxCYCzbjOT7+iVm7lx/ELV0Suc0lCVW2YyVDPF02YeeQGpPDNXtkeDIZUEfv7aRZf2SdUMP0WsCUs645tuZ2kk5kRzCeE6cxKViQwo4dd++tfXK0NBCLetcgj4Dl30/vPe/AIICUons7sxk/W+jiiCcP9gSL2oEE2XzEanwAiVboL1BQIDAQAB";
-    private String notifyUrl ="http://nrqm6b.natappfree.cc/alipay/notify";
+    private String appId;
+    private String appPrivateKey;
+    private String alipayPublicKey;
+    private String gatewayUrl = "https://openapi-sandbox.dl.alipaydev.com/gateway.do";
+    private String notifyUrl;
     private String returnUrl;
+
+    public boolean isConfigured() {
+        return hasText(appId)
+                && hasText(appPrivateKey)
+                && hasText(alipayPublicKey)
+                && !appId.contains("your_")
+                && !appPrivateKey.contains("your_")
+                && !alipayPublicKey.contains("your_");
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
 }

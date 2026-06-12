@@ -1,12 +1,11 @@
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { computed, ref, reactive, onMounted } from "vue";
 import $store, { userInfo } from "@/store";
-import axios from "axios";
 import fetch from "@/api/fetch";
 import { User } from "@/api/apis";
 import { ElMessage } from "element-plus";
 import { STATUS_MAP } from "@/constant";
-import { generateImageFromRawFile } from "@/lib/imageHelper.js";
+import { uploadImageFromRawFile } from "@/lib/imageHelper.js";
 const modifyFormVisible = ref(false);
 const modifyAddressVisible = ref(false);
 const formLabelWidth = "140px";
@@ -21,16 +20,23 @@ const chooseFile = () => {
 };
 
 // 文件上传及预览处理
-const uploadFile = (event) => {
+const uploadFile = async (event) => {
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       previewImageUrl.value = e.target.result;
     };
-    modifyData.portrait = generateImageFromRawFile(file);
-    modifyUserPortrait();
     reader.readAsDataURL(file);
+    try {
+      modifyData.portrait = await uploadImageFromRawFile(file, "avatar");
+      modifyUserPortrait();
+    } catch (error) {
+      previewImageUrl.value = null;
+      ElMessage.error(error?.message || "Upload avatar failed");
+    } finally {
+      event.target.value = "";
+    }
   }
 };
 
@@ -45,7 +51,15 @@ const modifyData = reactive({
   ...userInfo.value, // 初始化赋值为login获取到的用户信息
 });
 
-const addressData = reactive([]);
+const addressData = ref([]);
+const currentUserType = computed(() => {
+  return (
+    STATUS_MAP[userInfo.value?.type] || {
+      label: "未知身份",
+      value: userInfo.value?.type || "-",
+    }
+  );
+});
 
 const fetchAddressData = async () => {
   fetch(User.getAddress, { id: userInfo.value.id }).then((data) => {
@@ -259,7 +273,7 @@ onMounted(() => {
               <i class="el-icon-location-outline"></i>
               Type
             </template>
-            {{ STATUS_MAP[userInfo.type].value }}
+            {{ currentUserType.value }}
           </el-descriptions-item>
           <el-descriptions-item>
             <template v-slot:label> Description </template>
@@ -286,7 +300,7 @@ onMounted(() => {
           >Add Address</el-button
         >
         <!-- Address Table -->
-        <el-table :data="addressData.value" style="width: 100%">
+        <el-table :data="addressData" style="width: 100%">
           <el-table-column label="Address" width="1200">
             <template v-slot="{ row }">
               {{ row.location }}

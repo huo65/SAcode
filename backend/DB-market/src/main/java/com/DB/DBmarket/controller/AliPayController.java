@@ -1,20 +1,23 @@
 package com.DB.DBmarket.controller;
 
-import com.DB.DBmarket.pojo.OrderInfo;
 import com.DB.DBmarket.pojo.Result;
 import com.DB.DBmarket.pojo.utils.AliPay;
+import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
 import com.DB.DBmarket.service.AliPayService;
 import com.DB.DBmarket.service.OrderInfoService;
 import com.alipay.api.AlipayApiException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.relational.core.sql.In;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -26,23 +29,27 @@ public class AliPayController {
     @Resource
     private OrderInfoService orderInfoService;
 
-    @GetMapping("/pay") // &subject=xxx&traceNo=xxx&totalAmount=xxx
-    public Result pay(AliPay aliPay, HttpServletResponse httpResponse) throws IOException {
+    @GetMapping("/pay")
+    public void pay(@RequestParam String orderIds, HttpServletResponse httpResponse) throws IOException {
         log.info("pay by Alipay");
-        // 检查订单是否存在(支付宝会自动判重)
-//        if (orderInfoService.getOrderByOrderId(aliPay.getTraceNo()) == null) {
-//            return Result.error("order doesn't exist!");
-//        }
-        aliPayService.pay(aliPay, httpResponse);
-        return  Result.success();
+        List<String> orderIdList = parseOrderIds(orderIds);
+        String form = aliPayService.createPayForm(CurrentUserHolder.require(), orderIdList);
+        httpResponse.setContentType("text/html;charset=UTF-8");
+        httpResponse.getWriter().write(form);
+        httpResponse.getWriter().flush();
     }
-
 
     //支付完成以后支付宝沙箱回调接口
     @PostMapping("/notify")  // 注意这里必须是POST接口
     public Result payNotify(HttpServletRequest request) throws Exception {
         log.info("notify");
         return aliPayService.payNotify(request);
+    }
+
+    @GetMapping(value = "/return", produces = "text/html;charset=UTF-8")
+    public String payReturn(HttpServletRequest request) throws Exception {
+        log.info("return");
+        return aliPayService.payReturn(request);
     }
 
     @GetMapping("/refund")
@@ -56,12 +63,21 @@ public class AliPayController {
     }
 
     @GetMapping("/check")
-    public Result checkPaymentStatus(@RequestParam String id) {
+    public Result checkPaymentStatus(@RequestParam String orderIds) {
         log.info("check pay state");
-        List<OrderInfo> orderList = orderInfoService.getOrderByOrderId(id);
-        if (orderList == null) return Result.error("order doesn't exist!");
-        if (orderList.get(0).getState()==0) return Result.success();
-        else return Result.error("pay failure!");
+        Map<String, Object> data = new HashMap<>();
+        List<String> orderIdList = parseOrderIds(orderIds);
+        data.put("paid", orderInfoService.areOrdersPaid(orderIdList));
+        data.put("orderIds", orderIdList);
+        return Result.success(data);
+    }
+
+    private List<String> parseOrderIds(String orderIds) {
+        return Arrays.stream(orderIds.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
     }
 }
 

@@ -131,6 +131,54 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             orderInfoMapper.updateOrderState(orderId, 0, now, null, now, null, null, null);
         }
     }
+
+    @Override
+    public double calculatePayableTotal(CurrentUser currentUser, List<String> orderIdList) {
+        List<OrderInfo> rows = collectPayableRows(currentUser, orderIdList, false);
+        return rows.stream().mapToDouble(OrderInfo::getAccount).sum();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void payOrdersByExternal(CurrentUser currentUser, List<String> orderIdList, String payTime) {
+        List<OrderInfo> rows = collectPayableRows(currentUser, orderIdList, true);
+        if (rows.isEmpty()) {
+            return;
+        }
+        for (OrderInfo order : rows) {
+            int affected = productMapper.decrementStock(order.getProd(), order.getProdNum());
+            if (affected <= 0) {
+                throw new IllegalArgumentException("Insufficient stock for order " + order.getId());
+            }
+        }
+        String updateTime = payTime == null || payTime.trim().isEmpty()
+                ? String.valueOf(LocalDateTime.now())
+                : payTime;
+        for (String orderId : normalizeOrderIds(orderIdList)) {
+            orderInfoMapper.updateOrderState(orderId, 0, updateTime, null, updateTime, null, null, null);
+        }
+    }
+
+    @Override
+    public boolean areOrdersPaid(List<String> orderIdList) {
+        List<String> normalizedIds = normalizeOrderIds(orderIdList);
+        if (normalizedIds.isEmpty()) {
+            return false;
+        }
+        for (String orderId : normalizedIds) {
+            List<OrderInfo> rows = orderInfoMapper.getOrdersById(orderId);
+            if (rows == null || rows.isEmpty()) {
+                return false;
+            }
+            for (OrderInfo row : rows) {
+                if (row.getState() == null || row.getState() != 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     @Override
     public Integer pay(String id, ArrayList<Integer> prince_list, String order_id){
         double sum=0;
@@ -374,6 +422,64 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         }
         return account;
 
+    }
+
+    private List<OrderInfo> collectPayableRows(CurrentUser currentUser, List<String> orderIdList, boolean lockStock) {
+        List<String> normalizedIds = normalizeOrderIds(orderIdList);
+        if (normalizedIds.isEmpty()) {
+            throw new IllegalArgumentException("Order list is empty.");
+        }
+        List<OrderInfo> rows = new ArrayList<>();
+        Set<String> seenRows = new HashSet<>();
+        for (String orderId : normalizedIds) {
+            List<OrderInfo> orderRows = orderInfoMapper.getOrdersById(orderId);
+            if (orderRows == null || orderRows.isEmpty()) {
+                throw new IllegalArgumentException("Order does not exist: " + orderId);
+            }
+            for (OrderInfo order : orderRows) {
+                String rowKey = order.getId() + ":" + order.getProd();
+                if (seenRows.contains(rowKey)) {
+                    continue;
+                }
+                seenRows.add(rowKey);
+                if (!currentUser.isAdmin() && !currentUser.getId().equals(order.getCus())) {
+                    throw new IllegalArgumentException("No permission to pay this order.");
+                }
+                if (order.getState() != null && order.getState() == 0) {
+                    continue;
+                }
+                if (order.getState() == null || order.getState() != -1) {
+                    throw new IllegalArgumentException("Only unpaid orders can be paid.");
+                }
+                Product product = lockStock
+                        ? productMapper.getOneProductByIdForUpdate(order.getProd())
+                        : productMapper.getOneProductById(order.getProd());
+                if (product == null || product.getNumber() == null || product.getNumber() < order.getProdNum()) {
+                    throw new IllegalArgumentException("Insufficient stock for order " + orderId);
+                }
+                rows.add(order);
+            }
+        }
+        return rows;
+    }
+
+    private List<String> normalizeOrderIds(List<String> orderIdList) {
+        if (orderIdList == null) {
+            return Collections.emptyList();
+        }
+        List<String> normalizedIds = new ArrayList<>();
+        Set<String> uniqueIds = new LinkedHashSet<>();
+        for (String orderId : orderIdList) {
+            if (orderId == null) {
+                continue;
+            }
+            String normalized = orderId.trim();
+            if (!normalized.isEmpty()) {
+                uniqueIds.add(normalized);
+            }
+        }
+        normalizedIds.addAll(uniqueIds);
+        return normalizedIds;
     }
 }
 

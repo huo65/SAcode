@@ -1,16 +1,15 @@
 <template>
   <div class="qr-code">
-    <span>Scan to Pay</span>
+    <span>Select Pay Method</span>
     <el-radio-group v-model="payWay">
       <el-radio value="wechat" size="large">Wechat</el-radio>
       <el-radio value="alipay" size="large">AliPay</el-radio>
       <el-radio value="paypal" size="large">PayPal</el-radio>
     </el-radio-group>
-    <img
-      :src="payQRCodeUrl"
-      @click="payBill"
-      style="width: 200px; height: 200px"
-    />
+    <img :src="payQRCodeUrl" style="width: 200px; height: 200px" />
+    <el-button type="primary" @click="payBill">
+      {{ payWay === "alipay" ? "Open Alipay" : "Confirm Payment" }}
+    </el-button>
   </div>
 </template>
 
@@ -26,7 +25,7 @@ const payQRCodeUrlMap = {
 const payQRCodeUrl = computed(() => payQRCodeUrlMap[payWay.value]);
 
 const payBill = () => {
-  emits("pay");
+  emits("pay", payWay.value);
 };
 </script>
 

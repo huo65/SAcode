@@ -2,106 +2,105 @@ package com.DB.DBmarket.service.impl;
 
 import cn.hutool.json.JSONObject;
 import com.DB.DBmarket.config.AliPayConfig;
-import com.DB.DBmarket.pojo.OrderInfo;
 import com.DB.DBmarket.pojo.Result;
 import com.DB.DBmarket.pojo.utils.AliPay;
+import com.DB.DBmarket.pojo.utils.CurrentUser;
+import com.DB.DBmarket.pojo.utils.RandomIdGenerator;
 import com.DB.DBmarket.service.AliPayService;
 import com.DB.DBmarket.service.OrderInfoService;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.DefaultAlipayClient;
-import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePagePayRequest;
 import com.alipay.api.request.AlipayTradeRefundRequest;
 import com.alipay.api.response.AlipayTradeRefundResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
 @Service
 public class AliPayServiceImpl implements AliPayService {
-    private static final String GATEWAY_URL = "https://openapi-sandbox.dl.alipaydev.com/gateway.do";
     private static final String FORMAT = "JSON";
     private static final String CHARSET = "UTF-8";
-    //签名方式
     private static final String SIGN_TYPE = "RSA2";
+    private static final CurrentUser SYSTEM_USER = new CurrentUser("system", "system", "admin");
 
     @Resource
     private AliPayConfig aliPayConfig;
 
     @Resource
     private OrderInfoService orderInfoService;
-    @Override
-    public void pay(AliPay aliPay, HttpServletResponse httpResponse) throws IOException {
-        // 1. 创建Client，通用SDK提供的Client，负责调用支付宝的API
-        AlipayClient alipayClient = new DefaultAlipayClient(GATEWAY_URL, aliPayConfig.getAppId(),
-                aliPayConfig.getAppPrivateKey(), FORMAT, CHARSET, aliPayConfig.getAlipayPublicKey(), SIGN_TYPE);
 
-        // 2. 创建 Request并设置Request参数
-        AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();  // 发送请求的 Request类
-        request.setNotifyUrl(aliPayConfig.getNotifyUrl());
-        request.setReturnUrl(aliPayConfig.getReturnUrl());
+    @Override
+    public String createPayForm(CurrentUser currentUser, List<String> orderIdList) throws IOException {
+        validateConfig();
+        List<String> normalizedOrderIds = normalizeOrderIds(orderIdList);
+        double totalAmount = orderInfoService.calculatePayableTotal(currentUser, normalizedOrderIds);
+        if (totalAmount <= 0) {
+            throw new IllegalArgumentException("No payable orders found.");
+        }
+
+        AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();
+        if (StringUtils.hasText(aliPayConfig.getNotifyUrl()) && !aliPayConfig.getNotifyUrl().contains("your-public-domain")) {
+            request.setNotifyUrl(aliPayConfig.getNotifyUrl());
+        }
+        if (StringUtils.hasText(aliPayConfig.getReturnUrl())) {
+            request.setReturnUrl(aliPayConfig.getReturnUrl());
+        }
         JSONObject bizContent = new JSONObject();
-        bizContent.set("out_trade_no", aliPay.getTraceNo());  // 我们自己生成的订单编号
-        bizContent.set("total_amount", aliPay.getTotalAmount()); // 订单的总金额
-        bizContent.set("subject", aliPay.getSubject());   // 支付的名称
-        bizContent.set("product_code", "FAST_INSTANT_TRADE_PAY");  // 固定配置
+        bizContent.set("out_trade_no", buildTraceNo());
+        bizContent.set("total_amount", String.format(Locale.US, "%.2f", totalAmount));
+        bizContent.set("subject", buildSubject(normalizedOrderIds));
+        bizContent.set("product_code", "FAST_INSTANT_TRADE_PAY");
+        bizContent.set("passback_params", URLEncoder.encode(String.join(",", normalizedOrderIds), CHARSET));
         request.setBizContent(bizContent.toString());
 
-        // 执行请求，拿到响应的结果，返回给浏览器
-        String form = "";
         try {
-            form = alipayClient.pageExecute(request).getBody(); // 调用SDK生成表单
+            return createClient().pageExecute(request).getBody();
         } catch (AlipayApiException e) {
-            e.printStackTrace();
+            throw new IOException("Create Alipay payment form failed.", e);
         }
-        httpResponse.setContentType("text/html;charset=" + CHARSET);
-        httpResponse.getWriter().write(form);// 直接将完整的表单html输出到页面
-        httpResponse.getWriter().flush();
-        httpResponse.getWriter().close();
     }
 
     @Override
     public Result payNotify(HttpServletRequest request) throws AlipayApiException {
-        if (request.getParameter("trade_status").equals("TRADE_SUCCESS")) {
-            System.out.println("=========支付宝异步回调========");
-
-            Map<String, String> params = new HashMap<>();
-            Map<String, String[]> requestParams = request.getParameterMap();
-            for (String name : requestParams.keySet()) {
-                params.put(name, request.getParameter(name));
-                // System.out.println(name + " = " + request.getParameter(name));
-            }
-
-            String outTradeNo = params.get("out_trade_no");
-            String gmtPayment = params.get("gmt_payment");
-
-            String sign = params.get("sign");
-            String content = AlipaySignature.getSignCheckContentV1(params);
-            boolean checkSignature = AlipaySignature.rsa256CheckContent(content, sign, aliPayConfig.getAlipayPublicKey(), "UTF-8"); // 验证签名
-            // 支付宝验签
-            if (checkSignature) {
-                // 验签通过
-                System.out.println("交易名称: " + params.get("subject"));
-                System.out.println("交易状态: " + params.get("trade_status"));
-                System.out.println("支付宝交易凭证号: " + params.get("trade_no"));
-                System.out.println("商户订单号: " + params.get("out_trade_no"));
-                System.out.println("交易金额: " + params.get("total_amount"));
-                System.out.println("买家在支付宝唯一id: " + params.get("buyer_id"));
-                System.out.println("买家付款时间: " + params.get("gmt_payment"));
-                System.out.println("买家付款金额: " + params.get("buyer_pay_amount"));
-                // 订单更新
-                orderInfoService.updateOrderState1(outTradeNo,0, gmtPayment,"0","","");
-            }
+        Map<String, String> params = collectParams(request);
+        if (!verifySignature(params)) {
+            return Result.error("Invalid Alipay signature.");
+        }
+        String tradeStatus = params.get("trade_status");
+        if ("TRADE_SUCCESS".equals(tradeStatus) || "TRADE_FINISHED".equals(tradeStatus)) {
+            List<String> orderIds = parseOrderIds(params.get("passback_params"));
+            orderInfoService.payOrdersByExternal(SYSTEM_USER, orderIds, params.get("gmt_payment"));
             return Result.success();
         }
-        System.out.println("=========支付失败或其他状态========");
         return Result.error("pay or other error!");
+    }
+
+    @Override
+    public String payReturn(HttpServletRequest request) throws Exception {
+        Map<String, String> params = collectParams(request);
+        if (!verifySignature(params)) {
+            return buildReturnPage(false, "Payment verification failed.");
+        }
+        String tradeStatus = params.get("trade_status");
+        if ("TRADE_SUCCESS".equals(tradeStatus) || "TRADE_FINISHED".equals(tradeStatus)) {
+            List<String> orderIds = parseOrderIds(params.get("passback_params"));
+            orderInfoService.payOrdersByExternal(SYSTEM_USER, orderIds, params.get("gmt_payment"));
+            return buildReturnPage(true, "Payment completed successfully.");
+        }
+        return buildReturnPage(false, "Payment was not completed.");
     }
 
     @Override
@@ -117,40 +116,115 @@ public class AliPayServiceImpl implements AliPayService {
 //            }
 //        }
 
-
-        // 1. 创建Client，通用SDK提供的Client，负责调用支付宝的API
-        AlipayClient alipayClient = new DefaultAlipayClient(GATEWAY_URL,
-                aliPayConfig.getAppId(), aliPayConfig.getAppPrivateKey(), FORMAT, CHARSET,
-                aliPayConfig.getAlipayPublicKey(), SIGN_TYPE);
-        // 2. 创建 Request，设置参
+        validateConfig();
+        AlipayClient alipayClient = createClient();
         AlipayTradeRefundRequest request = new AlipayTradeRefundRequest();
         JSONObject bizContent = new JSONObject();
-        //bizContent.set("trade_no", aliPay.getAlipayTraceNo());  // 支付宝回调的订单流水号
-        bizContent.set("refund_amount", aliPay.getTotalAmount());  // 订单的总金额
-        bizContent.set("out_trade_no", aliPay.getTraceNo());   //  我的订单编号
-
-        // 返回参数选项，按需传入
-        //JSONArray queryOptions = new JSONArray();
-        //queryOptions.add("refund_detail_item_list");
-        //bizContent.put("query_options", queryOptions);
-
+        bizContent.set("refund_amount", aliPay.getTotalAmount());
+        bizContent.set("out_trade_no", aliPay.getTraceNo());
         request.setBizContent(bizContent.toString());
 
-        // 3. 执行请求
         AlipayTradeRefundResponse response = alipayClient.execute(request);
-        if (response.isSuccess()) {  // 退款成功，isSuccess 为true
+        if (response.isSuccess()) {
             System.out.println("调用成功");
 
-            OrderInfo orderInfo = orderInfoService.getOrderByOrderId(aliPay.getTraceNo()).get(0);
-            String complain = orderInfo.getComplain();
-            // 4. 更新数据库状态
-            orderInfoService.updateOrderState1(aliPay.getTraceNo(),-3, String.valueOf(LocalDateTime.now()), complain, "", refundReason);
+            String payTime = String.valueOf(LocalDateTime.now());
+            orderInfoService.updateOrderState1(aliPay.getTraceNo(),-3, payTime, null, "", refundReason);
 
             return Result.success();
-        } else {   // 退款失败，isSuccess 为false
+        } else {
             System.out.println(response.getBody());
             return Result.error(response.getBody());
         }
     }
 
+    private AlipayClient createClient() {
+        return new DefaultAlipayClient(
+                aliPayConfig.getGatewayUrl(),
+                aliPayConfig.getAppId(),
+                aliPayConfig.getAppPrivateKey(),
+                FORMAT,
+                CHARSET,
+                aliPayConfig.getAlipayPublicKey(),
+                SIGN_TYPE
+        );
+    }
+
+    private void validateConfig() {
+        if (!aliPayConfig.isConfigured()) {
+            throw new IllegalStateException("AliPay sandbox config is incomplete. Please configure appId, appPrivateKey and alipayPublicKey.");
+        }
+        if (!StringUtils.hasText(aliPayConfig.getReturnUrl())) {
+            throw new IllegalStateException("AliPay returnUrl is required.");
+        }
+    }
+
+    private String buildTraceNo() {
+        return "ALI" + RandomIdGenerator.getRandomId() + System.currentTimeMillis();
+    }
+
+    private String buildSubject(List<String> orderIds) {
+        return "DB Market Orders(" + orderIds.size() + ")";
+    }
+
+    private Map<String, String> collectParams(HttpServletRequest request) {
+        return request.getParameterMap().entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> request.getParameter(entry.getKey())
+                ));
+    }
+
+    private boolean verifySignature(Map<String, String> params) throws AlipayApiException {
+        return com.alipay.api.internal.util.AlipaySignature.rsaCheckV1(
+                params,
+                aliPayConfig.getAlipayPublicKey(),
+                CHARSET,
+                SIGN_TYPE
+        );
+    }
+
+    private List<String> parseOrderIds(String passbackParams) {
+        List<String> orderIds = new ArrayList<>();
+        if (!StringUtils.hasText(passbackParams)) {
+            return orderIds;
+        }
+        String decoded;
+        try {
+            decoded = URLDecoder.decode(passbackParams, CHARSET);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Decode passback_params failed.", e);
+        }
+        for (String orderId : decoded.split(",")) {
+            String normalized = orderId == null ? "" : orderId.trim();
+            if (!normalized.isEmpty()) {
+                orderIds.add(normalized);
+            }
+        }
+        return orderIds;
+    }
+
+    private List<String> normalizeOrderIds(List<String> orderIdList) {
+        LinkedHashSet<String> uniqueIds = new LinkedHashSet<>();
+        if (orderIdList != null) {
+            for (String orderId : orderIdList) {
+                if (orderId != null && !orderId.trim().isEmpty()) {
+                    uniqueIds.add(orderId.trim());
+                }
+            }
+        }
+        return new ArrayList<>(uniqueIds);
+    }
+
+    private String buildReturnPage(boolean success, String message) {
+        String title = success ? "Payment Success" : "Payment Failed";
+        String color = success ? "#67c23a" : "#f56c6c";
+        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + title + "</title></head>"
+                + "<body style=\"font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f5f7fa;\">"
+                + "<div style=\"padding:32px 40px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.08);text-align:center;\">"
+                + "<h2 style=\"margin:0 0 12px;color:" + color + ";\">" + title + "</h2>"
+                + "<p style=\"margin:0 0 20px;color:#606266;\">" + message + "</p>"
+                + "<p style=\"margin:0;color:#909399;font-size:12px;\">This window will close automatically.</p>"
+                + "</div><script>setTimeout(function(){window.close();},1500);</script></body></html>";
+    }
 }

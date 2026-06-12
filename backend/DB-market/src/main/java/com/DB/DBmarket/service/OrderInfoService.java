@@ -15,6 +15,12 @@ public interface OrderInfoService {
 
     void payOrders(CurrentUser currentUser, List<String> orderIdList);
 
+    double calculatePayableTotal(CurrentUser currentUser, List<String> orderIdList);
+
+    void payOrdersByExternal(CurrentUser currentUser, List<String> orderIdList, String payTime);
+
+    boolean areOrdersPaid(List<String> orderIdList);
+
     OrderList getOrderInfo(String id, Integer state, Integer timeOrder);
 
     List<Product> getProductList(String productId);

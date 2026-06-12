@@ -11,6 +11,10 @@ const STATUS_MAP = {
     label: "顾客",
     value: "customer",
   },
+  driver: {
+    label: "骑手",
+    value: "driver",
+  },
 };
 
 export { STATUS_MAP };

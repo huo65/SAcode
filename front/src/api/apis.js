@@ -176,6 +176,11 @@ export const Order = {
         method: "get",
         url: `${host}/order/filter`,
     },
+
+    alipayCheck: {
+        method: "get",
+        url: `${host}/alipay/check`,
+    },
 };
 
 export const Cart = {
@@ -197,3 +202,23 @@ export const Cart = {
         url: `${host}/cart/makeOrder`,
     },
 };
+
+export const Storage = {
+    upload: {
+        method: "post",
+        url: `${host}/storage/upload`,
+    },
+};
+
+export const Alipay = {
+    pay: {
+        method: "get",
+        url: `${host}/alipay/pay`,
+    },
+    check: {
+        method: "get",
+        url: `${host}/alipay/check`,
+    },
+};
+
+export { host };

@@ -13,7 +13,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
-import { curStatus, refreshDataFnMap } from "@/store";
+import { refreshDataFnMap } from "@/store";
 
 const { t } = useI18n();
 const activeName = ref("first");
@@ -30,7 +30,7 @@ const handleClick = (tab, event) => {
 </script>
 
 <style lang="less" scoped>
-.customer {
+.driver {
   margin: 20px;
   padding: 10px 20px;
 

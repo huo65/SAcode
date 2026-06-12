@@ -41,5 +41,12 @@ alipay:
   appId: your_alipay_app_id
   appPrivateKey: your_app_private_key
   alipayPublicKey: your_alipay_public_key
-  notifyUrl: http://localhost:8080/alipay/notify
-  returnUrl:
+  gatewayUrl: https://openapi-sandbox.dl.alipaydev.com/gateway.do
+  notifyUrl: https://your-public-domain/alipay/notify
+  returnUrl: http://127.0.0.1:8080/alipay/return
+
+storage:
+  provider: local
+  local:
+    baseDir: ./data/storage
+    publicUrlPrefix: http://127.0.0.1:8080/storage

@@ -31,6 +31,7 @@ backend/DB-market/src/main/resources/application.yml
 # IDE / editor files
 .idea/
 .vscode/
+.trae/
 *.iml
 *.ipr
 *.iws

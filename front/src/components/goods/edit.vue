@@ -76,7 +76,10 @@ import { ElMessage } from "element-plus";
 import fetch from "@/api/fetch.js";
 import { Product } from "@/api/apis.js";
 import { userInfo } from "@/store";
-import { generateImageListFromRawFiles } from "@/lib/imageHelper";
+import {
+  getFileNameFromUrl,
+  uploadImageListFromRawFiles,
+} from "@/lib/imageHelper";
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -87,7 +90,6 @@ const props = defineProps({
     default: null,
   },
 });
-console.log(props.productInfo, "@@");
 /* 商品信息 */
 const productInfoRef = ref();
 const productInfoFormDefault = {
@@ -127,9 +129,7 @@ const fileList = ref([]);
 const beforeUpload = () => {
   return false;
 };
-const handleImagesChange = (uploadFile, uploadFiles) => {
-  uploadFiles.push(uploadFile);
-};
+const handleImagesChange = () => {};
 
 const handleExceed = () => {
   ElMessage.error("No more than 3 pictures");
@@ -138,30 +138,50 @@ const handleExceed = () => {
 const emit = defineEmits(["close"]);
 const close = () => {
   emit("close");
-  Object.assign(productInfoForm, productInfoFormDefault);
+  productInfoForm.value = { ...productInfoFormDefault };
   fileList.value = [];
 };
+
+const buildExistingFileList = (imageList = []) =>
+  imageList.map((url) => ({
+    name: getFileNameFromUrl(url),
+    url,
+    status: "success",
+  }));
+
 watch(
   () => props.productInfo,
   (val) => {
     if (val?.id) {
-      productInfoForm.value = props.productInfo;
+      productInfoForm.value = {
+        ...productInfoFormDefault,
+        ...val,
+        image_list: [...(val.image_list || [])],
+      };
+      fileList.value = buildExistingFileList(val.image_list || []);
+    } else {
+      productInfoForm.value = { ...productInfoFormDefault };
+      fileList.value = [];
     }
-    console.log(val, "@");
   },
   { immediate: true, deep: true }
 );
-const submit = (productInfoRef) => {
-  console.log("fileList", fileList.value);
-  productInfoForm.value.image_list = generateImageListFromRawFiles(
-    fileList.value
-  );
-  console.log("submit", productInfoForm);
+const submit = async (productInfoRef) => {
+  const existingUrls = fileList.value
+    .filter((item) => !item.raw && item.url)
+    .map((item) => item.url);
+  const newFiles = fileList.value.filter((item) => item.raw);
 
-  productInfoRef.validate((valid, fields) => {
+  try {
+    const uploadedUrls = await uploadImageListFromRawFiles(newFiles, "product");
+    productInfoForm.value.image_list = [...existingUrls, ...uploadedUrls];
+  } catch (error) {
+    ElMessage.error(error?.message || "Upload product images failed");
+    return;
+  }
+
+  productInfoRef.validate((valid) => {
     if (valid) {
-      console.log("校验成功，发送请求");
-      console.log("###mer", userInfo.value.id);
       if (productInfoForm.value.id) {
         fetch(Product.editProductInfo, {
           ...productInfoForm.value,
