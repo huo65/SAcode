@@ -28,7 +28,7 @@
     </div>
 
     <div
-      v-for="item in orderList"
+      v-for="item in displayedOrderList"
       class="item"
       :class="{ 'item-timeout': isDispatchTimedOut(item) }"
     >
@@ -426,6 +426,9 @@ const isDriverBusy = computed(() =>
       item?.orderInfo?.driverId === userInfo.value.id
   )
 );
+const driverServiceArea = computed(() =>
+  (userInfo.value.driverServiceArea || "").trim().toLowerCase()
+);
 const DISPATCH_TIMEOUT_MINUTES = 10;
 
 const parseOrderTime = (timeText) => {
@@ -452,6 +455,27 @@ const getDispatchStatusText = (item) => {
   }
   return `${DISPATCH_TIMEOUT_MINUTES - waitMinutes} min left`;
 };
+
+const matchesDriverServiceArea = (item) => {
+  if (!driverServiceArea.value) return true;
+  if (item?.orderInfo?.driverId === userInfo.value.id) return true;
+  const haystack = [item?.delivery, item?.receive, item?.cusName, item?.merName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(driverServiceArea.value);
+};
+
+const displayedOrderList = computed(() => {
+  if (userInfo.value.type !== "driver") return orderList.value;
+  return orderList.value.filter((item) => {
+    if (item?.orderInfo?.driverId === userInfo.value.id) return true;
+    if (item?.orderInfo?.state === stateEnum.missOrder) {
+      return matchesDriverServiceArea(item);
+    }
+    return false;
+  });
+});
 
 console.log("###stateOptions", stateOptions);
 

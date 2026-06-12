@@ -8,13 +8,29 @@
           {{ isDriverOnline ? "在线接单" : "休息中" }}
         </el-tag>
         <el-tag v-if="isDriverBusy" type="warning">忙碌配送中</el-tag>
+        <el-tag v-if="driverServiceArea" type="primary">
+          服务区域: {{ driverServiceArea }}
+        </el-tag>
       </div>
-      <el-button
-        :type="isDriverOnline ? 'warning' : 'primary'"
-        @click="toggleDriverWorkStatus"
-      >
-        {{ isDriverOnline ? "切换为休息" : "切换为在线" }}
-      </el-button>
+      <div class="status-actions">
+        <el-input
+          v-model="serviceAreaInput"
+          placeholder="输入服务区域关键词"
+          clearable
+          style="width: 220px"
+          @keyup.enter="applyServiceArea"
+        />
+        <el-button @click="applyServiceArea">保存区域</el-button>
+        <el-button v-if="driverServiceArea" @click="clearServiceArea">
+          清空区域
+        </el-button>
+        <el-button
+          :type="isDriverOnline ? 'warning' : 'primary'"
+          @click="toggleDriverWorkStatus"
+        >
+          {{ isDriverOnline ? "切换为休息" : "切换为在线" }}
+        </el-button>
+      </div>
     </div>
 
     <div class="dashboard">
@@ -78,6 +94,10 @@ const isDriverOnline = computed(
   () => userInfo.value.driverWorkStatus !== "rest"
 );
 const isDriverBusy = computed(() => orderSummary.value.delivering > 0);
+const driverServiceArea = computed(
+  () => (userInfo.value.driverServiceArea || "").trim()
+);
+const serviceAreaInput = ref(userInfo.value.driverServiceArea || "");
 
 const parseOrderTime = (timeText) => {
   if (!timeText) return null;
@@ -91,6 +111,17 @@ const isDispatchTimedOut = (item) => {
   const date = parseOrderTime(item?.orderInfo?.time);
   if (!date) return false;
   return (Date.now() - date.getTime()) / 60000 >= DISPATCH_TIMEOUT_MINUTES;
+};
+
+const matchesDriverServiceArea = (item) => {
+  if (!driverServiceArea.value) return true;
+  if (item?.orderInfo?.driverId === userInfo.value.id) return true;
+  const keyword = driverServiceArea.value.toLowerCase();
+  const haystack = [item?.delivery, item?.receive, item?.cusName, item?.merName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(keyword);
 };
 
 const calcDeliveryIncome = (item) => {
@@ -122,10 +153,12 @@ const orderSummary = computed(() => {
   );
 
   return {
-    waiting: driverOrders.value.filter((item) => item?.orderInfo?.state === 3)
-      .length,
+    waiting: driverOrders.value.filter(
+      (item) =>
+        item?.orderInfo?.state === 3 && matchesDriverServiceArea(item)
+    ).length,
     timeoutWaiting: driverOrders.value.filter((item) => isDispatchTimedOut(item))
-      .length,
+      .filter((item) => matchesDriverServiceArea(item)).length,
     delivering: deliveringOrders.length,
     todayCompleted: completedOrders.filter((item) =>
       isSameDay(item?.orderInfo?.time)
@@ -155,6 +188,18 @@ const toggleDriverWorkStatus = () => {
   ElMessage.success(
     nextStatus === "online" ? "已切换为在线接单" : "已切换为休息中"
   );
+};
+
+const applyServiceArea = () => {
+  const value = serviceAreaInput.value.trim();
+  $store.commit("setDriverServiceArea", value);
+  ElMessage.success(value ? "服务区域已更新" : "已切换为全城接单");
+};
+
+const clearServiceArea = () => {
+  serviceAreaInput.value = "";
+  $store.commit("setDriverServiceArea", "");
+  ElMessage.success("已清空服务区域限制");
 };
 
 const tabKeyMap = {
@@ -211,6 +256,12 @@ onUnmounted(() => {
   gap: 12px;
   color: #303133;
   font-size: 14px;
+}
+
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .dashboard {

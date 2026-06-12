@@ -70,6 +70,13 @@ const store = createStore({
             };
             sessionStorage.setItem("userInfo", JSON.stringify(state.userInfo));
         },
+        setDriverServiceArea(state, serviceArea) {
+            state.userInfo = {
+                ...state.userInfo,
+                driverServiceArea: serviceArea,
+            };
+            sessionStorage.setItem("userInfo", JSON.stringify(state.userInfo));
+        },
     },
 });
 
