@@ -15,6 +15,10 @@
           <strong>{{ pendingOrderCount }}</strong>
         </div>
         <div class="hero-stat">
+          <span>待处理售后</span>
+          <strong>{{ pendingTicketCount }}</strong>
+        </div>
+        <div class="hero-stat">
           <span>当前标签</span>
           <strong>{{ currentTabTitle }}</strong>
         </div>
@@ -31,8 +35,16 @@
         </template>
         <Order />
       </el-tab-pane>
-      <el-tab-pane label="Store" name="third"><StoreManage /></el-tab-pane>
-      <el-tab-pane :label="t('common.info')" name="fourth"><Info /></el-tab-pane>
+      <el-tab-pane name="third">
+        <template #label>
+          <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
+            <span>After-Sale</span>
+          </el-badge>
+        </template>
+        <AfterSaleBoard scope="merchant" />
+      </el-tab-pane>
+      <el-tab-pane label="Store" name="fourth"><StoreManage /></el-tab-pane>
+      <el-tab-pane :label="t('common.info')" name="fifth"><Info /></el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -44,20 +56,23 @@ import Goods from "@/components/goods/index.vue";
 import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
 import StoreManage from "@/components/restaurant/store-manage.vue";
+import AfterSaleBoard from "@/components/after-sale/index.vue";
 import { ElNotification } from "element-plus";
-import { Order as OrderApi } from "@/api/apis";
+import { AfterSale, Order as OrderApi } from "@/api/apis";
 import fetch from "@/api/fetch";
 import { refreshDataFnMap, userInfo } from "@/store";
 
 const { t } = useI18n();
 const activeName = ref("first");
 const pendingOrderCount = ref(0);
+const pendingTicketCount = ref(0);
 let pollTimer = null;
 let initialized = false;
 
 const tabKeyMap = {
   [t("common.goods")]: "Goods",
   [t("common.order")]: "Order",
+  "After-Sale": "AfterSale",
   Store: "Store",
   [t("common.info")]: "Info",
 };
@@ -65,16 +80,18 @@ const tabKeyMap = {
 const tabNameMap = {
   first: "Goods",
   second: "Order",
-  third: "Store",
-  fourth: "Info",
+  third: "AfterSale",
+  fourth: "Store",
+  fifth: "Info",
 };
 
 const currentTabTitle = computed(() => {
   const map = {
     first: "商品管理",
     second: "订单处理",
-    third: "门店资料",
-    fourth: "账号信息",
+    third: "售后处理",
+    fourth: "门店资料",
+    fifth: "账号信息",
   };
   return map[activeName.value] || "门店运营";
 });
@@ -111,6 +128,9 @@ const pollPendingOrders = () => {
     }
     pendingOrderCount.value = nextCount;
     initialized = true;
+  });
+  fetch(AfterSale.stats, { scope: "merchant" }).then((data) => {
+    pendingTicketCount.value = Number(data?.stats?.pending || 0);
   });
 };
 
@@ -173,9 +193,9 @@ onBeforeUnmount(() => {
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
   gap: 12px;
-  min-width: 320px;
+  min-width: 480px;
 }
 
 .hero-stat {

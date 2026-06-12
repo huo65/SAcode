@@ -143,6 +143,24 @@ CREATE TABLE IF NOT EXISTS message (
     FOREIGN KEY (receiver) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息表';
 
+CREATE TABLE IF NOT EXISTS after_sale_ticket (
+    id VARCHAR(64) PRIMARY KEY COMMENT '工单id',
+    order_id VARCHAR(64) NOT NULL COMMENT '关联订单id',
+    customer_id VARCHAR(64) NOT NULL COMMENT '顾客id',
+    merchant_id VARCHAR(64) NOT NULL COMMENT '商家id',
+    type VARCHAR(32) NOT NULL COMMENT '工单类型',
+    content TEXT NOT NULL COMMENT '问题描述',
+    status VARCHAR(32) NOT NULL COMMENT '工单状态',
+    handler_id VARCHAR(64) COMMENT '处理人id',
+    handler_note TEXT COMMENT '处理备注',
+    created_time DATETIME NOT NULL COMMENT '创建时间',
+    updated_time DATETIME NOT NULL COMMENT '更新时间',
+    INDEX idx_after_sale_customer (customer_id),
+    INDEX idx_after_sale_merchant (merchant_id),
+    INDEX idx_after_sale_status (status),
+    INDEX idx_after_sale_order (order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='售后工单表';
+
 -- Order Review table
 CREATE TABLE IF NOT EXISTS order_review (
     order_id VARCHAR(64) PRIMARY KEY COMMENT '订单id',

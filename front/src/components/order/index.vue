@@ -153,6 +153,33 @@
               {{ item.orderInfo.refundReason || "-" }}
             </el-descriptions-item>
             <el-descriptions-item
+              v-if="getAfterSaleTicket(item)"
+              label-align="center"
+              :span="2"
+            >
+              <template #label>
+                <div>After-Sale</div>
+              </template>
+              <div class="review-block">
+                <div>
+                  <strong>{{ getAfterSaleTicket(item).type }}</strong>
+                  <el-tag
+                    size="small"
+                    :type="afterSaleStatusType[getAfterSaleTicket(item).status] || 'info'"
+                    style="margin-left: 8px"
+                  >
+                    {{ getAfterSaleTicket(item).status }}
+                  </el-tag>
+                </div>
+                <div class="reply-text">
+                  {{ getAfterSaleTicket(item).content }}
+                </div>
+                <div v-if="getAfterSaleTicket(item).handlerNote" class="reply-text">
+                  处理备注: {{ getAfterSaleTicket(item).handlerNote }}
+                </div>
+              </div>
+            </el-descriptions-item>
+            <el-descriptions-item
               v-if="item.reviewed"
               label-align="center"
               :span="2"
@@ -309,6 +336,15 @@
           >Ask For Returning</el-button
         >
         <el-button
+          type="warning"
+          v-if="
+            userInfo.type === 'cus' &&
+            canOpenAfterSale(item)
+          "
+          @click="openAfterSaleDialog(item)"
+          >After-Sale</el-button
+        >
+        <el-button
           v-if="
             item.orderInfo.state == stateEnum.returning &&
             userInfo.type === 'mer'
@@ -420,18 +456,54 @@
         <el-button type="primary" @click="submitIssue">Submit</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      :model-value="afterSaleVisible"
+      title="申请售后工单"
+      width="540px"
+      @close="closeAfterSaleDialog"
+    >
+      <el-form label-width="110px">
+        <el-form-item label="Order">
+          <span>{{ afterSaleForm.orderId || "-" }}</span>
+        </el-form-item>
+        <el-form-item label="Type" required>
+          <el-select v-model="afterSaleForm.type" style="width: 100%">
+            <el-option label="投诉反馈" value="投诉反馈" />
+            <el-option label="退款问题" value="退款问题" />
+            <el-option label="配送问题" value="配送问题" />
+            <el-option label="商品问题" value="商品问题" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Description" required>
+          <el-input
+            v-model="afterSaleForm.content"
+            type="textarea"
+            :rows="4"
+            maxlength="300"
+            show-word-limit
+            placeholder="请描述问题现象、期望处理方式和关键细节"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="closeAfterSaleDialog">Cancel</el-button>
+        <el-button type="primary" @click="submitAfterSale">Submit Ticket</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { computed, ref, reactive, onMounted } from "vue";
-import { Order, Review } from "@/api/apis.js";
+import { AfterSale, Order, Review } from "@/api/apis.js";
 import fetch from "@/api/fetch.js";
 import $store, { userInfo } from "@/store";
 import { ElMessage, ElMessageBox } from "element-plus";
 import Detail from "../goods/detail.vue";
 
 const orderList = ref([]);
+const afterSaleMap = ref({});
 const curOrder = ref({});
 const orderCondition = reactive({
   state: null,
@@ -512,6 +584,12 @@ const driverServiceArea = computed(() =>
   (userInfo.value.driverServiceArea || "").trim().toLowerCase()
 );
 const driverIssueReports = computed(() => userInfo.value.driverIssueReports || {});
+const afterSaleStatusType = {
+  待处理: "danger",
+  处理中: "warning",
+  已解决: "success",
+  已关闭: "info",
+};
 const DISPATCH_TIMEOUT_MINUTES = 10;
 
 const parseOrderTime = (timeText) => {
@@ -812,6 +890,35 @@ const submitReview = () => {
   });
 };
 
+const loadAfterSaleTickets = () => {
+  if (!userInfo.value?.type || userInfo.value.type === "driver") {
+    afterSaleMap.value = {};
+    return;
+  }
+  const scopeMap = {
+    cus: "customer",
+    mer: "merchant",
+    admin: "admin",
+  };
+  fetch(AfterSale.list, {
+    scope: scopeMap[userInfo.value.type],
+  }).then((data) => {
+    const nextMap = {};
+    (data?.ticketList || []).forEach((ticket) => {
+      nextMap[ticket.orderId] = ticket;
+    });
+    afterSaleMap.value = nextMap;
+  });
+};
+
+const getAfterSaleTicket = (item) => afterSaleMap.value?.[item?.orderInfo?.id] || null;
+
+const canOpenAfterSale = (item) => {
+  if (getAfterSaleTicket(item)) return false;
+  const state = item?.orderInfo?.state;
+  return [stateEnum.delivering, stateEnum.received, stateEnum.returning, stateEnum.returned].includes(state);
+};
+
 const replyVisible = ref(false);
 const replyForm = reactive({
   orderId: "",
@@ -888,8 +995,48 @@ const submitIssue = () => {
   closeIssueDialog();
 };
 
+const afterSaleVisible = ref(false);
+const afterSaleForm = reactive({
+  orderId: "",
+  type: "投诉反馈",
+  content: "",
+});
+
+const openAfterSaleDialog = (item) => {
+  afterSaleForm.orderId = item?.orderInfo?.id || "";
+  afterSaleForm.type = "投诉反馈";
+  afterSaleForm.content = "";
+  afterSaleVisible.value = true;
+};
+
+const closeAfterSaleDialog = () => {
+  afterSaleVisible.value = false;
+};
+
+const submitAfterSale = () => {
+  if (!afterSaleForm.orderId) {
+    ElMessage.error("Order is required");
+    return;
+  }
+  if (!afterSaleForm.content.trim()) {
+    ElMessage.error("Description is required");
+    return;
+  }
+  fetch(AfterSale.create, {
+    orderId: afterSaleForm.orderId,
+    type: afterSaleForm.type,
+    content: afterSaleForm.content.trim(),
+  }).then(() => {
+    ElMessage.success("After-sale ticket submitted");
+    closeAfterSaleDialog();
+    loadAfterSaleTickets();
+    getOrderList();
+  });
+};
+
 const initOrderData = () => {
   getOrderList();
+  loadAfterSaleTickets();
 };
 
 onMounted(() => {

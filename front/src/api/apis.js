@@ -147,6 +147,25 @@ export const Review = {
     },
 };
 
+export const AfterSale = {
+    create: {
+        method: "post",
+        url: `${host}/afterSale/create`,
+    },
+    list: {
+        method: "get",
+        url: `${host}/afterSale/list`,
+    },
+    update: {
+        method: "post",
+        url: `${host}/afterSale/update`,
+    },
+    stats: {
+        method: "get",
+        url: `${host}/afterSale/stats`,
+    },
+};
+
 // 订单相关接口信息
 export const Order = {
     // 创建订单(单个)
