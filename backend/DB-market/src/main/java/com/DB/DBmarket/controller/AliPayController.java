@@ -54,12 +54,8 @@ public class AliPayController {
 
     @GetMapping("/refund")
     public Result returnPay(@RequestParam String tradeNo, @RequestParam  Integer totalAmount,@RequestParam String refundReason) throws AlipayApiException {
-        log.info("refund");
-        AliPay aliPay = new AliPay();
-        aliPay.setTraceNo(tradeNo);
-        aliPay.setTotalAmount(totalAmount);
-        // 只有支付过的订单才能退款
-        return aliPayService.returnPay(aliPay, refundReason);
+        log.info("refund by Alipay is disabled in classroom wallet demo");
+        return Result.error("课堂展示版使用订单状态机触发余额退款，支付宝退款仅作为后续第三方支付扩展。");
     }
 
     @GetMapping("/check")

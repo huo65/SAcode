@@ -13,6 +13,8 @@ import com.DB.DBmarket.pojo.utils.OrderList;
 import com.DB.DBmarket.pojo.utils.ProductReturn;
 import com.DB.DBmarket.pojo.utils.RandomIdGenerator;
 import com.DB.DBmarket.service.OrderInfoService;
+import com.DB.DBmarket.service.OperationsService;
+import com.DB.DBmarket.service.WalletService;
 import org.springframework.data.relational.core.sql.In;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,54 +35,49 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     private AddressMapper addressMapper;
     @Resource
     private OrderReviewMapper orderReviewMapper;
+    @Resource(name = "WalletService")
+    private WalletService walletService;
+    @Resource(name = "OperationsService")
+    private OperationsService operationsService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean addOrder(OrderInfo orderInfo){
-        try {
-            Product product = productMapper.getOneProductById(orderInfo.getProd());
-            if (product == null) {
-                throw new IllegalArgumentException("商品不存在");
-            }
-            if (product.getState() == null || product.getState() != 1) {
-                throw new IllegalArgumentException("商品未通过审核");
-            }
-            if (orderInfo.getProdNum() == null || orderInfo.getProdNum() <= 0) {
-                throw new IllegalArgumentException("商品数量不合法");
-            }
-            if (product.getNumber() == null || product.getNumber() < orderInfo.getProdNum()) {
-                throw new IllegalArgumentException("库存不足");
-            }
-            if (orderInfo.getCus() == null || orderInfo.getRecAddr() == null) {
-                throw new IllegalArgumentException("缺少顾客或收货地址");
-            }
-            //价格全为整数...
-            Integer price= product.getPrice();
-            Integer account=price * orderInfo.getProdNum();
-            orderInfo.setAccount(account);
-            orderInfo.setTime(LocalDateTime.now());
-            orderInfo.setMer(product.getMer());
-            if (orderInfo.getState() == null) orderInfo.setState(-1);
-            //orderInfo.setMer(userMapper.getIdByName(orderInfo.getMer()));
-            List<String> merchantAddress = addressMapper.getAddress(orderInfo.getMer());
-            Random random = new Random();
-
-            orderInfo.setDeliAddr(merchantAddress.get(random.nextInt(merchantAddress.size())));
-
-            if(orderInfo.getId() != null){
-                //如果下单过该商家的商品,则使用上一次的订单ID
-                orderInfo.setId(orderInfo.getId());
-            }else{
-                //否则生成新的ID
-                String orderId = RandomIdGenerator.getRandomId();
-                orderInfo.setId(orderId);
-            }
-            orderInfoMapper.addOrder(orderInfo);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+        Product product = productMapper.getOneProductById(orderInfo.getProd());
+        if (product == null) {
+            throw new IllegalArgumentException("商品不存在");
         }
+        if (product.getState() == null || product.getState() != 1) {
+            throw new IllegalArgumentException("商品未通过审核");
+        }
+        if (orderInfo.getProdNum() == null || orderInfo.getProdNum() <= 0) {
+            throw new IllegalArgumentException("商品数量不合法");
+        }
+        if (product.getNumber() == null || product.getNumber() < orderInfo.getProdNum()) {
+            throw new IllegalArgumentException("库存不足");
+        }
+        if (orderInfo.getCus() == null || orderInfo.getRecAddr() == null) {
+            throw new IllegalArgumentException("缺少顾客或收货地址");
+        }
+        Integer price= product.getPrice();
+        Integer account=price * orderInfo.getProdNum();
+        orderInfo.setAccount(account);
+        orderInfo.setTime(LocalDateTime.now());
+        orderInfo.setMer(product.getMer());
+        if (orderInfo.getState() == null) orderInfo.setState(-1);
+        List<String> merchantAddress = addressMapper.getAddress(orderInfo.getMer());
+        if (merchantAddress == null || merchantAddress.isEmpty()) {
+            throw new IllegalArgumentException("商家发货地址不存在");
+        }
+        Random random = new Random();
+        orderInfo.setDeliAddr(merchantAddress.get(random.nextInt(merchantAddress.size())));
+
+        if(orderInfo.getId() == null){
+            String orderId = RandomIdGenerator.getRandomId();
+            orderInfo.setId(orderId);
+        }
+        orderInfoMapper.addOrder(orderInfo);
+        return true;
     }
 
     @Override
@@ -116,20 +113,17 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 rows.add(order);
             }
         }
-        if (!currentUser.isAdmin() && userMapper.getBalance(currentUser.getId()) < total) {
-            throw new IllegalArgumentException("余额不足");
-        }
         for (OrderInfo order : rows) {
             int affected = productMapper.decrementStock(order.getProd(), order.getProdNum());
             if (affected <= 0) throw new IllegalArgumentException("订单库存不足: " + order.getId());
         }
-        if (!currentUser.isAdmin()) {
-            userMapper.refundOrPay(currentUser.getId(), userMapper.getBalance(currentUser.getId()) - total);
-        }
+        walletService.payOrder(currentUser, (int) total, String.join(",", new LinkedHashSet<>(orderIdList)));
         String now = String.valueOf(LocalDateTime.now());
         for (String orderId : new HashSet<>(orderIdList)) {
             orderInfoMapper.updateOrderState(orderId, 0, now, null, now, null, null, null);
         }
+        operationsService.recordAudit(currentUser, "WALLET_PAY", "order", String.join(",", new LinkedHashSet<>(orderIdList)),
+                currentUser.getName(), "余额支付订单，金额 " + (int) total, "SUCCESS");
     }
 
     @Override
@@ -334,7 +328,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             if ((currentState == 0 || currentState == 4) && (refundReason == null || refundReason.trim().isEmpty())) {
                 throw new IllegalArgumentException("商家取消订单时必须填写退款原因");
             }
-            refundAndRestoreOrder(orderId, rows, first);
+            refundAndRestoreOrder(currentUser, orderId, rows, first, refundReason);
         } else if (targetState == -1 || targetState == 0) {
             throw new IllegalArgumentException("该状态请使用下单或支付接口处理");
         } else {
@@ -349,15 +343,16 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         return orderInfoMapper.getOrdersById(orderId).get(0);
     }
 
-    private void refundAndRestoreOrder(String orderId, List<OrderInfo> rows, OrderInfo first) {
+    private void refundAndRestoreOrder(CurrentUser currentUser, String orderId, List<OrderInfo> rows, OrderInfo first, String refundReason) {
         if (first.getCus() != null) {
-            double balance = userMapper.getBalance(first.getCus());
-            userMapper.refundOrPay(first.getCus(), balance + orderInfoMapper.getOrderAccount(orderId));
+            walletService.refundOrder(currentUser, first.getCus(), orderInfoMapper.getOrderAccount(orderId), orderId, refundReason);
         }
         // Restore stock for all items in this order
         for (OrderInfo orderItem : rows) {
             productMapper.incrementStock(orderItem.getProd(), orderItem.getProdNum());
         }
+        operationsService.recordAudit(currentUser, "WALLET_REFUND", "order", orderId, orderId,
+                "订单退款回滚，金额 " + orderInfoMapper.getOrderAccount(orderId), "SUCCESS");
     }
 
     @Override

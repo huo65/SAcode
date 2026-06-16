@@ -5,6 +5,7 @@ import com.DB.DBmarket.pojo.ops.OperationAuditLog;
 import com.DB.DBmarket.pojo.utils.CurrentUser;
 import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
 import com.DB.DBmarket.service.OperationsService;
+import com.DB.DBmarket.service.WalletService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +23,8 @@ import java.util.Map;
 public class OperationsController {
     @Resource(name = "OperationsService")
     private OperationsService operationsService;
+    @Resource(name = "WalletService")
+    private WalletService walletService;
 
     @GetMapping("/me")
     public Result me() {
@@ -88,6 +91,26 @@ public class OperationsController {
             List<OperationAuditLog> logs = operationsService.listAuditLogs(currentUser, scope, actionType, keyword);
             Map<String, Object> data = new HashMap<>();
             data.put("auditLogs", logs);
+            return Result.success(data);
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/wallet/transactions")
+    public Result listWalletTransactions(@RequestParam(required = false) String userId,
+                                         @RequestParam(required = false) String type,
+                                         @RequestParam(required = false) Integer limit) {
+        CurrentUser currentUser = CurrentUserHolder.require();
+        if (!currentUser.isAdmin()) {
+            return Result.error("Only admin can view wallet transactions.");
+        }
+        if (!operationsService.hasPermission(currentUser, "admin.action.wallet.view")) {
+            return Result.error("Admin permission denied: admin.action.wallet.view");
+        }
+        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("transactions", walletService.listTransactions(currentUser, userId, type, limit));
             return Result.success(data);
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());

@@ -10,6 +10,8 @@ import com.DB.DBmarket.pojo.Product;
 import com.DB.DBmarket.pojo.utils.OrderList;
 import com.DB.DBmarket.pojo.utils.ProductReturn;
 import com.DB.DBmarket.pojo.utils.CurrentUser;
+import com.DB.DBmarket.service.OperationsService;
+import com.DB.DBmarket.service.WalletService;
 import com.DB.DBmarket.service.impl.OrderInfoServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +53,12 @@ class OrderInfoServiceImplTests {
     @Mock
     private OrderReviewMapper orderReviewMapper;
 
+    @Mock
+    private WalletService walletService;
+
+    @Mock
+    private OperationsService operationsService;
+
     @InjectMocks
     private OrderInfoServiceImpl orderInfoService;
 
@@ -63,12 +71,11 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(order));
         when(productMapper.getOneProductByIdForUpdate("prod001")).thenReturn(product);
         when(productMapper.decrementStock("prod001", 2)).thenReturn(1);
-        when(userMapper.getBalance("cus001")).thenReturn(200.0, 200.0);
 
         orderInfoService.payOrders(customer, Collections.singletonList("order-1"));
 
         verify(productMapper).decrementStock("prod001", 2);
-        verify(userMapper).refundOrPay("cus001", 140.0);
+        verify(walletService).payOrder(customer, 60, "order-1");
         verify(orderInfoMapper).updateOrderState(eq("order-1"), eq(0), anyString(), isNull(), anyString(), isNull(), isNull(), isNull());
     }
 
@@ -84,7 +91,7 @@ class OrderInfoServiceImplTests {
 
         assertEquals("无权支付该订单", ex.getMessage());
         verify(productMapper, never()).decrementStock(anyString(), eq(1));
-        verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
+        verify(walletService, never()).payOrder(eq(customer), eq(30), eq("order-1"));
     }
 
     @Test
@@ -95,14 +102,14 @@ class OrderInfoServiceImplTests {
 
         when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(order));
         when(productMapper.getOneProductByIdForUpdate("prod001")).thenReturn(product);
-        when(userMapper.getBalance("cus001")).thenReturn(100.0);
+        when(productMapper.decrementStock("prod001", 1)).thenReturn(1);
+        when(walletService.payOrder(customer, 120, "order-1")).thenThrow(new IllegalArgumentException("余额不足"));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderInfoService.payOrders(customer, Collections.singletonList("order-1")));
 
         assertEquals("余额不足", ex.getMessage());
-        verify(productMapper, never()).decrementStock(anyString(), eq(1));
-        verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
+        verify(productMapper).decrementStock("prod001", 1);
         verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(0), anyString(), isNull(), anyString(), isNull(), isNull(), isNull());
     }
 
@@ -290,7 +297,6 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1"))
                 .thenReturn(Arrays.asList(refundingA, refundingB))
                 .thenReturn(Collections.singletonList(refunded));
-        when(userMapper.getBalance("cus001")).thenReturn(50.0);
         when(orderInfoMapper.getOrderAccount("order-1")).thenReturn(100);
         when(orderInfoMapper.updateOrderState(eq("order-1"), eq(-3), anyString(), isNull(), isNull(), isNull(), isNull(), eq("bad food")))
                 .thenReturn(1);
@@ -299,7 +305,7 @@ class OrderInfoServiceImplTests {
 
         assertNotNull(result);
         assertEquals(Integer.valueOf(-3), result.getState());
-        verify(userMapper).refundOrPay("cus001", 150.0);
+        verify(walletService).refundOrder(merchant, "cus001", 100, "order-1", "bad food");
         verify(productMapper).incrementStock("prod001", 2);
         verify(productMapper).incrementStock("prod002", 1);
     }
@@ -314,7 +320,6 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1"))
                 .thenReturn(Arrays.asList(paidA, paidB))
                 .thenReturn(Collections.singletonList(refunded));
-        when(userMapper.getBalance("cus001")).thenReturn(50.0);
         when(orderInfoMapper.getOrderAccount("order-1")).thenReturn(100);
         when(orderInfoMapper.updateOrderState(eq("order-1"), eq(-3), anyString(), isNull(), isNull(), isNull(), isNull(), eq("merchant rejected")))
                 .thenReturn(1);
@@ -323,7 +328,7 @@ class OrderInfoServiceImplTests {
 
         assertNotNull(result);
         assertEquals(Integer.valueOf(-3), result.getState());
-        verify(userMapper).refundOrPay("cus001", 150.0);
+        verify(walletService).refundOrder(merchant, "cus001", 100, "order-1", "merchant rejected");
         verify(productMapper).incrementStock("prod001", 2);
         verify(productMapper).incrementStock("prod002", 1);
     }
@@ -338,7 +343,6 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1"))
                 .thenReturn(Arrays.asList(preparingA, preparingB))
                 .thenReturn(Collections.singletonList(refunded));
-        when(userMapper.getBalance("cus001")).thenReturn(50.0);
         when(orderInfoMapper.getOrderAccount("order-1")).thenReturn(100);
         when(orderInfoMapper.updateOrderState(eq("order-1"), eq(-3), anyString(), isNull(), isNull(), isNull(), isNull(), eq("kitchen issue")))
                 .thenReturn(1);
@@ -347,7 +351,7 @@ class OrderInfoServiceImplTests {
 
         assertNotNull(result);
         assertEquals(Integer.valueOf(-3), result.getState());
-        verify(userMapper).refundOrPay("cus001", 150.0);
+        verify(walletService).refundOrder(merchant, "cus001", 100, "order-1", "kitchen issue");
         verify(productMapper).incrementStock("prod001", 2);
         verify(productMapper).incrementStock("prod002", 1);
     }
@@ -363,7 +367,7 @@ class OrderInfoServiceImplTests {
                 () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, "bad food"));
 
         assertEquals("仅已支付、备餐中或退款中的订单可退款", ex.getMessage());
-        verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
+        verify(walletService, never()).refundOrder(eq(merchant), anyString(), eq(30), eq("order-1"), eq("bad food"));
         verify(productMapper, never()).incrementStock(anyString(), eq(1));
     }
 
@@ -378,7 +382,7 @@ class OrderInfoServiceImplTests {
                 () -> orderInfoService.transitionOrder(merchant, "order-1", -3, null, null, " "));
 
         assertEquals("商家取消订单时必须填写退款原因", ex.getMessage());
-        verify(userMapper, never()).refundOrPay(anyString(), eq(0.0));
+        verify(walletService, never()).refundOrder(eq(merchant), anyString(), eq(30), eq("order-1"), eq(" "));
     }
 
     @Test
@@ -492,11 +496,11 @@ class OrderInfoServiceImplTests {
         when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(order));
         when(productMapper.getOneProductByIdForUpdate("prod001")).thenReturn(product);
         when(productMapper.decrementStock("prod001", 1)).thenReturn(1);
-        when(userMapper.getBalance("cus001")).thenReturn(100.0, 100.0);
 
         orderInfoService.payOrders(customer, Arrays.asList("order-1", "order-1"));
 
         verify(productMapper).decrementStock("prod001", 1);
+        verify(walletService).payOrder(customer, 30, "order-1");
         ArgumentCaptor<String> orderIdCaptor = ArgumentCaptor.forClass(String.class);
         verify(orderInfoMapper).updateOrderState(orderIdCaptor.capture(), eq(0), anyString(), isNull(), anyString(), isNull(), isNull(), isNull());
         assertEquals("order-1", orderIdCaptor.getValue());

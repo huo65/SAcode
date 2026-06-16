@@ -2,6 +2,8 @@ package com.DB.DBmarket.controller;
 
 import com.DB.DBmarket.pojo.Result;
 import com.DB.DBmarket.pojo.storage.StoredObject;
+import com.DB.DBmarket.pojo.utils.CurrentUser;
+import com.DB.DBmarket.pojo.utils.CurrentUserHolder;
 import com.DB.DBmarket.service.ObjectStorageService;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +30,10 @@ public class StorageController {
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam(defaultValue = "common") String category
     ) {
+        CurrentUser currentUser = CurrentUserHolder.require();
+        if (!isCategoryAllowed(currentUser, category)) {
+            return Result.error("No permission to upload files for this category.");
+        }
         if (files == null || files.isEmpty()) {
             return Result.error("Please select at least one file.");
         }
@@ -52,10 +58,32 @@ public class StorageController {
         if (!StringUtils.hasText(file.getOriginalFilename())) {
             throw new IllegalArgumentException("File name is required.");
         }
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("File size must not exceed 5MB.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new IllegalArgumentException("Only image files are allowed.");
+        }
         try {
             return objectStorageService.store(file, category);
         } catch (IOException e) {
             throw new IllegalArgumentException("Store file failed.");
         }
+    }
+
+    private boolean isCategoryAllowed(CurrentUser currentUser, String category) {
+        if (currentUser == null) {
+            return false;
+        }
+        if (currentUser.isAdmin()) {
+            return true;
+        }
+        String normalized = !StringUtils.hasText(category) ? "common" : category.trim().toLowerCase();
+        if (currentUser.isMerchant()) {
+            return "common".equals(normalized) || "avatar".equals(normalized)
+                    || "product".equals(normalized) || "restaurant".equals(normalized);
+        }
+        return "common".equals(normalized) || "avatar".equals(normalized);
     }
 }

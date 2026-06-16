@@ -11,10 +11,14 @@ import java.util.List;
 public interface UserMapper {
     @Update("update user set balance=#{s} where id=#{id}")
     void refundOrPay(@Param("id") String id, @Param("s") double s);
+    @Update("update market.user set balance=#{balance} where id=#{id}")
+    int updateBalance(@Param("id") String id, @Param("balance") Integer balance);
     @Select("select balance from market.user where id=#{id}")
     double getBalance(String id);
     @Select("select * from market.user where id=#{id}")
     User getInfo(String id);
+    @Select("select * from market.user where id=#{id} for update")
+    User getInfoForUpdate(String id);
 
     @Select("select * from user where name = #{name}")
     User getByName(String name);

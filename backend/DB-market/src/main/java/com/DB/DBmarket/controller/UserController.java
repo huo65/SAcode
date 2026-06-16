@@ -10,6 +10,7 @@ import com.DB.DBmarket.service.AddressService;
 import com.DB.DBmarket.service.OperationsService;
 import com.DB.DBmarket.service.OrderInfoService;
 import com.DB.DBmarket.service.UserService;
+import com.DB.DBmarket.service.WalletService;
 import com.alibaba.druid.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,8 @@ public class UserController {
     private AddressMapper addressMapper;
     @Resource(name = "OperationsService")
     private OperationsService operationsService;
+    @Resource(name = "WalletService")
+    private WalletService walletService;
 
     @PostMapping("/order")
     public Result UserInOrder(@RequestBody OrderInfo orderInfo) {
@@ -46,22 +49,70 @@ public class UserController {
             orderInfo.setCus(currentUser.getId());
         }
         log.info("User order:{}",orderInfo);
-        if(orderInfoService.addOrder(orderInfo)){
+        try {
+            orderInfoService.addOrder(orderInfo);
             Map<String,Object> data=new HashMap<>();
             //此时orderInfo已经经过处理，值发生改变
             data.put("order_info",orderInfo);
-            data.put("delivery",addressMapper.getAddressByAddressId(orderInfo.getMer()));
-            data.put("receive",addressMapper.getAddressByAddressId(orderInfo.getCus()));
+            data.put("delivery",addressMapper.getAddressByAddressId(orderInfo.getDeliAddr()));
+            data.put("receive",addressMapper.getAddressByAddressId(orderInfo.getRecAddr()));
             return Result.success(data);
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
         }
-        else return Result.error("Add order failed!");
     }
 
     @PostMapping("/pay")
     public Result UserPay(@RequestBody PayParmBody payParmBody) {
         try {
-            orderInfoService.payOrders(CurrentUserHolder.require(), payParmBody.getOrderIdList());
+            CurrentUser currentUser = CurrentUserHolder.require();
+            if (!currentUser.isCustomer()) {
+                return Result.error("Only customers can pay with wallet balance.");
+            }
+            orderInfoService.payOrders(currentUser, payParmBody.getOrderIdList());
             return Result.success();
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/recharge")
+    public Result recharge(@RequestBody Map<String, Object> request) {
+        try {
+            CurrentUser currentUser = CurrentUserHolder.require();
+            String targetUserId = request.get("userId") == null ? null : String.valueOf(request.get("userId"));
+            String remark = request.get("remark") == null ? null : String.valueOf(request.get("remark"));
+            Integer amount = parseInteger(request.get("amount"));
+            Map<String, Object> data = new HashMap<>();
+            data.put("transaction", walletService.recharge(currentUser, targetUserId, amount, remark));
+            data.put("wallet", walletService.getWallet(currentUser, targetUserId));
+            operationsService.recordAudit(currentUser, "WALLET_RECHARGE", "wallet",
+                    currentUser.isAdmin() && targetUserId != null ? targetUserId : currentUser.getId(),
+                    currentUser.isAdmin() && targetUserId != null ? targetUserId : currentUser.getName(),
+                    "钱包模拟充值 " + amount, "SUCCESS");
+            return Result.success(data);
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/wallet")
+    public Result getWallet(@RequestParam(required = false) String userId) {
+        try {
+            return Result.success(walletService.getWallet(CurrentUserHolder.require(), userId));
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/wallet/transactions")
+    public Result listWalletTransactions(@RequestParam(required = false) String userId,
+                                         @RequestParam(required = false) String type,
+                                         @RequestParam(required = false) Integer limit) {
+        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("transactions", walletService.listTransactions(CurrentUserHolder.require(), userId, type, limit));
+            return Result.success(data);
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }
@@ -189,6 +240,16 @@ public class UserController {
             return Result.success();
         }
         return Result.error("Update user status failed.");
+    }
+
+    private Integer parseInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        return Integer.parseInt(String.valueOf(value));
     }
 
 }

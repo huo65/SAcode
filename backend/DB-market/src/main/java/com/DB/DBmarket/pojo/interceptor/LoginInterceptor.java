@@ -57,7 +57,8 @@ public class LoginInterceptor implements HandlerInterceptor {
                 "/product/search".equals(path) ||
                 "/product/info".equals(path) ||
                 "/restaurant/list".equals(path) ||
-                "/restaurant/info".equals(path)
+                "/restaurant/info".equals(path) ||
+                path.startsWith("/storage/")
         );
     }
 

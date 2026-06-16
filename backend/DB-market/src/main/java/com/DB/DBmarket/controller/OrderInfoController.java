@@ -70,6 +70,11 @@ public class OrderInfoController {
 
     @GetMapping("/filter")
     public Result listByOrderState(@RequestParam(required = false) Integer state) {
+        CurrentUser currentUser = CurrentUserHolder.require();
+        if (!currentUser.isAdmin()) {
+            OrderList orderList = orderInfoService.getOrderInfo(currentUser.getId(), state, 1);
+            return Result.success(orderList, "Orders retrieved for current user.");
+        }
         List<OrderInfo> orders;
         if (state != null) {
             if (state >= -3 && state <= 4) {

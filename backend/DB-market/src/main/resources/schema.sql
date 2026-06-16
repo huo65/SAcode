@@ -190,6 +190,27 @@ CREATE TABLE IF NOT EXISTS operation_audit_log (
     INDEX idx_operation_audit_time (created_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='课堂展示版操作审计日志表';
 
+CREATE TABLE IF NOT EXISTS wallet_transaction (
+    id VARCHAR(64) PRIMARY KEY COMMENT '流水id',
+    user_id VARCHAR(64) NOT NULL COMMENT '钱包用户id',
+    user_name VARCHAR(128) COMMENT '钱包用户名称',
+    type VARCHAR(32) NOT NULL COMMENT '流水类型 RECHARGE/PAY/REFUND/ADJUST',
+    amount INT NOT NULL COMMENT '变动金额，收入为正，支出为负',
+    balance_before INT NOT NULL COMMENT '变动前余额',
+    balance_after INT NOT NULL COMMENT '变动后余额',
+    related_order_id VARCHAR(64) COMMENT '关联订单id',
+    remark VARCHAR(500) COMMENT '备注',
+    actor_id VARCHAR(64) COMMENT '操作人id',
+    actor_name VARCHAR(128) COMMENT '操作人名称',
+    actor_type VARCHAR(32) COMMENT '操作人角色',
+    created_time DATETIME NOT NULL COMMENT '创建时间',
+    INDEX idx_wallet_transaction_user (user_id),
+    INDEX idx_wallet_transaction_type (type),
+    INDEX idx_wallet_transaction_order (related_order_id),
+    INDEX idx_wallet_transaction_time (created_time),
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钱包余额流水表';
+
 -- Order Review table
 CREATE TABLE IF NOT EXISTS order_review (
     order_id VARCHAR(64) PRIMARY KEY COMMENT '订单id',
@@ -242,8 +263,10 @@ INSERT IGNORE INTO operation_permission (role_code, permission_key, permission_n
     ('admin', 'admin.action.user.view', '查看用户列表', 'action', 'admin', 1, NOW()),
     ('admin', 'admin.action.user.disable', '启停用户账号', 'action', 'admin', 1, NOW()),
     ('admin', 'admin.action.product.audit', '审核商品', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.category.manage', '维护商品分类', 'action', 'admin', 1, NOW()),
     ('admin', 'admin.action.afterSale.handle', '处理售后工单', 'action', 'admin', 1, NOW()),
     ('admin', 'admin.action.audit.view', '查看审计日志', 'action', 'admin', 1, NOW()),
+    ('admin', 'admin.action.wallet.view', '查看钱包流水', 'action', 'admin', 1, NOW()),
     ('mer', 'merchant.menu.goods', '商品管理', 'menu', 'merchant', 1, NOW()),
     ('mer', 'merchant.menu.order', '订单处理', 'menu', 'merchant', 1, NOW()),
     ('mer', 'merchant.menu.afterSale', '售后处理', 'menu', 'merchant', 1, NOW()),

@@ -588,8 +588,10 @@ public class OperationsServiceImpl implements OperationsService {
         defaults.add(permission("admin", "admin.action.user.view", "查看用户列表", TYPE_ACTION, "admin", now));
         defaults.add(permission("admin", "admin.action.user.disable", "启停用户账号", TYPE_ACTION, "admin", now));
         defaults.add(permission("admin", "admin.action.product.audit", "审核商品", TYPE_ACTION, "admin", now));
+        defaults.add(permission("admin", "admin.action.category.manage", "维护商品分类", TYPE_ACTION, "admin", now));
         defaults.add(permission("admin", "admin.action.afterSale.handle", "处理售后工单", TYPE_ACTION, "admin", now));
         defaults.add(permission("admin", "admin.action.audit.view", "查看审计日志", TYPE_ACTION, "admin", now));
+        defaults.add(permission("admin", "admin.action.wallet.view", "查看钱包流水", TYPE_ACTION, "admin", now));
 
         defaults.add(permission("mer", "merchant.menu.goods", "商品管理", TYPE_MENU, "merchant", now));
         defaults.add(permission("mer", "merchant.menu.order", "订单处理", TYPE_MENU, "merchant", now));

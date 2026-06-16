@@ -25,8 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
                 "/user/login",
                 "/user/register",
                 "/alipay/notify",
-                "/alipay/return",
-                "/storage/**"
+                "/alipay/return"
         );
     }
 
