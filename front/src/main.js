@@ -3,6 +3,7 @@ import App from "./App.vue";
 import router from "./router";
 import i18n from "./locales";
 import "./style/common.less";
+import "./style/global.less";
 import "element-plus/es/components/message/style/css";
 import "element-plus/es/components/notification/style/css";
 

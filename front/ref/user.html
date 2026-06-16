@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>味掌柜 - 用户端</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#EF4444;--primary-dark:#DC2626;--primary-light:#FEF2F2;--primary-50:#FFF1F2;
+  --accent:#F97316;--accent-light:#FFF7ED;
+  --success:#10B981;--success-light:#ECFDF5;
+  --warning:#F59E0B;--warning-light:#FFFBEB;
+  --info:#3B82F6;--info-light:#EFF6FF;
+  --bg:#F5F5F5;--card:#FFFFFF;--border:#F0F0F0;
+  --text-primary:#1F2937;--text-secondary:#6B7280;--text-muted:#9CA3AF;
+  --phone-w:390px;--phone-h:844px;--phone-radius:44px;
+  --radius:14px;--radius-sm:10px;--radius-xs:6px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg:0 12px 30px rgba(0,0,0,0.12);
+  --transition:all 0.2s ease;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:#E8E8E8;color:var(--text-primary);font-size:14px;line-height:1.5;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:auto}
+
+.phone-frame{width:var(--phone-w);height:var(--phone-h);background:var(--bg);border-radius:var(--phone-radius);overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2),0 0 0 1px rgba(0,0,0,0.05);flex-shrink:0}
+.phone-inner{width:100%;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+
+/* Status bar */
+.status-bar{height:48px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--text-primary);flex-shrink:0;position:relative;z-index:50}
+.status-bar .time{font-size:15px;font-weight:700}
+.status-bar .icons{display:flex;gap:5px;align-items:center;font-size:13px}
+
+/* Scrollable content */
+.screen-scroll{flex:1;overflow-y:auto;overflow-x:hidden}
+.screen-scroll::-webkit-scrollbar{display:none}
+
+/* Page container */
+.page{display:none;flex-direction:column;min-height:100%}
+.page.active{display:flex}
+
+/* ===== Bottom Tab Bar ===== */
+.tab-bar{height:82px;background:var(--card);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;flex-shrink:0;position:relative;z-index:50}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:var(--transition);padding:4px 0}
+.tab-item i{font-size:20px;color:var(--text-muted);transition:var(--transition)}
+.tab-item span{font-size:10px;color:var(--text-muted);font-weight:500;transition:var(--transition)}
+.tab-item.active i{color:var(--primary)}
+.tab-item.active span{color:var(--primary);font-weight:600}
+.tab-item .tab-badge{position:absolute;top:0;right:50%;transform:translateX(14px);background:var(--primary);color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* ===== Home Page ===== */
+.home-header{padding:12px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.home-location{display:flex;align-items:center;gap:6px;cursor:pointer}
+.home-location i{color:var(--primary);font-size:14px}
+.home-location .loc-text{font-size:16px;font-weight:700;color:var(--text-primary)}
+.home-location .loc-sub{font-size:11px;color:var(--text-muted)}
+.home-actions{display:flex;gap:12px}
+.home-actions i{font-size:20px;color:var(--text-secondary);cursor:pointer}
+
+.search-bar{margin:14px 20px;position:relative}
+.search-bar input{width:100%;height:40px;background:var(--card);border:none;border-radius:20px;padding:0 16px 0 40px;font-size:13px;box-shadow:var(--shadow);outline:none}
+.search-bar input::placeholder{color:var(--text-muted)}
+.search-bar i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+
+/* Banner */
+.banner{margin:0 20px 16px;height:140px;border-radius:var(--radius);background:linear-gradient(135deg,#EF4444,#F97316);position:relative;overflow:hidden;display:flex;align-items:center;padding:0 24px}
+.banner-text{position:relative;z-index:1;color:white}
+.banner-text .title{font-size:22px;font-weight:800;line-height:1.3}
+.banner-text .sub{font-size:12px;opacity:0.9;margin-top:4px}
+.banner-text .btn-banner{display:inline-flex;align-items:center;gap:4px;margin-top:12px;padding:6px 16px;background:white;color:var(--primary);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer}
+.banner-deco{position:absolute;right:-10px;bottom:-10px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.15)}
+.banner-deco2{position:absolute;right:40px;top:-20px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.1)}
+
+/* Category icons */
+.categories{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 20px;margin-bottom:20px}
+.cat-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.cat-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.cat-label{font-size:11px;color:var(--text-secondary);font-weight:500}
+
+/* Section */
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin-bottom:12px}
+.section-title{font-size:17px;font-weight:700;color:var(--text-primary)}
+.section-more{font-size:12px;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;gap:2px}
+
+/* Restaurant card */
+.rest-list{padding:0 20px;display:flex;flex-direction:column;gap:14px;margin-bottom:20px}
+.rest-card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:var(--transition)}
+.rest-card:active{transform:scale(0.98)}
+.rest-img{height:120px;position:relative;overflow:hidden}
+.rest-img-bg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:0.7}
+.rest-tag{position:absolute;top:8px;left:8px;background:var(--primary);color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
+.rest-discount{position:absolute;bottom:8px;right:8px;background:rgba(255,255,255,0.95);color:var(--accent);font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px}
+.rest-info{padding:12px 14px}
+.rest-name{font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+.rest-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.rest-meta .rating{color:var(--accent);font-weight:700}
+.rest-meta .rating i{font-size:10px}
+.rest-tags{display:flex;gap:4px}
+.rest-tags span{font-size:10px;padding:2px 6px;border-radius:3px;background:var(--primary-50);color:var(--primary);font-weight:500}
+
+/* ===== Menu / Restaurant Detail ===== */
+.rest-detail-header{position:relative;height:200px;overflow:hidden}
+.rest-detail-bg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:60px;opacity:0.6}
+.rest-detail-overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,0.6));display:flex;flex-direction:column;justify-content:flex-end;padding:16px 20px;color:white}
+.rest-detail-overlay .name{font-size:20px;font-weight:800}
+.rest-detail-overlay .meta{font-size:12px;opacity:0.9;margin-top:4px;display:flex;gap:12px}
+.back-btn{position:absolute;top:48px;left:16px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.3);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;font-size:14px}
+
+.menu-cats{display:flex;gap:0;background:var(--card);border-bottom:1px solid var(--border);padding:0 8px;position:sticky;top:0;z-index:10}
+.menu-cat-btn{padding:10px 14px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:var(--transition)}
+.menu-cat-btn.active{color:var(--primary);font-weight:700;border-bottom-color:var(--primary)}
+
+.menu-list{padding:12px 16px;display:flex;flex-direction:column;gap:14px}
+.menu-item{display:flex;gap:12px;cursor:pointer;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.menu-item:last-child{border-bottom:none;padding-bottom:0}
+.menu-item-img{width:80px;height:80px;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;opacity:0.7}
+.menu-item-info{flex:1;display:flex;flex-direction:column;justify-content:space-between}
+.menu-item-name{font-size:14px;font-weight:600;color:var(--text-primary)}
+.menu-item-desc{font-size:11px;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}
+.menu-item-sales{font-size:11px;color:var(--text-muted);margin-top:2px}
+.menu-item-bottom{display:flex;align-items:center;justify-content:space-between}
+.menu-item-price{font-size:18px;font-weight:800;color:var(--primary)}
+.menu-item-price span{font-size:11px;font-weight:400}
+.add-btn{width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;font-weight:700}
+
+/* Cart float bar */
+.cart-float{position:sticky;bottom:0;background:var(--text-primary);margin:0 16px 16px;border-radius:24px;padding:8px 16px;display:flex;align-items:center;gap:12px;z-index:20}
+.cart-float .cart-icon-wrap{position:relative;width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-size:18px}
+.cart-float .cart-count{position:absolute;top:-4px;right:-4px;background:white;color:var(--primary);font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.cart-float .cart-total{flex:1;color:white;font-size:16px;font-weight:700}
+.cart-float .cart-total span{font-size:12px;font-weight:400;opacity:0.6}
+.cart-float .cart-btn{padding:8px 20px;background:var(--primary);color:white;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:none}
+
+/* ===== Cart Page ===== */
+.cart-header{padding:16px 20px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.cart-header .back{font-size:18px;color:var(--text-primary);cursor:pointer}
+.cart-header .title{font-size:17px;font-weight:700}
+.cart-header .clear{font-size:12px;color:var(--text-muted);cursor:pointer;margin-left:auto}
+
+.cart-items{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.cart-item{display:flex;align-items:center;gap:12px}
+.cart-item-img{width:56px;height:56px;border-radius:var(--radius-xs);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0.7}
+.cart-item-info{flex:1}
+.cart-item-name{font-size:14px;font-weight:600;color:var(--text-primary)}
+.cart-item-price{font-size:15px;font-weight:700;color:var(--primary);margin-top:2px}
+.cart-item-qty{display:flex;align-items:center;gap:10px}
+.qty-btn{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;color:var(--text-secondary);font-weight:600}
+.qty-btn.minus{color:var(--text-muted)}
+.qty-btn.plus{background:var(--primary);border-color:var(--primary);color:white}
+.qty-num{font-size:15px;font-weight:700;min-width:20px;text-align:center}
+
+.cart-summary{margin:16px 20px;background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.summary-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);padding:4px 0}
+.summary-row.total{font-size:16px;font-weight:800;color:var(--text-primary);padding-top:10px;margin-top:8px;border-top:1px solid var(--border)}
+.summary-row.total .price{color:var(--primary)}
+.summary-row .discount{color:var(--success)}
+
+.checkout-btn{margin:0 20px 20px;padding:14px;background:linear-gradient(135deg,var(--primary),var(--accent));color:white;border:none;border-radius:24px;font-size:16px;font-weight:700;cursor:pointer;text-align:center;box-shadow:0 4px 15px rgba(239,68,68,0.3)}
+
+/* ===== Order Tracking ===== */
+.track-header{padding:16px 20px;background:linear-gradient(135deg,var(--primary),var(--accent));color:white}
+.track-order-id{font-size:12px;opacity:0.8}
+.track-status{font-size:20px;font-weight:800;margin-top:4px}
+.track-sub{font-size:12px;opacity:0.9;margin-top:2px}
+
+.track-map{height:200px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);display:flex;align-items:center;justify-content:center;position:relative}
+.track-map-text{font-size:13px;color:#2E7D32;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:6px}
+.track-map-text i{font-size:32px;opacity:0.5}
+.track-rider{position:absolute;bottom:12px;left:20px;right:20px;background:white;border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-md)}
+.track-rider-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white}
+.track-rider-info{flex:1}
+.track-rider-name{font-size:14px;font-weight:600}
+.track-rider-eta{font-size:12px;color:var(--primary);font-weight:600}
+.track-rider-call{width:36px;height:36px;border-radius:50%;background:var(--success-light);color:var(--success);display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+.track-timeline{padding:20px;background:var(--card);margin:12px 16px;border-radius:var(--radius)}
+.track-tl-item{display:flex;gap:12px;padding-bottom:16px;position:relative}
+.track-tl-item:last-child{padding-bottom:0}
+.track-tl-item:not(:last-child)::before{content:'';position:absolute;left:13px;top:26px;bottom:0;width:2px;background:var(--border)}
+.track-tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;z-index:1}
+.track-tl-dot.done{background:var(--success-light);color:var(--success)}
+.track-tl-dot.current{background:var(--primary-light);color:var(--primary);box-shadow:0 0 0 4px rgba(239,68,68,0.1)}
+.track-tl-dot.pending{background:var(--bg);color:var(--text-muted)}
+.track-tl-text{padding-top:4px}
+.track-tl-title{font-size:13px;font-weight:600;color:var(--text-primary)}
+.track-tl-title.pending{color:var(--text-muted)}
+.track-tl-time{font-size:11px;color:var(--text-muted);margin-top:1px}
+
+/* ===== Order History ===== */
+.order-list{padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+.order-card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.order-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.order-card-shop{font-size:14px;font-weight:700;color:var(--text-primary)}
+.order-card-status{font-size:12px;font-weight:600}
+.order-card-status.done{color:var(--success)}
+.order-card-status.active{color:var(--primary)}
+.order-card-items{font-size:12px;color:var(--text-muted);margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.order-card-bottom{display:flex;justify-content:space-between;align-items:center}
+.order-card-price{font-size:16px;font-weight:800;color:var(--text-primary)}
+.order-card-btn{padding:5px 14px;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--primary);color:var(--primary);background:transparent}
+
+/* ===== Profile ===== */
+.profile-header{padding:20px;background:linear-gradient(135deg,var(--primary),var(--accent));color:white;display:flex;align-items:center;gap:14px}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.profile-name{font-size:18px;font-weight:700}
+.profile-phone{font-size:12px;opacity:0.8;margin-top:2px}
+
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);margin:-16px 16px 12px;border-radius:var(--radius);box-shadow:var(--shadow-md);padding:16px 0;text-align:center;position:relative;z-index:2}
+.profile-stat-val{font-size:20px;font-weight:800;color:var(--text-primary)}
+.profile-stat-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+.profile-menu{margin:0 16px;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.profile-menu-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--transition)}
+.profile-menu-item:last-child{border-bottom:none}
+.profile-menu-item:active{background:var(--bg)}
+.profile-menu-item i{width:20px;text-align:center;color:var(--text-secondary);font-size:15px}
+.profile-menu-item span{flex:1;font-size:14px;color:var(--text-primary)}
+.profile-menu-item .arrow{color:var(--text-muted);font-size:12px}
+
+/* ===== Empty State ===== */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center}
+.empty-state i{font-size:48px;color:var(--text-muted);opacity:0.3;margin-bottom:16px}
+.empty-state .title{font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:4px}
+.empty-state .sub{font-size:13px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="status-bar">
+      <span class="time">23:30</span>
+      <span class="icons"><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-full"></i></span>
+    </div>
+
+    <div class="screen-scroll">
+      <!-- ===== Home ===== -->
+      <div class="page active" id="page-home">
+        <div class="home-header">
+          <div class="home-location">
+            <i class="fas fa-location-dot"></i>
+            <div>
+              <div class="loc-text">国贸建外SOHO</div>
+              <div class="loc-sub">朝阳区建国门外大街</div>
+            </div>
+            <i class="fas fa-chevron-down" style="font-size:10px;color:var(--text-muted);margin-left:2px"></i>
+          </div>
+          <div class="home-actions">
+            <i class="fas fa-bell"></i>
+            <i class="fas fa-comment-dots"></i>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="搜索商家、菜品">
+        </div>
+
+        <div class="banner">
+          <div class="banner-text">
+            <div class="title">新用户专享</div>
+            <div class="sub">首单立减15元，限时抢享</div>
+            <div class="btn-banner">立即领取 <i class="fas fa-chevron-right" style="font-size:10px"></i></div>
+          </div>
+          <div class="banner-deco"></div>
+          <div class="banner-deco2"></div>
+        </div>
+
+        <div class="categories">
+          <div class="cat-item"><div class="cat-icon" style="background:#FEF2F2">🍜</div><div class="cat-label">中餐</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#FFF7ED">🍔</div><div class="cat-label">西式快餐</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#ECFDF5">🥗</div><div class="cat-label">轻食</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#EFF6FF">🍣</div><div class="cat-label">日韩</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#F5F3FF">🧋</div><div class="cat-label">饮品</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#FFFBEB">🍰</div><div class="cat-label">甜点</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#FFF1F2">🔥</div><div class="cat-label">麻辣</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#F0FDF4">🥘</div><div class="cat-label">煲仔</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#EFF6FF">🌯</div><div class="cat-label">卷饼</div></div>
+          <div class="cat-item"><div class="cat-icon" style="background:#F8FAFC">📋</div><div class="cat-label">全部分类</div></div>
+        </div>
+
+        <div class="section-head">
+          <div class="section-title">附近好店</div>
+          <div class="section-more">更多 <i class="fas fa-chevron-right" style="font-size:9px"></i></div>
+        </div>
+
+        <div class="rest-list">
+          <div class="rest-card" onclick="switchPage('menu')">
+            <div class="rest-img">
+              <div class="rest-img-bg" style="background:linear-gradient(135deg,#FFECD2,#FCB69F)">🍗</div>
+              <div class="rest-tag">品牌</div>
+              <div class="rest-discount">满30减5</div>
+            </div>
+            <div class="rest-info">
+              <div class="rest-name">川味小馆（国贸店）</div>
+              <div class="rest-meta"><span class="rating"><i class="fas fa-star"></i> 4.8</span><span>月售1680</span><span>¥20起送</span><span>1.2km</span></div>
+              <div class="rest-tags"><span>川菜</span><span>30分钟</span></div>
+            </div>
+          </div>
+          <div class="rest-card" onclick="switchPage('menu')">
+            <div class="rest-img">
+              <div class="rest-img-bg" style="background:linear-gradient(135deg,#C6FFDD,#FBD786)">🐟</div>
+              <div class="rest-tag">人气</div>
+              <div class="rest-discount">满50减8</div>
+            </div>
+            <div class="rest-info">
+              <div class="rest-name">绿茶餐厅（望京店）</div>
+              <div class="rest-meta"><span class="rating"><i class="fas fa-star"></i> 4.7</span><span>月售3120</span><span>¥25起送</span><span>2.1km</span></div>
+              <div class="rest-tags"><span>浙菜</span><span>35分钟</span></div>
+            </div>
+          </div>
+          <div class="rest-card" onclick="switchPage('menu')">
+            <div class="rest-img">
+              <div class="rest-img-bg" style="background:linear-gradient(135deg,#FF9A9E,#FECFEF)">🍔</div>
+              <div class="rest-discount">满40减6</div>
+            </div>
+            <div class="rest-info">
+              <div class="rest-name">汉堡王（国贸店）</div>
+              <div class="rest-meta"><span class="rating"><i class="fas fa-star"></i> 4.6</span><span>月售2450</span><span>¥15起送</span><span>0.8km</span></div>
+              <div class="rest-tags"><span>西式快餐</span><span>20分钟</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+
+      <!-- ===== Menu / Restaurant Detail ===== -->
+      <div class="page" id="page-menu">
+        <div class="rest-detail-header">
+          <div class="rest-detail-bg" style="background:linear-gradient(135deg,#FFECD2,#FCB69F)">🍗</div>
+          <div class="rest-detail-overlay">
+            <div class="name">川味小馆（国贸店）</div>
+            <div class="meta"><span><i class="fas fa-star" style="color:#F59E0B"></i> 4.8</span><span>月售1680</span><span>1.2km</span></div>
+          </div>
+          <div class="back-btn" onclick="switchPage('home')"><i class="fas fa-arrow-left"></i></div>
+        </div>
+
+        <div class="menu-cats">
+          <div class="menu-cat-btn active">招牌菜</div>
+          <div class="menu-cat-btn">主食</div>
+          <div class="menu-cat-btn">凉菜</div>
+          <div class="menu-cat-btn">饮品</div>
+          <div class="menu-cat-btn">套餐</div>
+        </div>
+
+        <div class="menu-list">
+          <div class="menu-item">
+            <div class="menu-item-img" style="background:linear-gradient(135deg,#FFECD2,#FCB69F)">🍗</div>
+            <div class="menu-item-info">
+              <div>
+                <div class="menu-item-name">宫保鸡丁</div>
+                <div class="menu-item-desc">精选鸡腿肉搭配花生米，经典川味微辣</div>
+                <div class="menu-item-sales">月售842 好评率98%</div>
+              </div>
+              <div class="menu-item-bottom">
+                <div class="menu-item-price"><span>¥</span>32</div>
+                <div class="add-btn" onclick="addToCart(this)">+</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div class="menu-item-img" style="background:linear-gradient(135deg,#C6FFDD,#FBD786)">🐟</div>
+            <div class="menu-item-info">
+              <div>
+                <div class="menu-item-name">酸菜鱼</div>
+                <div class="menu-item-desc">鲜嫩鱼片配以正宗酸菜，酸辣开胃</div>
+                <div class="menu-item-sales">月售636 好评率96%</div>
+              </div>
+              <div class="menu-item-bottom">
+                <div class="menu-item-price"><span>¥</span>46</div>
+                <div class="add-btn" onclick="addToCart(this)">+</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div class="menu-item-img" style="background:linear-gradient(135deg,#FF9A9E,#FECFEF)">🔥</div>
+            <div class="menu-item-info">
+              <div>
+                <div class="menu-item-name">麻辣香锅</div>
+                <div class="menu-item-desc">自选食材现炒，麻辣鲜香</div>
+                <div class="menu-item-sales">月售528 好评率95%</div>
+              </div>
+              <div class="menu-item-bottom">
+                <div class="menu-item-price"><span>¥</span>38</div>
+                <div class="add-btn" onclick="addToCart(this)">+</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div class="menu-item-img" style="background:linear-gradient(135deg,#A8EDEA,#FED6E3)">🥩</div>
+            <div class="menu-item-info">
+              <div>
+                <div class="menu-item-name">鱼香肉丝</div>
+                <div class="menu-item-desc">甜酸微辣的经典川菜，下饭神器</div>
+                <div class="menu-item-sales">月售424 好评率97%</div>
+              </div>
+              <div class="menu-item-bottom">
+                <div class="menu-item-price"><span>¥</span>28</div>
+                <div class="add-btn" onclick="addToCart(this)">+</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div class="menu-item-img" style="background:linear-gradient(135deg,#D4FC79,#96E6A1)">🥚</div>
+            <div class="menu-item-info">
+              <div>
+                <div class="menu-item-name">番茄炒蛋</div>
+                <div class="menu-item-desc">家常经典，酸甜适口</div>
+                <div class="menu-item-sales">月售320 好评率99%</div>
+              </div>
+              <div class="menu-item-bottom">
+                <div class="menu-item-price"><span>¥</span>22</div>
+                <div class="add-btn" onclick="addToCart(this)">+</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cart-float" id="cartFloat" style="display:none">
+          <div class="cart-icon-wrap"><i class="fas fa-shopping-cart"></i><div class="cart-count" id="cartCount">0</div></div>
+          <div class="cart-total">¥<span id="cartTotal">0</span></div>
+          <div class="cart-btn" onclick="switchPage('cart')">去结算</div>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+
+      <!-- ===== Cart ===== -->
+      <div class="page" id="page-cart">
+        <div class="cart-header">
+          <i class="fas fa-arrow-left back" onclick="switchPage('menu')"></i>
+          <div class="title">购物车</div>
+          <span class="clear">清空</span>
+        </div>
+        <div class="cart-items">
+          <div class="cart-item">
+            <div class="cart-item-img" style="background:linear-gradient(135deg,#FFECD2,#FCB69F)">🍗</div>
+            <div class="cart-item-info"><div class="cart-item-name">宫保鸡丁</div><div class="cart-item-price">¥32</div></div>
+            <div class="cart-item-qty"><div class="qty-btn minus">-</div><div class="qty-num">1</div><div class="qty-btn plus">+</div></div>
+          </div>
+          <div class="cart-item">
+            <div class="cart-item-img" style="background:linear-gradient(135deg,#C6FFDD,#FBD786)">🐟</div>
+            <div class="cart-item-info"><div class="cart-item-name">酸菜鱼</div><div class="cart-item-price">¥46</div></div>
+            <div class="cart-item-qty"><div class="qty-btn minus">-</div><div class="qty-num">1</div><div class="qty-btn plus">+</div></div>
+          </div>
+          <div class="cart-item">
+            <div class="cart-item-img" style="background:linear-gradient(135deg,#F5F5F5,#E8E8E8)">🍚</div>
+            <div class="cart-item-info"><div class="cart-item-name">米饭</div><div class="cart-item-price">¥2</div></div>
+            <div class="cart-item-qty"><div class="qty-btn minus">-</div><div class="qty-num">2</div><div class="qty-btn plus">+</div></div>
+          </div>
+        </div>
+        <div class="cart-summary">
+          <div class="summary-row"><span>菜品小计</span><span>¥82.00</span></div>
+          <div class="summary-row"><span>配送费</span><span>¥5.00</span></div>
+          <div class="summary-row"><span>满减优惠</span><span class="discount">-¥5.00</span></div>
+          <div class="summary-row"><span>新客立减</span><span class="discount">-¥15.00</span></div>
+          <div class="summary-row total"><span>合计</span><span class="price">¥67.00</span></div>
+        </div>
+        <div class="checkout-btn" onclick="switchPage('tracking')">提交订单</div>
+      </div>
+
+      <!-- ===== Tracking ===== -->
+      <div class="page" id="page-tracking">
+        <div class="track-header">
+          <div class="track-order-id">订单号 #20260613001</div>
+          <div class="track-status">骑手正在配送中</div>
+          <div class="track-sub">预计 23:50 送达</div>
+        </div>
+        <div class="track-map">
+          <div class="track-map-text"><i class="fas fa-map-location-dot"></i><span>实时地图</span></div>
+          <div class="track-rider">
+            <div class="track-rider-avatar" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">张</div>
+            <div class="track-rider-info"><div class="track-rider-name">骑手 张伟</div><div class="track-rider-eta">距您约 1.2km · 约8分钟</div></div>
+            <div class="track-rider-call"><i class="fas fa-phone"></i></div>
+          </div>
+        </div>
+        <div class="track-timeline">
+          <div class="track-tl-item">
+            <div class="track-tl-dot done"><i class="fas fa-check"></i></div>
+            <div class="track-tl-text"><div class="track-tl-title">订单已提交</div><div class="track-tl-time">23:16</div></div>
+          </div>
+          <div class="track-tl-item">
+            <div class="track-tl-dot done"><i class="fas fa-check"></i></div>
+            <div class="track-tl-text"><div class="track-tl-title">商家已接单</div><div class="track-tl-time">23:17</div></div>
+          </div>
+          <div class="track-tl-item">
+            <div class="track-tl-dot done"><i class="fas fa-check"></i></div>
+            <div class="track-tl-text"><div class="track-tl-title">商家已出餐</div><div class="track-tl-time">23:32</div></div>
+          </div>
+          <div class="track-tl-item">
+            <div class="track-tl-dot current"><i class="fas fa-motorcycle"></i></div>
+            <div class="track-tl-text"><div class="track-tl-title">骑手配送中</div><div class="track-tl-time">23:35</div></div>
+          </div>
+          <div class="track-tl-item">
+            <div class="track-tl-dot pending"><i class="fas fa-flag-checkered"></i></div>
+            <div class="track-tl-text"><div class="track-tl-title pending">已送达</div></div>
+          </div>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+
+      <!-- ===== Orders ===== -->
+      <div class="page" id="page-orders">
+        <div style="padding:16px 20px;background:var(--card);border-bottom:1px solid var(--border)"><div style="font-size:18px;font-weight:800">我的订单</div></div>
+        <div class="order-list">
+          <div class="order-card" onclick="switchPage('tracking')">
+            <div class="order-card-head"><span class="order-card-shop">川味小馆（国贸店）</span><span class="order-card-status active">配送中</span></div>
+            <div class="order-card-items">宫保鸡丁x1 + 酸菜鱼x1 + 米饭x2</div>
+            <div class="order-card-bottom"><span class="order-card-price">¥67.00</span><span class="order-card-btn" style="border-color:var(--primary);color:var(--primary)">查看进度</span></div>
+          </div>
+          <div class="order-card">
+            <div class="order-card-head"><span class="order-card-shop">汉堡王（国贸店）</span><span class="order-card-status done">已完成</span></div>
+            <div class="order-card-items">皇堡套餐x1 + 可乐x1</div>
+            <div class="order-card-bottom"><span class="order-card-price">¥42.00</span><span class="order-card-btn">再来一单</span></div>
+          </div>
+          <div class="order-card">
+            <div class="order-card-head"><span class="order-card-shop">绿茶餐厅（望京店）</span><span class="order-card-status done">已完成</span></div>
+            <div class="order-card-items">龙井虾仁x1 + 西湖醋鱼x1 + 米饭x2</div>
+            <div class="order-card-bottom"><span class="order-card-price">¥128.00</span><span class="order-card-btn">再来一单</span></div>
+          </div>
+          <div class="order-card">
+            <div class="order-card-head"><span class="order-card-shop">鲜之寿司（三里屯店）</span><span class="order-card-status done">已完成</span></div>
+            <div class="order-card-items">三文鱼刺身x1 + 寿司拼盘x1</div>
+            <div class="order-card-bottom"><span class="order-card-price">¥96.00</span><span class="order-card-btn">再来一单</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Profile ===== -->
+      <div class="page" id="page-profile">
+        <div class="profile-header">
+          <div class="profile-avatar">王</div>
+          <div><div class="profile-name">王先生</div><div class="profile-phone">139****6677</div></div>
+        </div>
+        <div class="profile-stats">
+          <div><div class="profile-stat-val">286</div><div class="profile-stat-label">总订单</div></div>
+          <div><div class="profile-stat-val">5</div><div class="profile-stat-label">优惠券</div></div>
+          <div><div class="profile-stat-val">860</div><div class="profile-stat-label">积分</div></div>
+        </div>
+        <div class="profile-menu">
+          <div class="profile-menu-item"><i class="fas fa-location-dot"></i><span>收货地址</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-ticket"></i><span>优惠券</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-heart"></i><span>我的收藏</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-headset"></i><span>客服中心</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-shield-halved"></i><span>隐私设置</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-gear"></i><span>设置</span><i class="fas fa-chevron-right arrow"></i></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab-item active" data-page="home"><i class="fas fa-home"></i><span>首页</span></div>
+      <div class="tab-item" data-page="orders"><i class="fas fa-receipt"></i><span>订单</span><div class="tab-badge">1</div></div>
+      <div class="tab-item" data-page="cart" data-skip="true"><i class="fas fa-shopping-cart"></i><span>购物车</span></div>
+      <div class="tab-item" data-page="profile"><i class="fas fa-user"></i><span>我的</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let cartItems=0,cartTotal=0;
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  const tab=document.querySelector(`[data-page="${p}"]`);
+  if(tab&&!tab.dataset.skip)tab.classList.add('active');
+  document.querySelector('.screen-scroll').scrollTop=0;
+  // Show/hide cart float
+  const cf=document.getElementById('cartFloat');
+  if(cf){cf.style.display=(p==='menu'&&cartItems>0)?'flex':'none'}
+}
+document.querySelectorAll('.tab-item').forEach(t=>{
+  t.addEventListener('click',()=>{if(!t.dataset.skip)switchPage(t.dataset.page)})
+});
+document.querySelectorAll('.menu-cats').forEach(g=>{
+  g.querySelectorAll('.menu-cat-btn').forEach(b=>{
+    b.addEventListener('click',function(){g.querySelectorAll('.menu-cat-btn').forEach(x=>x.classList.remove('active'));this.classList.add('active')})
+  })
+});
+function addToCart(el){
+  cartItems++;cartTotal+=32;
+  const cf=document.getElementById('cartFloat');
+  document.getElementById('cartCount').textContent=cartItems;
+  document.getElementById('cartTotal').textContent=cartTotal;
+  cf.style.display='flex';
+  el.style.transform='scale(0.8)';
+  setTimeout(()=>el.style.transform='',150);
+}
+</script>
+</body>
+</html>

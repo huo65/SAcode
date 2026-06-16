@@ -1,290 +1,140 @@
 <template>
-  <!-- merchant 身份 -->
-  <div class="page-shell">
-    <div class="merchant">
-      <div class="merchant-hero">
-        <div>
-          <p class="eyebrow">商家工作台</p>
-          <h2>门店运营中心</h2>
-          <p class="hero-desc">
-            统一查看商品、订单、门店资料与经营分析，让顾客端展示内容与商家端维护信息始终保持一致。
-          </p>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <span>待处理订单</span>
-            <strong>{{ pendingOrderCount }}</strong>
-          </div>
-          <div class="hero-stat">
-            <span>待处理售后</span>
-            <strong>{{ pendingTicketCount }}</strong>
-          </div>
-          <div class="hero-stat">
-            <span>当前标签</span>
-            <strong>{{ currentTabTitle }}</strong>
-          </div>
-          <div class="hero-stat">
-            <span>启用权限</span>
-            <strong>{{ enabledPermissionCount }}</strong>
-          </div>
-        </div>
-      </div>
+  <div class="page-container">
+    <AppSidebar
+      role="merchant"
+      :current-page="currentPage"
+      :store-open="storeOpen"
+      :mobile-open="mobileOpen"
+      :badges="badges"
+      @navigate="onNavigate"
+      @toggle-store-status="toggleStoreStatus"
+      @close-mobile="mobileOpen = false"
+    />
 
-      <el-tabs v-model="activeName" @tab-click="handleClick" class="merchant-tab">
-        <el-tab-pane v-if="hasMenu('merchant.menu.goods')" :label="t('common.goods')" name="first"><Goods /></el-tab-pane>
-        <el-tab-pane v-if="hasMenu('merchant.menu.order')" name="second">
-          <template #label>
-            <el-badge :value="pendingOrderCount" :hidden="pendingOrderCount <= 0" :max="99">
-              <span>{{ t("common.order") }}</span>
-            </el-badge>
-          </template>
-          <Order />
-        </el-tab-pane>
-        <el-tab-pane v-if="hasMenu('merchant.menu.afterSale')" name="third">
-          <template #label>
-            <el-badge :value="pendingTicketCount" :hidden="pendingTicketCount <= 0" :max="99">
-              <span>售后</span>
-            </el-badge>
-          </template>
-          <AfterSaleBoard scope="merchant" />
-        </el-tab-pane>
-        <el-tab-pane v-if="hasMenu('merchant.menu.store')" label="店铺" name="fourth"><StoreManage /></el-tab-pane>
-        <el-tab-pane v-if="hasMenu('merchant.menu.info')" :label="t('common.info')" name="fifth"><Info /></el-tab-pane>
-        <el-tab-pane v-if="hasMenu('merchant.menu.ops')" label="运营" name="sixth"><MerchantOps /></el-tab-pane>
-      </el-tabs>
+    <div class="page-main">
+      <Header @toggle-mobile="mobileOpen = !mobileOpen" />
+
+      <div class="page-content">
+        <!-- 移动端遮罩 -->
+        <div class="mobile-mask" v-if="mobileOpen" @click="mobileOpen = false"></div>
+
+        <!-- 路由出口 -->
+        <router-view v-slot="{ Component }">
+          <transition name="fade-slide" mode="out-in">
+            <component :is="Component" :key="$route.fullPath" />
+          </transition>
+        </router-view>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount } from "vue";
-import { useI18n } from "vue-i18n";
-import Goods from "@/components/goods/index.vue";
-import Order from "@/components/order/index.vue";
-import Info from "@/components/info/index.vue";
-import StoreManage from "@/components/restaurant/store-manage.vue";
-import AfterSaleBoard from "@/components/after-sale/index.vue";
-import MerchantOps from "@/components/operation/merchant-ops.vue";
-import { ElNotification } from "element-plus";
-import { AfterSale, Ops, Order as OrderApi } from "@/api/apis";
-import fetch from "@/api/fetch";
-import { refreshDataFnMap, userInfo } from "@/store";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import AppSidebar from '@/components/AppSidebar/index.vue';
+import Header from '@/page/home/components/Header.vue';
+import { userInfo } from '@/store';
+import { Order as OrderApi, AfterSale } from '@/api/apis';
+import fetch from '@/api/fetch';
 
-const { t } = useI18n();
-const activeName = ref("first");
+const route = useRoute();
+const router = useRouter();
+
+const mobileOpen = ref(false);
+const storeOpen = ref(true);
 const pendingOrderCount = ref(0);
 const pendingTicketCount = ref(0);
-const permissionSnapshot = ref({
-  menuMap: {},
-  menuKeys: [],
-  actionKeys: [],
+
+const badges = computed(() => ({
+  pendingOrders: pendingOrderCount.value,
+  pendingTickets: pendingTicketCount.value,
+}));
+
+const currentPage = computed(() => {
+  return route.meta?.sidebarKey || 'dashboard';
 });
+
+const onNavigate = ({ key }) => {
+  router.push(`/home/merchant/${key}`);
+};
+
+const toggleStoreStatus = () => {
+  storeOpen.value = !storeOpen.value;
+};
+
+// ==================== 拉取角标 ====================
 let pollTimer = null;
 let initialized = false;
 
-const tabKeyMap = {
-  [t("common.goods")]: "Goods",
-  [t("common.order")]: "Order",
-  售后: "AfterSale",
-  店铺: "Store",
-  [t("common.info")]: "Info",
-  运营: "Ops",
-};
-
-const tabNameMap = {
-  first: "Goods",
-  second: "Order",
-  third: "AfterSale",
-  fourth: "Store",
-  fifth: "Info",
-  sixth: "Ops",
-};
-
-const tabPermissionMap = {
-  first: "merchant.menu.goods",
-  second: "merchant.menu.order",
-  third: "merchant.menu.afterSale",
-  fourth: "merchant.menu.store",
-  fifth: "merchant.menu.info",
-  sixth: "merchant.menu.ops",
-};
-
-const currentTabTitle = computed(() => {
-  const map = {
-    first: "商品管理",
-    second: "订单处理",
-    third: "售后处理",
-    fourth: "门店资料",
-    fifth: "账号信息",
-    sixth: "经营分析",
-  };
-  return map[activeName.value] || "门店运营";
-});
-
-const enabledPermissionCount = computed(
-  () =>
-    (permissionSnapshot.value?.menuKeys?.length || 0) +
-    (permissionSnapshot.value?.actionKeys?.length || 0)
-);
-
-const hasMenu = (permissionKey) =>
-  permissionSnapshot.value?.menuMap?.[permissionKey] !== false;
-
-const ensureActiveTab = () => {
-  const candidate = Object.keys(tabPermissionMap).find((name) =>
-    hasMenu(tabPermissionMap[name])
-  );
-  if (!candidate) return;
-  if (!hasMenu(tabPermissionMap[activeName.value])) {
-    activeName.value = candidate;
-  }
-};
-
-const handleClick = (tab, event) => {
-  const key = tabNameMap[tab.props.name] || tabKeyMap[tab.props.label] || tab.props.label;
-  refreshDataFnMap.value?.[key]?.();
-};
-
-const loadPermissions = () => {
-  fetch(Ops.me).then((data) => {
-    permissionSnapshot.value = data || {
-      menuMap: {},
-      menuKeys: [],
-      actionKeys: [],
-    };
-    ensureActiveTab();
-  });
-};
-
-const refreshMerchantOrders = () => {
-  if (activeName.value === "second") {
-    refreshDataFnMap.value?.Order?.();
-  }
-};
-
-const pollPendingOrders = () => {
-  if (userInfo.value.type !== "mer") return;
+const loadPendingCounts = () => {
+  if (userInfo.value.type !== 'mer') return;
   fetch(OrderApi.getOrderList, {
     usrId: userInfo.value.id,
     state: 0,
     timeOrder: 1,
   }).then((data) => {
-    const nextCount = data?.merList?.length || 0;
-    if (initialized && nextCount > pendingOrderCount.value) {
-      ElNotification({
-        title: "新订单提醒",
-        message: `当前有 ${nextCount} 笔已支付订单等待处理。`,
-        type: "success",
-        duration: 3000,
-      });
-      refreshMerchantOrders();
-    } else if (activeName.value === "second" && nextCount !== pendingOrderCount.value) {
-      refreshMerchantOrders();
-    }
-    pendingOrderCount.value = nextCount;
+    pendingOrderCount.value = data?.merList?.length || 0;
     initialized = true;
   });
-  fetch(AfterSale.stats, { scope: "merchant" }).then((data) => {
+  fetch(AfterSale.stats, { scope: 'merchant' }).then((data) => {
     pendingTicketCount.value = Number(data?.stats?.pending || 0);
   });
 };
 
+// 默认跳到 dashboard
 onMounted(() => {
-  loadPermissions();
-  pollPendingOrders();
-  pollTimer = window.setInterval(pollPendingOrders, 15000);
-  window.addEventListener("ops-permission-updated", loadPermissions);
+  if (route.path === '/home' || route.path === '/home/merchant') {
+    router.replace('/home/merchant/dashboard');
+  }
+  loadPendingCounts();
+  pollTimer = setInterval(loadPendingCounts, 15000);
 });
 
 onBeforeUnmount(() => {
-  if (pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = null;
-  }
-  window.removeEventListener("ops-permission-updated", loadPermissions);
+  if (pollTimer) clearInterval(pollTimer);
+});
+
+// 监听路由变化关闭移动端 sidebar
+watch(() => route.fullPath, () => {
+  mobileOpen.value = false;
 });
 </script>
 
 <style lang="less" scoped>
-.merchant {
-  padding: 18px 20px 24px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(255, 200, 87, 0.18), transparent 28%),
-    radial-gradient(circle at left center, rgba(185, 122, 57, 0.1), transparent 32%),
-    linear-gradient(180deg, rgba(255, 254, 251, 0.92) 0%, rgba(247, 239, 229, 0.9) 100%);
-  border: 1px solid rgba(41, 28, 20, 0.08);
-  box-shadow: var(--shadow-card);
+.page-content {
+  position: relative;
+  padding: 28px 32px;
+}
 
-  &-tab {
-    padding: 16px 4px 4px;
+.mobile-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 99;
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-mask {
+    display: block;
+  }
+  .page-content {
+    padding: 16px;
   }
 }
 
-.merchant-hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 20px 8px 8px;
+// 路由切换动画
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s ease;
 }
-
-.eyebrow {
-  margin: 0 0 8px;
-  color: #b76e2b;
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
 }
-
-.merchant-hero h2 {
-  margin: 0;
-  font-size: 34px;
-  font-family: "Georgia", "Times New Roman", serif;
-  color: #23170f;
-}
-
-.hero-desc {
-  max-width: 760px;
-  margin: 10px 0 0;
-  color: rgba(35, 23, 15, 0.72);
-  line-height: 1.8;
-}
-
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(140px, 1fr));
-  gap: 12px;
-  min-width: 620px;
-}
-
-.hero-stat {
-  padding: 18px 16px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(35, 23, 15, 0.08);
-}
-
-.hero-stat span {
-  display: block;
-  color: rgba(35, 23, 15, 0.58);
-  font-size: 13px;
-}
-
-.hero-stat strong {
-  display: block;
-  margin-top: 8px;
-  color: #23170f;
-  font-size: 26px;
-  font-family: "Georgia", "Times New Roman", serif;
-}
-
-@media (max-width: 1100px) {
-  .merchant-hero {
-    flex-direction: column;
-  }
-
-  .hero-stats {
-    min-width: 0;
-  }
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

@@ -1,0 +1,273 @@
+// ============================================================
+//  全局样式重置 & 通用工具类
+//  需在 main.js 中 import '[@/style/global.less](@/style/global.less)'
+// ============================================================
+
+// ==================== 角色主题切换 ====================
+// 在 body 上添加对应 class 即可切换整套主题色
+// 例：<body class="role-customer">  →  顾客端红色主题
+
+.role-merchant {
+  --primary: #E8652B;
+  --primary-light: #FFF3ED;
+  --primary-hover: #D4561E;
+  --secondary: #2D3436;
+  --success: #00B894;
+  --success-light: #E8FFF7;
+  --warning: #FDCB6E;
+  --warning-light: #FFF9E6;
+  --danger: #E17055;
+  --danger-light: #FFEFEC;
+  --info: #0984E3;
+  --info-light: #EBF5FF;
+  --bg: #F5F6FA;
+  --card: #FFFFFF;
+  --border: #E8E9ED;
+  --text-primary: #1A1D21;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --sidebar-w: 240px;
+  --header-h: 64px;
+}
+
+.role-customer {
+  --primary: #EF4444;
+  --primary-dark: #DC2626;
+  --primary-light: #FEF3F2;
+  --primary-50: #FFF1F2;
+  --accent: #F97316;
+  --accent-light: #FFF7ED;
+  --success: #10B981;
+  --success-light: #ECFDF5;
+  --warning: #F59E0B;
+  --warning-light: #FFFBEB;
+  --danger: #EF4444;
+  --danger-light: #FEF3F2;
+  --info: #3B82F6;
+  --info-light: #EFF6FF;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --border: #F0F0F0;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+}
+
+.role-admin {
+  --primary: #4F46E5;
+  --primary-light: #EEF2FF;
+  --primary-hover: #4338CA;
+  --primary-50: #E0E7FF;
+  --accent: #7C3AED;
+  --accent-light: #F5F3FF;
+  --success: #059669;
+  --success-light: #ECFDF5;
+  --warning: #D97706;
+  --warning-light: #FFFBEB;
+  --danger: #DC2626;
+  --danger-light: #FEF2F2;
+  --info: #0284C7;
+  --info-light: #F0F9FF;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --border: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --sidebar-w: 260px;
+  --header-h: 60px;
+}
+
+.role-rider {
+  --primary: #059669;
+  --primary-dark: #047857;
+  --primary-light: #ECFDF5;
+  --primary-50: #F0FDF4;
+  --accent: #0EA5E9;
+  --accent-light: #F0F9FF;
+  --success: #16A34A;
+  --success-light: #F0FDF4;
+  --warning: #EAB308;
+  --warning-light: #FEFCE8;
+  --danger: #DC2626;
+  --danger-light: #FEF2F2;
+  --info: #6366F1;
+  --info-light: #EEF2FF;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --border: #F0F0F0;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+}
+
+// ==================== CSS 变量兜底（无 class 时） ====================
+:root {
+  --primary: #E8652B;
+  --primary-light: #FFF3ED;
+  --primary-hover: #D4561E;
+  --success: #00B894;
+  --warning: #FDCB6E;
+  --danger: #E17055;
+  --info: #0984E3;
+  --bg: #F5F6FA;
+  --card: #FFFFFF;
+  --border: #E8E9ED;
+  --text-primary: #1A1D21;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.1);
+  --transition: all 0.2s ease;
+}
+
+// ==================== 全局重置 ====================
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+// ==================== 通用布局工具类 ====================
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ==================== 通用卡片基类 ====================
+.card-base {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// ==================== 页面容器 ====================
+.page-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.page-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  margin-left: var(--sidebar-w);
+  transition: margin-left 0.2s ease;
+}
+
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+}
+
+// ==================== 页面 hero 区域 ====================
+.page-hero {
+  padding: 20px 8px 8px;
+
+  .eyebrow {
+    margin: 0 0 8px;
+    color: var(--primary);
+    font-size: 12px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 34px;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    color: var(--text-primary);
+  }
+
+  .hero-desc {
+    max-width: 760px;
+    margin: 10px 0 0;
+    color: fade(@text-primary, 72%);
+    line-height: 1.8;
+  }
+}
+
+// ==================== 统计卡片网格 ====================
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1100px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

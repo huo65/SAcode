@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>味掌柜 - 骑手端</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#059669;--primary-dark:#047857;--primary-light:#ECFDF5;--primary-50:#F0FDF4;
+  --accent:#0EA5E9;--accent-light:#F0F9FF;
+  --success:#16A34A;--success-light:#F0FDF4;
+  --warning:#EAB308;--warning-light:#FEFCE8;
+  --danger:#DC2626;--danger-light:#FEF2F2;
+  --info:#6366F1;--info-light:#EEF2FF;
+  --bg:#F5F5F5;--card:#FFFFFF;--border:#F0F0F0;
+  --text-primary:#111827;--text-secondary:#4B5563;--text-muted:#9CA3AF;
+  --phone-w:390px;--phone-h:844px;--phone-radius:44px;
+  --radius:14px;--radius-sm:10px;--radius-xs:6px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg:0 12px 30px rgba(0,0,0,0.12);
+  --transition:all 0.2s ease;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:#E8E8E8;color:var(--text-primary);font-size:14px;line-height:1.5;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:auto}
+
+.phone-frame{width:var(--phone-w);height:var(--phone-h);background:var(--bg);border-radius:var(--phone-radius);overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.2),0 0 0 1px rgba(0,0,0,0.05);flex-shrink:0}
+.phone-inner{width:100%;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+
+.status-bar{height:48px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--text-primary);flex-shrink:0;position:relative;z-index:50}
+.status-bar .time{font-size:15px;font-weight:700}
+.status-bar .icons{display:flex;gap:5px;align-items:center;font-size:13px}
+
+.screen-scroll{flex:1;overflow-y:auto;overflow-x:hidden}
+.screen-scroll::-webkit-scrollbar{display:none}
+
+.page{display:none;flex-direction:column;min-height:100%}
+.page.active{display:flex;animation:fadeUp 0.25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Tab Bar ===== */
+.tab-bar{height:82px;background:var(--card);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;flex-shrink:0;z-index:50}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:var(--transition);padding:4px 0;position:relative}
+.tab-item i{font-size:20px;color:var(--text-muted);transition:var(--transition)}
+.tab-item span{font-size:10px;color:var(--text-muted);font-weight:500;transition:var(--transition)}
+.tab-item.active i{color:var(--primary)}
+.tab-item.active span{color:var(--primary);font-weight:600}
+.tab-badge{position:absolute;top:-2px;right:50%;transform:translateX(18px);background:var(--danger);color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* ===== Home / Order Queue ===== */
+.rider-header{padding:16px 20px;background:var(--primary);color:white;display:flex;align-items:center;justify-content:space-between}
+.rider-header-left{display:flex;align-items:center;gap:10px}
+.rider-avatar{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+.rider-greeting{font-size:16px;font-weight:700}
+.rider-sub{font-size:11px;opacity:0.8}
+.rider-status-btn{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:none}
+.rider-status-btn.online{background:white;color:var(--primary)}
+.rider-status-btn.offline{background:rgba(255,255,255,0.2);color:white}
+
+/* Earnings quick view */
+.earnings-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:var(--card);margin:0;padding:14px 0;box-shadow:var(--shadow)}
+.earn-item{text-align:center;border-right:1px solid var(--border)}
+.earn-item:last-child{border-right:none}
+.earn-val{font-size:22px;font-weight:800;color:var(--text-primary)}
+.earn-val.green{color:var(--primary)}
+.earn-label{font-size:11px;color:var(--text-muted);margin-top:1px}
+
+/* Order queue */
+.queue-section{padding:16px}
+.queue-title{font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.queue-title .count{background:var(--danger);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px}
+.queue-title i{color:var(--primary)}
+
+.order-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);transition:var(--transition);cursor:pointer}
+.order-card:active{transform:scale(0.98)}
+.order-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.order-card-id{font-size:12px;color:var(--text-muted);font-weight:500}
+.order-card-time{font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px}
+.order-card-time.urgent{background:var(--danger-light);color:var(--danger)}
+.order-card-time.normal{background:var(--primary-light);color:var(--primary)}
+.order-card-shop{font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.order-card-shop i{color:var(--primary);font-size:13px}
+.order-card-addr{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.order-card-addr i{color:var(--text-muted);font-size:10px;width:14px}
+.order-card-customer{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;margin-bottom:8px}
+.order-card-customer i{color:var(--text-muted);font-size:10px;width:14px}
+.order-card-footer{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border)}
+.order-card-fee{font-size:13px;color:var(--text-secondary)}
+.order-card-fee strong{color:var(--primary);font-size:16px;font-weight:800}
+.order-card-btn{padding:8px 20px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:none}
+.order-card-btn.accept{background:var(--primary);color:white;box-shadow:0 2px 8px rgba(5,150,105,0.3)}
+.order-card-btn.navigate{background:var(--accent);color:white;box-shadow:0 2px 8px rgba(14,165,233,0.3)}
+
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;text-align:center}
+.empty-state i{font-size:48px;color:var(--text-muted);opacity:0.3;margin-bottom:16px}
+.empty-state .title{font-size:16px;font-weight:600;color:var(--text-secondary)}
+.empty-state .sub{font-size:13px;color:var(--text-muted);margin-top:4px}
+
+/* ===== Active Delivery ===== */
+.delivery-header{padding:14px 20px;background:var(--primary);color:white;display:flex;align-items:center;gap:12px}
+.delivery-header .back{cursor:pointer;font-size:16px}
+.delivery-header .title{font-size:16px;font-weight:700}
+.delivery-header .step{font-size:12px;opacity:0.8;margin-left:auto}
+
+.delivery-map{height:220px;background:linear-gradient(135deg,#DCFCE7,#BBF7D0);display:flex;align-items:center;justify-content:center;position:relative}
+.delivery-map-text{font-size:13px;color:#166534;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:6px}
+.delivery-map-text i{font-size:36px;opacity:0.5}
+.delivery-info-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(255,255,255,0.95));padding:16px 20px 12px}
+.delivery-eta{font-size:28px;font-weight:800;color:var(--primary);display:flex;align-items:baseline;gap:4px}
+.delivery-eta span{font-size:13px;font-weight:500;color:var(--text-muted)}
+.delivery-dist{font-size:12px;color:var(--text-secondary);margin-top:2px}
+
+.delivery-actions{display:flex;gap:10px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border)}
+.action-btn{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:6px}
+.action-btn.call{background:var(--primary-light);color:var(--primary)}
+.action-btn.msg{background:var(--accent-light);color:var(--accent)}
+.action-btn.complete{background:var(--primary);color:white;box-shadow:0 2px 8px rgba(5,150,105,0.3)}
+
+.delivery-detail{padding:16px 20px}
+.detail-section{margin-bottom:16px}
+.detail-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.detail-card{background:var(--card);border-radius:var(--radius-sm);padding:14px;box-shadow:var(--shadow)}
+.detail-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.detail-row:last-child{margin-bottom:0}
+.detail-row i{color:var(--text-muted);font-size:13px;margin-top:2px;width:16px;text-align:center}
+.detail-row .label{font-size:11px;color:var(--text-muted)}
+.detail-row .value{font-size:13px;font-weight:500;color:var(--text-primary)}
+.detail-row .value.green{color:var(--primary);font-weight:700}
+.detail-row .note{font-size:12px;color:var(--warning);font-weight:600}
+
+.items-list{display:flex;flex-direction:column;gap:6px}
+.item-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)}
+.item-row .name{font-weight:500;color:var(--text-primary)}
+
+/* ===== Earnings ===== */
+.earnings-header{padding:24px 20px;background:linear-gradient(135deg,var(--primary),#0D9488);color:white;text-align:center}
+.earnings-header .label{font-size:13px;opacity:0.8}
+.earnings-header .amount{font-size:36px;font-weight:800;margin:4px 0}
+.earnings-header .amount span{font-size:16px;font-weight:400}
+.earnings-header .sub{font-size:12px;opacity:0.7}
+
+.earnings-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.earnings-tab{flex:1;padding:12px 0;text-align:center;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:var(--transition)}
+.earnings-tab.active{color:var(--primary);font-weight:700;border-bottom-color:var(--primary)}
+
+.earnings-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px 20px}
+.earn-summary-card{background:var(--card);border-radius:var(--radius-sm);padding:14px;box-shadow:var(--shadow);text-align:center}
+.earn-summary-val{font-size:22px;font-weight:800;color:var(--text-primary)}
+.earn-summary-val.green{color:var(--primary)}
+.earn-summary-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+.earn-chart{margin:0 20px 16px;background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.earn-chart-title{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:12px}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:100px}
+.chart-bar{flex:1;border-radius:4px 4px 0 0;min-height:4px;cursor:pointer;transition:var(--transition)}
+.chart-bar:hover{filter:brightness(1.1)}
+.chart-bar-labels{display:flex;gap:4px;margin-top:6px}
+.chart-bar-labels span{flex:1;text-align:center;font-size:9px;color:var(--text-muted)}
+
+.earn-detail{padding:0 20px 20px}
+.earn-detail-title{font-size:13px;font-weight:700;margin-bottom:10px}
+.earn-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.earn-row:last-child{border-bottom:none}
+.earn-row .info{display:flex;flex-direction:column;gap:1px}
+.earn-row .shop{font-weight:600;color:var(--text-primary)}
+.earn-row .time{font-size:11px;color:var(--text-muted)}
+.earn-row .fee{font-weight:700;color:var(--primary)}
+
+/* ===== Order History ===== */
+.history-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.history-tab{flex:1;padding:12px 0;text-align:center;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:var(--transition)}
+.history-tab.active{color:var(--primary);font-weight:700;border-bottom-color:var(--primary)}
+
+.history-list{padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.history-card{background:var(--card);border-radius:var(--radius-sm);padding:14px;box-shadow:var(--shadow)}
+.history-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.history-card-id{font-size:12px;color:var(--text-muted)}
+.history-card-status{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.history-card-status.completed{background:var(--primary-light);color:var(--primary)}
+.history-card-status.cancelled{background:var(--danger-light);color:var(--danger)}
+.history-card-shop{font-size:14px;font-weight:600;margin-bottom:6px}
+.history-card-route{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.history-card-route i{font-size:10px;color:var(--text-muted)}
+.history-card-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.history-card-fee{font-size:15px;font-weight:800;color:var(--primary)}
+.history-card-time{font-size:11px;color:var(--text-muted)}
+
+/* ===== Profile ===== */
+.profile-header{padding:24px 20px;background:linear-gradient(135deg,var(--primary),#0D9488);color:white;display:flex;align-items:center;gap:14px}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.profile-name{font-size:18px;font-weight:700}
+.profile-id{font-size:12px;opacity:0.7;margin-top:2px}
+
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);margin:-16px 16px 12px;border-radius:var(--radius);box-shadow:var(--shadow-md);padding:16px 0;text-align:center;position:relative;z-index:2}
+.profile-stat-val{font-size:20px;font-weight:800;color:var(--text-primary)}
+.profile-stat-val.green{color:var(--primary)}
+.profile-stat-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+.profile-menu{margin:0 16px;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.profile-menu-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--transition)}
+.profile-menu-item:last-child{border-bottom:none}
+.profile-menu-item:active{background:var(--bg)}
+.profile-menu-item i{width:20px;text-align:center;color:var(--text-secondary);font-size:15px}
+.profile-menu-item span{flex:1;font-size:14px;color:var(--text-primary)}
+.profile-menu-item .arrow{color:var(--text-muted);font-size:12px}
+
+/* Online/Offline big toggle */
+.online-toggle{margin:16px;background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);text-align:center}
+.online-toggle .status-text{font-size:16px;font-weight:700;margin-bottom:12px}
+.online-toggle .status-text.online{color:var(--primary)}
+.online-toggle .status-text.offline{color:var(--text-muted)}
+.toggle-switch{width:56px;height:30px;border-radius:15px;cursor:pointer;position:relative;transition:var(--transition);display:inline-block;background:#CBD5E1}
+.toggle-switch.on{background:var(--primary)}
+.toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;background:white;border-radius:50%;transition:var(--transition);box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle-switch.on::after{transform:translateX(26px)}
+.online-toggle .hint{font-size:11px;color:var(--text-muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-inner">
+    <div class="status-bar">
+      <span class="time">23:30</span>
+      <span class="icons"><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-full"></i></span>
+    </div>
+
+    <div class="screen-scroll">
+      <!-- ===== Home / Order Queue ===== -->
+      <div class="page active" id="page-home">
+        <div class="rider-header">
+          <div class="rider-header-left">
+            <div class="rider-avatar">张</div>
+            <div><div class="rider-greeting">你好，张伟</div><div class="rider-sub">今日已跑 28 单</div></div>
+          </div>
+          <button class="rider-status-btn online" id="onlineBtn" onclick="toggleOnline()">在线接单</button>
+        </div>
+
+        <div class="earnings-strip">
+          <div class="earn-item"><div class="earn-val green">¥326</div><div class="earn-label">今日收入</div></div>
+          <div class="earn-item"><div class="earn-val">8.5h</div><div class="earn-label">在线时长</div></div>
+          <div class="earn-item"><div class="earn-val">4.9</div><div class="earn-label">服务评分</div></div>
+        </div>
+
+        <div class="queue-section">
+          <div class="queue-title"><i class="fas fa-bell"></i>待接订单 <span class="count">3</span></div>
+
+          <div class="order-card" onclick="switchPage('delivery')">
+            <div class="order-card-top">
+              <span class="order-card-id">#20260613001</span>
+              <span class="order-card-time urgent"><i class="fas fa-clock" style="font-size:10px"></i> 剩余5分钟</span>
+            </div>
+            <div class="order-card-shop"><i class="fas fa-store"></i>川味小馆（国贸店）</div>
+            <div class="order-card-addr"><i class="fas fa-location-dot"></i>国贸建外SOHO 12号楼 → 建国路88号SOHO现代城A座1206</div>
+            <div class="order-card-customer"><i class="fas fa-user"></i>王先生 · 139****6677 · 距离1.2km</div>
+            <div class="order-card-footer">
+              <div class="order-card-fee">配送费 <strong>¥8.5</strong></div>
+              <button class="order-card-btn accept">接单</button>
+            </div>
+          </div>
+
+          <div class="order-card">
+            <div class="order-card-top">
+              <span class="order-card-id">#20260613002</span>
+              <span class="order-card-time normal"><i class="fas fa-clock" style="font-size:10px"></i> 剩余12分钟</span>
+            </div>
+            <div class="order-card-shop"><i class="fas fa-store"></i>绿茶餐厅（望京店）</div>
+            <div class="order-card-addr"><i class="fas fa-location-dot"></i>望京SOHO T2 → 阜通东大街6号院</div>
+            <div class="order-card-customer"><i class="fas fa-user"></i>李女士 · 138****5566 · 距离2.3km</div>
+            <div class="order-card-footer">
+              <div class="order-card-fee">配送费 <strong>¥10.0</strong></div>
+              <button class="order-card-btn accept">接单</button>
+            </div>
+          </div>
+
+          <div class="order-card">
+            <div class="order-card-top">
+              <span class="order-card-id">#20260613003</span>
+              <span class="order-card-time normal"><i class="fas fa-clock" style="font-size:10px"></i> 剩余15分钟</span>
+            </div>
+            <div class="order-card-shop"><i class="fas fa-store"></i>汉堡王（国贸店）</div>
+            <div class="order-card-addr"><i class="fas fa-location-dot"></i>国贸商城B1层 → 朝外大街18号</div>
+            <div class="order-card-customer"><i class="fas fa-user"></i>赵先生 · 136****3344 · 距离1.8km</div>
+            <div class="order-card-footer">
+              <div class="order-card-fee">配送费 <strong>¥7.5</strong></div>
+              <button class="order-card-btn accept">接单</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Active Delivery ===== -->
+      <div class="page" id="page-delivery">
+        <div class="delivery-header">
+          <i class="fas fa-arrow-left back" onclick="switchPage('home')"></i>
+          <div class="title">配送中</div>
+          <div class="step">第 1/2 步 · 取餐</div>
+        </div>
+
+        <div class="delivery-map">
+          <div class="delivery-map-text"><i class="fas fa-route"></i><span>导航路线</span></div>
+          <div class="delivery-info-overlay">
+            <div class="delivery-eta">8<span>分钟</span></div>
+            <div class="delivery-dist">距离取餐点 1.2km · 预计 23:42 到达</div>
+          </div>
+        </div>
+
+        <div class="delivery-actions">
+          <button class="action-btn call"><i class="fas fa-phone"></i>联系商家</button>
+          <button class="action-btn msg"><i class="fas fa-message"></i>联系客户</button>
+          <button class="action-btn complete" onclick="switchStep()"><i class="fas fa-check"></i>已取餐</button>
+        </div>
+
+        <div class="delivery-detail">
+          <div class="detail-section">
+            <div class="detail-label">取餐信息</div>
+            <div class="detail-card">
+              <div class="detail-row"><i class="fas fa-store"></i><div><div class="label">商家</div><div class="value">川味小馆（国贸店）</div></div></div>
+              <div class="detail-row"><i class="fas fa-location-dot"></i><div><div class="label">地址</div><div class="value">朝阳区国贸建外SOHO 12号楼</div></div></div>
+              <div class="detail-row"><i class="fas fa-phone"></i><div><div class="label">电话</div><div class="value">010-8888****</div></div></div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-label">送餐信息</div>
+            <div class="detail-card">
+              <div class="detail-row"><i class="fas fa-user"></i><div><div class="label">客户</div><div class="value">王先生 · 139****6677</div></div></div>
+              <div class="detail-row"><i class="fas fa-location-dot"></i><div><div class="label">地址</div><div class="value">建国路88号SOHO现代城A座1206</div></div></div>
+              <div class="detail-row"><i class="fas fa-sticky-note"></i><div><div class="label">备注</div><div class="value note">不要辣，多放葱，到了打电话</div></div></div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-label">订单详情</div>
+            <div class="detail-card">
+              <div class="items-list">
+                <div class="item-row"><span class="name">宫保鸡丁 x1</span><span>¥32.00</span></div>
+                <div class="item-row"><span class="name">酸菜鱼 x1</span><span>¥46.00</span></div>
+                <div class="item-row"><span class="name">米饭 x2</span><span>¥4.00</span></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:14px;font-weight:700">
+                <span>配送费</span><span class="green" style="color:var(--primary)">¥8.50</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Earnings ===== -->
+      <div class="page" id="page-earnings">
+        <div class="earnings-header">
+          <div class="label">今日收入</div>
+          <div class="amount"><span>¥</span>326.00</div>
+          <div class="sub">较昨日同期 +12.5%</div>
+        </div>
+
+        <div class="earnings-tabs">
+          <div class="earnings-tab active">今日</div>
+          <div class="earnings-tab">本周</div>
+          <div class="earnings-tab">本月</div>
+        </div>
+
+        <div class="earnings-summary">
+          <div class="earn-summary-card"><div class="earn-summary-val green">28</div><div class="earn-summary-label">完成订单</div></div>
+          <div class="earn-summary-card"><div class="earn-summary-val">8.5h</div><div class="earn-summary-label">在线时长</div></div>
+          <div class="earn-summary-card"><div class="earn-summary-val green">¥11.6</div><div class="earn-summary-label">单均收入</div></div>
+          <div class="earn-summary-card"><div class="earn-summary-val">4.9</div><div class="earn-summary-label">服务评分</div></div>
+        </div>
+
+        <div class="earn-chart">
+          <div class="earn-chart-title">近7日收入</div>
+          <div class="chart-bars" id="earnChart"></div>
+          <div class="chart-bar-labels" id="earnLabels"></div>
+        </div>
+
+        <div class="earn-detail">
+          <div class="earn-detail-title">收入明细</div>
+          <div class="earn-row"><div class="info"><span class="shop">川味小馆 → 王先生</span><span class="time">23:16 · 1.2km</span></div><span class="fee">+¥8.50</span></div>
+          <div class="earn-row"><div class="info"><span class="shop">绿茶餐厅 → 李女士</span><span class="time">22:48 · 2.3km</span></div><span class="fee">+¥10.00</span></div>
+          <div class="earn-row"><div class="info"><span class="shop">汉堡王 → 赵先生</span><span class="time">22:15 · 1.8km</span></div><span class="fee">+¥7.50</span></div>
+          <div class="earn-row"><div class="info"><span class="shop">鲜之寿司 → 陈女士</span><span class="time">21:40 · 3.1km</span></div><span class="fee">+¥12.00</span></div>
+          <div class="earn-row"><div class="info"><span class="shop">味千拉面 → 孙先生</span><span class="time">21:05 · 1.5km</span></div><span class="fee">+¥8.00</span></div>
+        </div>
+      </div>
+
+      <!-- ===== Order History ===== -->
+      <div class="page" id="page-history">
+        <div style="padding:16px 20px;background:var(--card);border-bottom:1px solid var(--border)"><div style="font-size:18px;font-weight:800">配送记录</div></div>
+        <div class="history-tabs">
+          <div class="history-tab active">全部</div>
+          <div class="history-tab">已完成</div>
+          <div class="history-tab">已取消</div>
+        </div>
+        <div class="history-list">
+          <div class="history-card">
+            <div class="history-card-top"><span class="history-card-id">#20260613001 · 23:16</span><span class="history-card-status completed">已完成</span></div>
+            <div class="history-card-shop">川味小馆 → 王先生</div>
+            <div class="history-card-route"><i class="fas fa-route"></i>1.2km · 25分钟</div>
+            <div class="history-card-bottom"><span class="history-card-fee">+¥8.50</span><span class="history-card-time">今天 23:16</span></div>
+          </div>
+          <div class="history-card">
+            <div class="history-card-top"><span class="history-card-id">#20260613002 · 22:48</span><span class="history-card-status completed">已完成</span></div>
+            <div class="history-card-shop">绿茶餐厅 → 李女士</div>
+            <div class="history-card-route"><i class="fas fa-route"></i>2.3km · 32分钟</div>
+            <div class="history-card-bottom"><span class="history-card-fee">+¥10.00</span><span class="history-card-time">今天 22:48</span></div>
+          </div>
+          <div class="history-card">
+            <div class="history-card-top"><span class="history-card-id">#20260613003 · 22:15</span><span class="history-card-status completed">已完成</span></div>
+            <div class="history-card-shop">汉堡王 → 赵先生</div>
+            <div class="history-card-route"><i class="fas fa-route"></i>1.8km · 22分钟</div>
+            <div class="history-card-bottom"><span class="history-card-fee">+¥7.50</span><span class="history-card-time">今天 22:15</span></div>
+          </div>
+          <div class="history-card">
+            <div class="history-card-top"><span class="history-card-id">#20260612087 · 20:30</span><span class="history-card-status cancelled">已取消</span></div>
+            <div class="history-card-shop">味千拉面 → 刘女士</div>
+            <div class="history-card-route"><i class="fas fa-ban" style="color:var(--danger)"></i>客户取消订单</div>
+            <div class="history-card-bottom"><span class="history-card-fee" style="color:var(--text-muted)">¥0.00</span><span class="history-card-time">今天 20:30</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Profile ===== -->
+      <div class="page" id="page-profile">
+        <div class="profile-header">
+          <div class="profile-avatar">张</div>
+          <div><div class="profile-name">张伟</div><div class="profile-id">骑手编号 R-20240318</div></div>
+        </div>
+        <div class="profile-stats">
+          <div><div class="profile-stat-val green">3,860</div><div class="profile-stat-label">累计单量</div></div>
+          <div><div class="profile-stat-val">4.9</div><div class="profile-stat-label">服务评分</div></div>
+          <div><div class="profile-stat-val green">¥12.6万</div><div class="profile-stat-label">累计收入</div></div>
+        </div>
+
+        <div class="online-toggle">
+          <div class="status-text online" id="profileStatus">当前在线</div>
+          <div class="toggle-switch on" id="profileToggle" onclick="toggleProfileSwitch()"></div>
+          <div class="hint">关闭后将不会收到新订单推送</div>
+        </div>
+
+        <div class="profile-menu">
+          <div class="profile-menu-item"><i class="fas fa-wallet"></i><span>我的钱包</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-star"></i><span>评价记录</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-chart-line"></i><span>收入统计</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-graduation-cap"></i><span>骑手学院</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-headset"></i><span>客服帮助</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-shield-halved"></i><span>安全中心</span><i class="fas fa-chevron-right arrow"></i></div>
+          <div class="profile-menu-item"><i class="fas fa-gear"></i><span>设置</span><i class="fas fa-chevron-right arrow"></i></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <div class="tab-item active" data-page="home"><i class="fas fa-home"></i><span>接单</span><div class="tab-badge">3</div></div>
+      <div class="tab-item" data-page="delivery"><i class="fas fa-motorcycle"></i><span>配送</span></div>
+      <div class="tab-item" data-page="earnings"><i class="fas fa-wallet"></i><span>收入</span></div>
+      <div class="tab-item" data-page="history"><i class="fas fa-clock-rotate-left"></i><span>记录</span></div>
+      <div class="tab-item" data-page="profile"><i class="fas fa-user"></i><span>我的</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  const tab=document.querySelector(`[data-page="${p}"]`);
+  if(tab)tab.classList.add('active');
+  document.querySelector('.screen-scroll').scrollTop=0;
+}
+document.querySelectorAll('.tab-item').forEach(t=>{
+  t.addEventListener('click',()=>switchPage(t.dataset.page))
+});
+document.querySelectorAll('.earnings-tabs,.history-tabs').forEach(g=>{
+  g.querySelectorAll('.earnings-tab,.history-tab').forEach(b=>{
+    b.addEventListener('click',function(){g.querySelectorAll('.earnings-tab,.history-tab').forEach(x=>x.classList.remove('active'));this.classList.add('active')})
+  })
+});
+
+function toggleOnline(){
+  const btn=document.getElementById('onlineBtn');
+  if(btn.classList.contains('online')){btn.classList.remove('online');btn.classList.add('offline');btn.textContent='休息中'}
+  else{btn.classList.remove('offline');btn.classList.add('online');btn.textContent='在线接单'}
+}
+function toggleProfileSwitch(){
+  const sw=document.getElementById('profileToggle');
+  const st=document.getElementById('profileStatus');
+  sw.classList.toggle('on');
+  if(sw.classList.contains('on')){st.textContent='当前在线';st.classList.add('online');st.classList.remove('offline')}
+  else{st.textContent='已离线';st.classList.remove('online');st.classList.add('offline')}
+}
+function switchStep(){
+  const step=document.querySelector('.delivery-header .step');
+  const btn=document.querySelector('.action-btn.complete');
+  if(step.textContent.includes('取餐')){step.textContent='第 2/2 步 · 送餐';btn.innerHTML='<i class="fas fa-check"></i>确认送达'}
+}
+
+// Earnings chart
+(function(){
+  const data=[245,280,312,298,356,320,326];
+  const labels=['周一','周二','周三','周四','周五','周六','周日'];
+  const mx=Math.max(...data);
+  const c=document.getElementById('earnChart');
+  const l=document.getElementById('earnLabels');
+  data.forEach((v,i)=>{
+    const b=document.createElement('div');b.className='chart-bar';
+    b.style.height=(v/mx*100)+'%';
+    b.style.background=i===data.length-1?'var(--primary)':'var(--primary)88';
+    c.appendChild(b);
+    const s=document.createElement('span');s.textContent=labels[i];l.appendChild(s);
+  });
+})();
+</script>
+</body>
+</html>

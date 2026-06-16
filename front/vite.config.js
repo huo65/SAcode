@@ -9,6 +9,12 @@ import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 export default defineConfig({
   css: {
     devSourcemap: true,
+    preprocessorOptions: {
+      less: {
+        additionalData: `@import "${path.resolve(__dirname, "src/style/theme.less")}";\n`,
+        javascriptEnabled: true,
+      },
+    },
   },
   build: {
     sourcemap: "inline",

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>味掌柜 - 外卖商家管理平台</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#E8652B;--primary-light:#FFF3ED;--primary-hover:#D4561E;
+  --secondary:#2D3436;--secondary-light:#636E72;
+  --success:#00B894;--success-light:#E8FFF7;
+  --warning:#FDCB6E;--warning-light:#FFF9E6;
+  --danger:#E17055;--danger-light:#FFEFEC;
+  --info:#0984E3;--info-light:#EBF5FF;
+  --bg:#F5F6FA;--card:#FFFFFF;--border:#E8E9ED;
+  --text-primary:#1A1D21;--text-secondary:#6B7280;--text-muted:#9CA3AF;
+  --sidebar-w:240px;--header-h:64px;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:0 12px 40px rgba(0,0,0,0.1);
+  --transition:all 0.2s ease;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text-primary);font-size:14px;line-height:1.6;overflow:hidden;height:100vh}
+
+/* Layout */
+.app{display:flex;height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:var(--transition)}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar-brand{padding:20px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.brand-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--primary),#FF8A5C);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:700}
+.brand-text{font-size:18px;font-weight:700;color:var(--text-primary);letter-spacing:-0.3px}
+.brand-sub{font-size:11px;color:var(--text-muted);margin-top:-2px}
+
+.sidebar-nav{flex:1;padding:12px;overflow-y:auto}
+.nav-group{margin-bottom:8px}
+.nav-group-title{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:8px 12px;margin-bottom:2px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);color:var(--text-secondary);font-size:14px;position:relative;margin-bottom:2px}
+.nav-item:hover{background:var(--bg);color:var(--text-primary)}
+.nav-item.active{background:var(--primary-light);color:var(--primary);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--primary);border-radius:0 3px 3px 0}
+.nav-item i{width:20px;text-align:center;font-size:15px}
+.nav-badge{margin-left:auto;background:var(--danger);color:white;font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border)}
+.store-status{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--success-light);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition)}
+.store-status:hover{opacity:0.9}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.store-status-text{font-size:13px;font-weight:600;color:#065F46}
+
+/* Header */
+.header{height:var(--header-h);background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-title{font-size:20px;font-weight:700;color:var(--text-primary)}
+.header-subtitle{font-size:13px;color:var(--text-muted)}
+.header-right{display:flex;align-items:center;gap:16px}
+.header-search{position:relative}
+.header-search input{width:280px;height:38px;border:1px solid var(--border);border-radius:20px;padding:0 16px 0 38px;font-size:13px;background:var(--bg);transition:var(--transition);outline:none}
+.header-search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(232,101,43,0.1)}
+.header-search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px}
+.header-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);position:relative;color:var(--text-secondary)}
+.header-btn:hover{background:var(--bg);border-color:var(--primary);color:var(--primary)}
+.header-btn .dot{position:absolute;top:8px;right:8px;width:7px;height:7px;background:var(--danger);border-radius:50%;border:1.5px solid var(--card)}
+.header-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#FF8A5C);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:14px;cursor:pointer}
+
+/* Content */
+.content{flex:1;overflow-y:auto;padding:28px 32px}
+
+/* Page sections */
+.page{display:none}
+.page.active{display:block}
+
+/* Dashboard */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:28px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:22px 24px;border:1px solid var(--border);transition:var(--transition);position:relative;overflow:hidden}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.orange::after{background:var(--primary)}
+.stat-card.green::after{background:var(--success)}
+.stat-card.blue::after{background:var(--info)}
+.stat-card.amber::after{background:#F59E0B}
+.stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
+.stat-icon.orange{background:var(--primary-light);color:var(--primary)}
+.stat-icon.green{background:var(--success-light);color:var(--success)}
+.stat-icon.blue{background:var(--info-light);color:var(--info)}
+.stat-icon.amber{background:var(--warning-light);color:#D69E00}
+.stat-label{font-size:13px;color:var(--text-muted);margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.2}
+.stat-change{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;margin-top:8px;padding:3px 8px;border-radius:6px}
+.stat-change.up{background:var(--success-light);color:#065F46}
+.stat-change.down{background:var(--danger-light);color:#9B2C2C}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:28px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:28px}
+
+/* Card */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.card-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:16px;font-weight:700;color:var(--text-primary)}
+.card-action{font-size:13px;color:var(--primary);cursor:pointer;font-weight:600;transition:var(--transition)}
+.card-action:hover{opacity:0.8}
+.card-body{padding:20px 24px}
+
+/* Chart placeholder */
+.chart-area{height:220px;position:relative;display:flex;align-items:flex-end;gap:6px;padding:20px 0}
+.chart-bar{flex:1;border-radius:6px 6px 0 0;transition:var(--transition);cursor:pointer;position:relative;min-height:8px}
+.chart-bar:hover{opacity:0.85;transform:scaleY(1.02)}
+.chart-bar:hover::after{content:attr(data-val);position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:var(--secondary);color:white;font-size:11px;padding:3px 8px;border-radius:4px;white-space:nowrap;font-weight:500}
+.chart-labels{display:flex;gap:6px;padding-top:8px}
+.chart-labels span{flex:1;text-align:center;font-size:11px;color:var(--text-muted)}
+
+/* Order list */
+.order-list{display:flex;flex-direction:column;gap:12px}
+.order-item{display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);transition:var(--transition);cursor:pointer}
+.order-item:hover{border-color:var(--primary);box-shadow:var(--shadow)}
+.order-id{font-size:13px;font-weight:600;color:var(--primary)}
+.order-time{font-size:12px;color:var(--text-muted)}
+.order-info{flex:1}
+.order-customer{font-size:14px;font-weight:500;color:var(--text-primary)}
+.order-detail{font-size:12px;color:var(--text-muted);margin-top:2px}
+.order-amount{font-size:16px;font-weight:700;color:var(--text-primary);text-align:right}
+.order-amount span{font-size:12px;font-weight:400;color:var(--text-muted)}
+
+/* Status badge */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600}
+.badge.pending{background:var(--warning-light);color:#92600A}
+.badge.preparing{background:var(--info-light);color:#075CAA}
+.badge.delivering{background:var(--primary-light);color:var(--primary)}
+.badge.completed{background:var(--success-light);color:#065F46}
+.badge.cancelled{background:var(--danger-light);color:#9B2C2C}
+
+/* Menu grid */
+.menu-categories{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.menu-cat{padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition);border:1px solid var(--border);background:var(--card);color:var(--text-secondary)}
+.menu-cat:hover{border-color:var(--primary);color:var(--primary)}
+.menu-cat.active{background:var(--primary);color:white;border-color:var(--primary)}
+.menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.menu-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;transition:var(--transition);cursor:pointer}
+.menu-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.menu-card-img{height:140px;background:linear-gradient(135deg,#FFECD2,#FCB69F);display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--primary);opacity:0.6}
+.menu-card-body{padding:14px 16px}
+.menu-card-name{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.menu-card-desc{font-size:12px;color:var(--text-muted);margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.menu-card-footer{display:flex;align-items:center;justify-content:space-between}
+.menu-card-price{font-size:18px;font-weight:700;color:var(--primary)}
+.menu-card-price span{font-size:12px;font-weight:400}
+.menu-card-sales{font-size:12px;color:var(--text-muted)}
+.menu-card-status{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.menu-card-status.on{background:var(--success-light);color:#065F46}
+.menu-card-status.off{background:var(--danger-light);color:#9B2C2C}
+
+/* Toggle switch */
+.toggle{width:40px;height:22px;background:#CBD5E0;border-radius:11px;cursor:pointer;position:relative;transition:var(--transition)}
+.toggle.active{background:var(--success)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:white;border-radius:50%;transition:var(--transition);box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle.active::after{transform:translateX(18px)}
+
+/* Financial page */
+.finance-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:28px}
+.finance-card{background:var(--card);border-radius:var(--radius);padding:24px;border:1px solid var(--border)}
+.finance-card-label{font-size:13px;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.finance-card-value{font-size:32px;font-weight:700;color:var(--text-primary)}
+.finance-card-sub{font-size:13px;color:var(--text-muted);margin-top:6px}
+
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);background:var(--bg)}
+td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-primary)}
+tr:hover td{background:rgba(232,101,43,0.03)}
+
+/* Settings */
+.settings-section{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:20px}
+.settings-section-title{padding:18px 24px;font-size:16px;font-weight:700;border-bottom:1px solid var(--border)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+.settings-row-info{flex:1}
+.settings-row-label{font-size:14px;font-weight:500;color:var(--text-primary)}
+.settings-row-desc{font-size:12px;color:var(--text-muted);margin-top:2px}
+.settings-row-action{display:flex;align-items:center;gap:12px}
+
+/* Reviews */
+.review-card{padding:20px;border-bottom:1px solid var(--border)}
+.review-card:last-child{border-bottom:none}
+.review-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.review-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:white}
+.review-name{font-size:14px;font-weight:600;color:var(--text-primary)}
+.review-date{font-size:12px;color:var(--text-muted)}
+.review-stars{color:#F59E0B;font-size:13px;margin-bottom:8px}
+.review-text{font-size:14px;color:var(--text-secondary);line-height:1.6}
+.review-reply{margin-top:12px;padding:12px 16px;background:var(--bg);border-radius:var(--radius-sm);font-size:13px;color:var(--text-secondary)}
+
+/* Button */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);border:none;outline:none}
+.btn-primary{background:var(--primary);color:white}
+.btn-primary:hover{background:var(--primary-hover);box-shadow:0 4px 12px rgba(232,101,43,0.3)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-secondary)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* Quick action bar */
+.quick-actions{display:flex;gap:12px;margin-bottom:28px}
+.quick-action{flex:1;display:flex;align-items:center;gap:14px;padding:18px 20px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;transition:var(--transition)}
+.quick-action:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);border-color:var(--primary)}
+.quick-action-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.quick-action-text{font-size:14px;font-weight:600;color:var(--text-primary)}
+.quick-action-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#9CA3AF}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page.active{animation:fadeIn 0.3s ease}
+
+/* Order detail modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:16px;width:520px;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{font-size:18px;font-weight:700}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:var(--transition)}
+.modal-close:hover{background:var(--danger-light);color:var(--danger)}
+.modal-body{padding:24px}
+
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:0}
+.timeline-item{display:flex;gap:14px;padding-bottom:20px;position:relative}
+.timeline-item:not(:last-child)::before{content:'';position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--border)}
+.timeline-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;z-index:1}
+.timeline-dot.done{background:var(--success-light);color:var(--success)}
+.timeline-dot.current{background:var(--primary-light);color:var(--primary)}
+.timeline-dot.pending{background:var(--bg);color:var(--text-muted)}
+.timeline-content{padding-top:5px}
+.timeline-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+.timeline-time{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* Responsive for smaller screens within the dashboard */
+@media(max-width:1400px){.stats-grid{grid-template-columns:repeat(2,1fr)}.menu-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">味</div>
+      <div>
+        <div class="brand-text">味掌柜</div>
+        <div class="brand-sub">商家管理平台</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-title">概览</div>
+        <div class="nav-item active" data-page="dashboard"><i class="fas fa-chart-pie"></i>经营数据</div>
+        <div class="nav-item" data-page="orders"><i class="fas fa-receipt"></i>订单管理<span class="nav-badge">5</span></div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">经营</div>
+        <div class="nav-item" data-page="menu"><i class="fas fa-utensils"></i>菜品管理</div>
+        <div class="nav-item" data-page="finance"><i class="fas fa-wallet"></i>财务结算</div>
+        <div class="nav-item" data-page="reviews"><i class="fas fa-star"></i>评价管理</div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">设置</div>
+        <div class="nav-item" data-page="settings"><i class="fas fa-cog"></i>店铺设置</div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="store-status" id="storeToggle">
+        <div class="status-dot"></div>
+        <span class="store-status-text">营业中</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div>
+          <div class="header-title" id="pageTitle">经营数据</div>
+          <div class="header-subtitle" id="pageSubtitle">实时监控店铺经营状况</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="搜索订单、菜品、客户...">
+        </div>
+        <div class="header-btn" title="通知"><i class="fas fa-bell"></i><div class="dot"></div></div>
+        <div class="header-btn" title="消息"><i class="fas fa-comment-dots"></i></div>
+        <div class="header-avatar">张</div>
+      </div>
+    </header>
+
+    <!-- Content area -->
+    <div class="content">
+
+      <!-- ===== Dashboard Page ===== -->
+      <div class="page active" id="page-dashboard">
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card orange">
+            <div class="stat-icon orange"><i class="fas fa-shopping-bag"></i></div>
+            <div class="stat-label">今日订单</div>
+            <div class="stat-value">168</div>
+            <div class="stat-change up"><i class="fas fa-arrow-up"></i>12.5%</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon green"><i class="fas fa-yen-sign"></i></div>
+            <div class="stat-label">今日营收</div>
+            <div class="stat-value">¥8,642</div>
+            <div class="stat-change up"><i class="fas fa-arrow-up"></i>8.3%</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon blue"><i class="fas fa-clock"></i></div>
+            <div class="stat-label">平均出餐</div>
+            <div class="stat-value">18<span style="font-size:14px;font-weight:400;color:var(--text-muted)"> 分钟</span></div>
+            <div class="stat-change up"><i class="fas fa-arrow-down"></i>3分钟</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon amber"><i class="fas fa-star"></i></div>
+            <div class="stat-label">店铺评分</div>
+            <div class="stat-value">4.8</div>
+            <div class="stat-change up"><i class="fas fa-arrow-up"></i>0.1</div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="quick-actions">
+          <div class="quick-action" onclick="switchPage('orders')">
+            <div class="quick-action-icon" style="background:var(--primary-light);color:var(--primary)"><i class="fas fa-plus-circle"></i></div>
+            <div><div class="quick-action-text">新订单处理</div><div class="quick-action-sub">5笔待处理订单</div></div>
+          </div>
+          <div class="quick-action" onclick="switchPage('menu')">
+            <div class="quick-action-icon" style="background:var(--success-light);color:var(--success)"><i class="fas fa-plus"></i></div>
+            <div><div class="quick-action-text">添加新菜品</div><div class="quick-action-sub">上架新品吸引客流</div></div>
+          </div>
+          <div class="quick-action" onclick="switchPage('finance')">
+            <div class="quick-action-icon" style="background:var(--info-light);color:var(--info)"><i class="fas fa-file-invoice"></i></div>
+            <div><div class="quick-action-text">查看账单</div><div class="quick-action-sub">本周结算 ¥42,180</div></div>
+          </div>
+          <div class="quick-action" onclick="switchPage('reviews')">
+            <div class="quick-action-icon" style="background:var(--warning-light);color:#D69E00"><i class="fas fa-comment"></i></div>
+            <div><div class="quick-action-text">回复评价</div><div class="quick-action-sub">3条待回复</div></div>
+          </div>
+        </div>
+
+        <!-- Revenue chart + Recent orders -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">营收趋势</div>
+              <div class="card-action">查看详情 <i class="fas fa-chevron-right" style="font-size:10px"></i></div>
+            </div>
+            <div class="card-body">
+              <div class="chart-area" id="revenueChart"></div>
+              <div class="chart-labels" id="revenueLabels"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">最新订单</div>
+              <div class="card-action" onclick="switchPage('orders')">全部订单 <i class="fas fa-chevron-right" style="font-size:10px"></i></div>
+            </div>
+            <div class="card-body">
+              <div class="order-list">
+                <div class="order-item" onclick="showOrderDetail()">
+                  <div>
+                    <div class="order-id">#20260613001</div>
+                    <div class="order-time">3分钟前</div>
+                  </div>
+                  <div class="order-info">
+                    <div class="order-customer">王先生</div>
+                    <div class="order-detail">宫保鸡丁x1 + 米饭x2</div>
+                  </div>
+                  <div class="order-amount">¥38.00<br><span class="badge pending"><i class="fas fa-circle" style="font-size:6px"></i>待接单</span></div>
+                </div>
+                <div class="order-item" onclick="showOrderDetail()">
+                  <div>
+                    <div class="order-id">#20260613002</div>
+                    <div class="order-time">8分钟前</div>
+                  </div>
+                  <div class="order-info">
+                    <div class="order-customer">李女士</div>
+                    <div class="order-detail">酸菜鱼x1 + 柠檬茶x1</div>
+                  </div>
+                  <div class="order-amount">¥56.00<br><span class="badge preparing"><i class="fas fa-circle" style="font-size:6px"></i>制作中</span></div>
+                </div>
+                <div class="order-item" onclick="showOrderDetail()">
+                  <div>
+                    <div class="order-id">#20260613003</div>
+                    <div class="order-time">15分钟前</div>
+                  </div>
+                  <div class="order-info">
+                    <div class="order-customer">赵先生</div>
+                    <div class="order-detail">麻辣香锅(中辣)x1</div>
+                  </div>
+                  <div class="order-amount">¥42.00<br><span class="badge delivering"><i class="fas fa-circle" style="font-size:6px"></i>配送中</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Popular items + Order sources -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">热销菜品 TOP5</div>
+            </div>
+            <div class="card-body" style="padding:0">
+              <table>
+                <thead><tr><th>排名</th><th>菜品名称</th><th>今日销量</th><th>营收占比</th></tr></thead>
+                <tbody>
+                  <tr><td><span style="color:var(--primary);font-weight:700">1</span></td><td>宫保鸡丁</td><td>42份</td><td>18.5%</td></tr>
+                  <tr><td><span style="color:var(--primary);font-weight:700">2</span></td><td>酸菜鱼</td><td>36份</td><td>22.3%</td></tr>
+                  <tr><td><span style="color:var(--primary);font-weight:700">3</span></td><td>麻辣香锅</td><td>28份</td><td>15.8%</td></tr>
+                  <tr><td>4</td><td>鱼香肉丝</td><td>24份</td><td>11.2%</td></tr>
+                  <tr><td>5</td><td>番茄炒蛋</td><td>20份</td><td>8.6%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">订单渠道分布</div>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:500">美团外卖</span><span style="font-size:13px;font-weight:600;color:var(--primary)">45%</span></div>
+                  <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="width:45%;height:100%;background:var(--primary);border-radius:4px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:500">饿了么</span><span style="font-size:13px;font-weight:600;color:var(--info)">32%</span></div>
+                  <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="width:32%;height:100%;background:var(--info);border-radius:4px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:500">抖音外卖</span><span style="font-size:13px;font-weight:600;color:var(--success)">15%</span></div>
+                  <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="width:15%;height:100%;background:var(--success);border-radius:4px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:500">微信小程序</span><span style="font-size:13px;font-weight:600;color:#8B5CF6">8%</span></div>
+                  <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="width:8%;height:100%;background:#8B5CF6;border-radius:4px"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Orders Page ===== -->
+      <div class="page" id="page-orders">
+        <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap">
+          <div class="menu-cat active" data-filter="all">全部订单 <span style="margin-left:4px;opacity:0.7">168</span></div>
+          <div class="menu-cat" data-filter="pending">待接单 <span style="margin-left:4px;opacity:0.7">5</span></div>
+          <div class="menu-cat" data-filter="preparing">制作中 <span style="margin-left:4px;opacity:0.7">12</span></div>
+          <div class="menu-cat" data-filter="delivering">配送中 <span style="margin-left:4px;opacity:0.7">8</span></div>
+          <div class="menu-cat" data-filter="completed">已完成 <span style="margin-left:4px;opacity:0.7">138</span></div>
+          <div class="menu-cat" data-filter="cancelled">已取消 <span style="margin-left:4px;opacity:0.7">5</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="card-title">订单列表</div>
+              <span style="font-size:12px;color:var(--text-muted)">最近24小时</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm"><i class="fas fa-download"></i> 导出</button>
+              <button class="btn btn-outline btn-sm"><i class="fas fa-filter"></i> 筛选</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0">
+            <table>
+              <thead><tr><th>订单号</th><th>客户</th><th>菜品</th><th>金额</th><th>下单时间</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td style="font-weight:600;color:var(--primary)">#20260613001</td><td>王先生</td><td>宫保鸡丁x1, 米饭x2</td><td style="font-weight:600">¥38.00</td><td>23:16</td><td><span class="badge pending"><i class="fas fa-circle" style="font-size:6px"></i>待接单</span></td><td><button class="btn btn-primary btn-sm" onclick="showOrderDetail()">接单</button></td></tr>
+                <tr><td style="font-weight:600;color:var(--primary)">#20260613002</td><td>李女士</td><td>酸菜鱼x1, 柠檬茶x1</td><td style="font-weight:600">¥56.00</td><td>23:11</td><td><span class="badge preparing"><i class="fas fa-circle" style="font-size:6px"></i>制作中</span></td><td><button class="btn btn-primary btn-sm" onclick="showOrderDetail()">出餐</button></td></tr>
+                <tr><td style="font-weight:600;color:var(--primary)">#20260613003</td><td>赵先生</td><td>麻辣香锅(中辣)x1</td><td style="font-weight:600">¥42.00</td><td>23:04</td><td><span class="badge delivering"><i class="fas fa-circle" style="font-size:6px"></i>配送中</span></td><td><button class="btn btn-outline btn-sm" onclick="showOrderDetail()">详情</button></td></tr>
+                <tr><td style="font-weight:600;color:var(--primary)">#20260613004</td><td>陈女士</td><td>鱼香肉丝x1, 蛋花汤x1</td><td style="font-weight:600">¥35.00</td><td>22:58</td><td><span class="badge delivering"><i class="fas fa-circle" style="font-size:6px"></i>配送中</span></td><td><button class="btn btn-outline btn-sm" onclick="showOrderDetail()">详情</button></td></tr>
+                <tr><td style="font-weight:600;color:var(--primary)">#20260613005</td><td>张先生</td><td>番茄炒蛋x1, 可乐x1</td><td style="font-weight:600">¥26.00</td><td>22:50</td><td><span class="badge completed"><i class="fas fa-circle" style="font-size:6px"></i>已完成</span></td><td><button class="btn btn-outline btn-sm" onclick="showOrderDetail()">详情</button></td></tr>
+                <tr><td style="font-weight:600;color:var(--primary)">#20260613006</td><td>刘女士</td><td>宫保鸡丁x2, 酸菜鱼x1</td><td style="font-weight:600">¥102.00</td><td>22:42</td><td><span class="badge completed"><i class="fas fa-circle" style="font-size:6px"></i>已完成</span></td><td><button class="btn btn-outline btn-sm" onclick="showOrderDetail()">详情</button></td></tr>
+                <tr><td style="font-weight:600;color:var(--primary)">#20260613007</td><td>孙先生</td><td>水煮牛肉x1</td><td style="font-weight:600">¥58.00</td><td>22:35</td><td><span class="badge cancelled"><i class="fas fa-circle" style="font-size:6px"></i>已取消</span></td><td><button class="btn btn-outline btn-sm" onclick="showOrderDetail()">详情</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Menu Page ===== -->
+      <div class="page" id="page-menu">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div class="menu-categories">
+            <div class="menu-cat active">全部菜品</div>
+            <div class="menu-cat">招牌菜</div>
+            <div class="menu-cat">主食</div>
+            <div class="menu-cat">凉菜</div>
+            <div class="menu-cat">饮品</div>
+            <div class="menu-cat">套餐</div>
+          </div>
+          <button class="btn btn-primary"><i class="fas fa-plus"></i> 添加菜品</button>
+        </div>
+
+        <div class="menu-grid">
+          <div class="menu-card">
+            <div class="menu-card-img" style="background:linear-gradient(135deg,#FFECD2,#FCB69F)"><i class="fas fa-drumstick-bite"></i></div>
+            <div class="menu-card-body">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+                <div class="menu-card-name">宫保鸡丁</div>
+                <span class="menu-card-status on">上架中</span>
+              </div>
+              <div class="menu-card-desc">精选鸡腿肉搭配花生米，经典川味微辣口感</div>
+              <div class="menu-card-footer">
+                <div class="menu-card-price"><span>¥</span>32</div>
+                <div class="menu-card-sales">今日售42份</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-card">
+            <div class="menu-card-img" style="background:linear-gradient(135deg,#C6FFDD,#FBD786)"><i class="fas fa-fish"></i></div>
+            <div class="menu-card-body">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+                <div class="menu-card-name">酸菜鱼</div>
+                <span class="menu-card-status on">上架中</span>
+              </div>
+              <div class="menu-card-desc">鲜嫩鱼片配以正宗酸菜，酸辣开胃</div>
+              <div class="menu-card-footer">
+                <div class="menu-card-price"><span>¥</span>46</div>
+                <div class="menu-card-sales">今日售36份</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-card">
+            <div class="menu-card-img" style="background:linear-gradient(135deg,#FF9A9E,#FECFEF)"><i class="fas fa-fire"></i></div>
+            <div class="menu-card-body">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+                <div class="menu-card-name">麻辣香锅</div>
+                <span class="menu-card-status on">上架中</span>
+              </div>
+              <div class="menu-card-desc">自选食材现炒，麻辣鲜香一口满足</div>
+              <div class="menu-card-footer">
+                <div class="menu-card-price"><span>¥</span>38</div>
+                <div class="menu-card-sales">今日售28份</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-card">
+            <div class="menu-card-img" style="background:linear-gradient(135deg,#A8EDEA,#FED6E3)"><i class="fas fa-pepper-hot"></i></div>
+            <div class="menu-card-body">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+                <div class="menu-card-name">鱼香肉丝</div>
+                <span class="menu-card-status on">上架中</span>
+              </div>
+              <div class="menu-card-desc">甜酸微辣的经典川菜，下饭神器</div>
+              <div class="menu-card-footer">
+                <div class="menu-card-price"><span>¥</span>28</div>
+                <div class="menu-card-sales">今日售24份</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-card">
+            <div class="menu-card-img" style="background:linear-gradient(135deg,#FDCBF1,#E6DEE9)"><i class="fas fa-egg"></i></div>
+            <div class="menu-card-body">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+                <div class="menu-card-name">番茄炒蛋</div>
+                <span class="menu-card-status on">上架中</span>
+              </div>
+              <div class="menu-card-desc">家常经典，酸甜适口老少皆宜</div>
+              <div class="menu-card-footer">
+                <div class="menu-card-price"><span>¥</span>22</div>
+                <div class="menu-card-sales">今日售20份</div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-card">
+            <div class="menu-card-img" style="background:linear-gradient(135deg,#D4FC79,#96E6A1)"><i class="fas fa-bowl-rice"></i></div>
+            <div class="menu-card-body">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+                <div class="menu-card-name">水煮牛肉</div>
+                <span class="menu-card-status off">已下架</span>
+              </div>
+              <div class="menu-card-desc">鲜嫩牛肉搭配豆芽，麻辣鲜香</div>
+              <div class="menu-card-footer">
+                <div class="menu-card-price"><span>¥</span>52</div>
+                <div class="menu-card-sales">今日售0份</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Finance Page ===== -->
+      <div class="page" id="page-finance">
+        <div class="finance-summary">
+          <div class="finance-card">
+            <div class="finance-card-label"><i class="fas fa-calendar-day" style="color:var(--primary)"></i> 今日收入</div>
+            <div class="finance-card-value">¥8,642</div>
+            <div class="finance-card-sub">较昨日 <span style="color:var(--success);font-weight:600">+8.3%</span></div>
+          </div>
+          <div class="finance-card">
+            <div class="finance-card-label"><i class="fas fa-calendar-week" style="color:var(--info)"></i> 本周收入</div>
+            <div class="finance-card-value">¥42,180</div>
+            <div class="finance-card-sub">较上周 <span style="color:var(--success);font-weight:600">+5.1%</span></div>
+          </div>
+          <div class="finance-card">
+            <div class="finance-card-label"><i class="fas fa-piggy-bank" style="color:var(--success)"></i> 可提现余额</div>
+            <div class="finance-card-value">¥28,560</div>
+            <div class="finance-card-sub"><button class="btn btn-primary btn-sm" style="margin-top:4px">申请提现</button></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">收入趋势 (近7天)</div>
+              <div style="display:flex;gap:8px">
+                <div class="menu-cat active" style="padding:4px 12px;font-size:12px">营收</div>
+                <div class="menu-cat" style="padding:4px 12px;font-size:12px">订单量</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-area" id="financeChart"></div>
+              <div class="chart-labels" id="financeLabels"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">结算明细</div>
+            </div>
+            <div class="card-body" style="padding:0">
+              <table>
+                <thead><tr><th>日期</th><th>订单</th><th>营收</th><th>平台费</th><th>实收</th></tr></thead>
+                <tbody>
+                  <tr><td>06-13</td><td>168</td><td>¥8,642</td><td>¥1,296</td><td style="font-weight:600;color:var(--success)">¥7,346</td></tr>
+                  <tr><td>06-12</td><td>155</td><td>¥7,980</td><td>¥1,197</td><td style="font-weight:600;color:var(--success)">¥6,783</td></tr>
+                  <tr><td>06-11</td><td>142</td><td>¥7,230</td><td>¥1,085</td><td style="font-weight:600;color:var(--success)">¥6,145</td></tr>
+                  <tr><td>06-10</td><td>138</td><td>¥6,890</td><td>¥1,034</td><td style="font-weight:600;color:var(--success)">¥5,856</td></tr>
+                  <tr><td>06-09</td><td>161</td><td>¥8,120</td><td>¥1,218</td><td style="font-weight:600;color:var(--success)">¥6,902</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Reviews Page ===== -->
+      <div class="page" id="page-reviews">
+        <div style="display:flex;gap:16px;margin-bottom:24px">
+          <div class="stat-card" style="flex:1;text-align:center;padding:20px">
+            <div class="stat-value" style="color:var(--primary)">4.8</div>
+            <div style="color:#F59E0B;font-size:16px;margin:6px 0"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+            <div class="stat-label">综合评分</div>
+          </div>
+          <div class="stat-card" style="flex:1;text-align:center;padding:20px">
+            <div class="stat-value">326</div>
+            <div class="stat-label">总评价数</div>
+          </div>
+          <div class="stat-card" style="flex:1;text-align:center;padding:20px">
+            <div class="stat-value" style="color:var(--success)">96%</div>
+            <div class="stat-label">好评率</div>
+          </div>
+          <div class="stat-card" style="flex:1;text-align:center;padding:20px">
+            <div class="stat-value" style="color:var(--info)">3</div>
+            <div class="stat-label">待回复</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">最新评价</div>
+            <div style="display:flex;gap:8px">
+              <div class="menu-cat active" style="padding:4px 12px;font-size:12px">全部</div>
+              <div class="menu-cat" style="padding:4px 12px;font-size:12px">待回复</div>
+              <div class="menu-cat" style="padding:4px 12px;font-size:12px">差评</div>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="review-card">
+              <div class="review-header">
+                <div class="review-avatar" style="background:linear-gradient(135deg,#667EEA,#764BA2)">王</div>
+                <div style="flex:1"><div class="review-name">王先生</div><div class="review-date">2026-06-13 22:30 | 宫保鸡丁</div></div>
+                <span class="badge pending">待回复</span>
+              </div>
+              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+              <div class="review-text">非常好吃！鸡丁很嫩，花生米很脆，分量也很足，下次还点！配送也很快，包装严实没有洒漏。</div>
+              <div style="margin-top:12px"><button class="btn btn-primary btn-sm"><i class="fas fa-reply"></i> 回复</button></div>
+            </div>
+            <div class="review-card">
+              <div class="review-header">
+                <div class="review-avatar" style="background:linear-gradient(135deg,#F093FB,#F5576C)">李</div>
+                <div style="flex:1"><div class="review-name">李女士</div><div class="review-date">2026-06-13 21:15 | 酸菜鱼</div></div>
+                <span class="badge pending">待回复</span>
+              </div>
+              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
+              <div class="review-text">酸菜鱼味道不错，就是觉得鱼片可以再多一点。酸菜很正宗，汤底也很好喝，总体来说还是满意的。</div>
+              <div style="margin-top:12px"><button class="btn btn-primary btn-sm"><i class="fas fa-reply"></i> 回复</button></div>
+            </div>
+            <div class="review-card">
+              <div class="review-header">
+                <div class="review-avatar" style="background:linear-gradient(135deg,#4FACFE,#00F2FE)">陈</div>
+                <div style="flex:1"><div class="review-name">陈女士</div><div class="review-date">2026-06-13 19:45 | 鱼香肉丝</div></div>
+                <span class="badge completed">已回复</span>
+              </div>
+              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+              <div class="review-text">鱼香肉丝绝了！酸甜度刚刚好，肉丝也很嫩，配米饭太香了。已经推荐给同事了！</div>
+              <div class="review-reply"><strong>商家回复：</strong>感谢您的好评！我们会继续保持品质，欢迎下次光临~ 🎉</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Settings Page ===== -->
+      <div class="page" id="page-settings">
+        <div class="settings-section">
+          <div class="settings-section-title"><i class="fas fa-store" style="margin-right:8px;color:var(--primary)"></i>基本信息</div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">店铺名称</div><div class="settings-row-desc">在平台展示的店铺名称</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">川味小馆（国贸店）</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">店铺地址</div><div class="settings-row-desc">配送范围计算起点</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">北京市朝阳区国贸建外SOHO 12号楼</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">联系电话</div><div class="settings-row-desc">平台与客户联系您的号码</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">138****8888</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title"><i class="fas fa-clock" style="margin-right:8px;color:var(--info)"></i>营业时间</div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">午市</div><div class="settings-row-desc">上午营业时段</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">10:00 - 14:00</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">晚市</div><div class="settings-row-desc">下午至夜间营业时段</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">16:30 - 22:00</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">自动接单</div><div class="settings-row-desc">开启后新订单自动确认接单</div></div>
+            <div class="settings-row-action"><div class="toggle active" onclick="this.classList.toggle('active')"></div></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title"><i class="fas fa-truck" style="margin-right:8px;color:var(--success)"></i>配送设置</div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">配送范围</div><div class="settings-row-desc">当前配送覆盖半径</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">3.0 公里</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">起送金额</div><div class="settings-row-desc">最低订单金额</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">¥20</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">配送费</div><div class="settings-row-desc">客户支付的配送费用</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">¥5 (满30免配送费)</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">预计出餐时间</div><div class="settings-row-desc">向客户展示的出餐时间</div></div>
+            <div class="settings-row-action"><span style="color:var(--text-secondary);font-weight:500">20 分钟</span><button class="btn btn-outline btn-sm">修改</button></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title"><i class="fas fa-tag" style="margin-right:8px;color:var(--danger)"></i>促销活动</div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">新客立减</div><div class="settings-row-desc">首次下单客户专享优惠</div></div>
+            <div class="settings-row-action"><div class="toggle active" onclick="this.classList.toggle('active')"></div></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">满减活动</div><div class="settings-row-desc">满30减5，满60减12</div></div>
+            <div class="settings-row-action"><div class="toggle active" onclick="this.classList.toggle('active')"></div></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-info"><div class="settings-row-label">折扣菜</div><div class="settings-row-desc">指定菜品限时折扣</div></div>
+            <div class="settings-row-action"><div class="toggle" onclick="this.classList.toggle('active')"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>订单详情 #20260613001</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <!-- Order status timeline -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">订单进度</div>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot done"><i class="fas fa-check"></i></div>
+            <div class="timeline-content"><div class="timeline-title">订单已提交</div><div class="timeline-time">23:16:32</div></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot current"><i class="fas fa-bell"></i></div>
+            <div class="timeline-content"><div class="timeline-title" style="color:var(--primary)">等待商家接单</div><div class="timeline-time">23:16:32</div></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot pending"><i class="fas fa-fire"></i></div>
+            <div class="timeline-content"><div class="timeline-title" style="color:var(--text-muted)">商家制作中</div></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot pending"><i class="fas fa-motorcycle"></i></div>
+            <div class="timeline-content"><div class="timeline-title" style="color:var(--text-muted)">骑手配送中</div></div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot pending"><i class="fas fa-flag-checkered"></i></div>
+            <div class="timeline-content"><div class="timeline-title" style="color:var(--text-muted)">已送达</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer info -->
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">客户信息</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+          <div><span style="color:var(--text-muted)">姓名：</span>王先生</div>
+          <div><span style="color:var(--text-muted)">电话：</span>139****6677</div>
+          <div style="grid-column:span 2"><span style="color:var(--text-muted)">地址：</span>北京市朝阳区建国路88号SOHO现代城A座1206</div>
+          <div style="grid-column:span 2"><span style="color:var(--text-muted)">备注：</span>不要辣，多放葱，到了打电话</div>
+        </div>
+      </div>
+
+      <!-- Order items -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">菜品明细</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+          <span>宫保鸡丁</span><span>x1</span><span style="font-weight:600">¥32.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+          <span>米饭</span><span>x2</span><span style="font-weight:600">¥4.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted)">
+          <span>配送费</span><span></span><span>¥5.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--success)">
+          <span>满减优惠</span><span></span><span>-¥5.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:16px;font-weight:700">
+          <span>合计</span><span style="color:var(--primary)">¥36.00</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1;padding:12px"><i class="fas fa-check"></i> 接单</button>
+        <button class="btn btn-outline" style="flex:1;padding:12px;border-color:var(--danger);color:var(--danger)"><i class="fas fa-times"></i> 拒单</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Page navigation
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+
+  const titles = {
+    dashboard: ['经营数据', '实时监控店铺经营状况'],
+    orders: ['订单管理', '处理和管理所有外卖订单'],
+    menu: ['菜品管理', '管理菜品上下架、价格和分类'],
+    finance: ['财务结算', '查看收入、账单和提现'],
+    reviews: ['评价管理', '查看和回复客户评价'],
+    settings: ['店铺设置', '配置店铺基本信息和运营参数']
+  };
+  document.getElementById('pageTitle').textContent = titles[page][0];
+  document.getElementById('pageSubtitle').textContent = titles[page][1];
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => switchPage(item.dataset.page));
+});
+
+// Menu category filter clicks
+document.querySelectorAll('.menu-categories .menu-cat').forEach(cat => {
+  cat.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.menu-cat').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Revenue chart
+function renderChart(containerId, labelsId, data, labels, color) {
+  const container = document.getElementById(containerId);
+  const labelsContainer = document.getElementById(labelsId);
+  const maxVal = Math.max(...data);
+  container.innerHTML = '';
+  labelsContainer.innerHTML = '';
+
+  data.forEach((val, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.height = (val / maxVal * 100) + '%';
+    bar.style.background = i === data.length - 1 ? color : color + '99';
+    bar.setAttribute('data-val', '¥' + val.toLocaleString());
+    container.appendChild(bar);
+
+    const label = document.createElement('span');
+    label.textContent = labels[i];
+    labelsContainer.appendChild(label);
+  });
+}
+
+renderChart('revenueChart', 'revenueLabels',
+  [5230, 6120, 5890, 7340, 6890, 7980, 8642],
+  ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+  '#E8652B'
+);
+
+renderChart('financeChart', 'financeLabels',
+  [5230, 6120, 5890, 7340, 6890, 7980, 8642],
+  ['06-07', '06-08', '06-09', '06-10', '06-11', '06-12', '06-13'],
+  '#0984E3'
+);
+
+// Modal
+function showOrderDetail() {
+  document.getElementById('orderModal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('orderModal').classList.remove('show');
+}
+document.getElementById('orderModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Store toggle
+document.getElementById('storeToggle').addEventListener('click', function() {
+  const dot = this.querySelector('.status-dot');
+  const text = this.querySelector('.store-status-text');
+  const isOnline = text.textContent === '营业中';
+
+  if (isOnline) {
+    dot.style.background = '#CBD5E0';
+    dot.style.animation = 'none';
+    text.textContent = '休息中';
+    this.style.background = 'var(--bg)';
+    text.style.color = 'var(--text-secondary)';
+  } else {
+    dot.style.background = 'var(--success)';
+    dot.style.animation = 'pulse 2s infinite';
+    text.textContent = '营业中';
+    this.style.background = 'var(--success-light)';
+    text.style.color = '#065F46';
+  }
+});
+</script>
+</body>
+</html>

@@ -1,4 +1,146 @@
-// 存储主题变量，统一管理
+// ============================================================
+//  SA外卖平台 · 全局主题变量
+//  基于 ref/ 目录四个参考页面设计提取
+//  使用 --role-* 前缀避免与第三方库冲突
+// ============================================================
+
+// ==================== 默认主题（商家端） ====================
+// 商家端 — 暖橙主题  #E8652B
+@merchant-primary: #E8652B;
+@merchant-primary-light: #FFF3ED;
+@merchant-primary-hover: #D4561E;
+@merchant-secondary: #2D3436;
+@merchant-success: #00B894;
+@merchant-success-light: #E8FFF7;
+@merchant-warning: #FDCB6E;
+@merchant-warning-light: #FFF9E6;
+@merchant-danger: #E17055;
+@merchant-danger-light: #FFEFEC;
+@merchant-info: #0984E3;
+@merchant-info-light: #EBF5FF;
+@merchant-bg: #F5F6FA;
+@merchant-card: #FFFFFF;
+@merchant-border: #E8E9ED;
+@merchant-text-primary: #1A1D21;
+@merchant-text-secondary: #6B7280;
+@merchant-text-muted: #9CA3AF;
+@merchant-sidebar-w: 240px;
+@merchant-header-h: 64px;
+
+// ==================== 顾客端 ====================
+// 顾客端 — 鲜红主题  #EF4444
+@customer-primary: #EF4444;
+@customer-primary-dark: #DC2626;
+@customer-primary-light: #FEF2F2;
+@customer-primary-50: #FFF1F2;
+@customer-accent: #F97316;
+@customer-accent-light: #FFF7ED;
+@customer-success: #10B981;
+@customer-success-light: #ECFDF5;
+@customer-warning: #F59E0B;
+@customer-warning-light: #FFFBEB;
+@customer-danger: @customer-primary;
+@customer-danger-light: @customer-primary-light;
+@customer-info: #3B82F6;
+@customer-info-light: #EFF6FF;
+@customer-bg: #F5F5F5;
+@customer-card: #FFFFFF;
+@customer-border: #F0F0F0;
+@customer-text-primary: #1F2937;
+@customer-text-secondary: #6B7280;
+@customer-text-muted: #9CA3AF;
+
+// ==================== 管理端 ====================
+// 管理端 — 靛蓝主题  #4F46E5
+@admin-primary: #4F46E5;
+@admin-primary-light: #EEF2FF;
+@admin-primary-hover: #4338CA;
+@admin-primary-50: #E0E7FF;
+@admin-accent: #7C3AED;
+@admin-accent-light: #F5F3FF;
+@admin-success: #059669;
+@admin-success-light: #ECFDF5;
+@admin-warning: #D97706;
+@admin-warning-light: #FFFBEB;
+@admin-danger: #DC2626;
+@admin-danger-light: #FEF2F2;
+@admin-info: #0284C7;
+@admin-info-light: #F0F9FF;
+@admin-bg: #F8FAFC;
+@admin-card: #FFFFFF;
+@admin-border: #E2E8F0;
+@admin-text-primary: #0F172A;
+@admin-text-secondary: #475569;
+@admin-text-muted: #94A3B8;
+@admin-sidebar-w: 260px;
+@admin-header-h: 60px;
+
+// ==================== 骑手端 ====================
+// 骑手端 — 翠绿主题  #059669
+@rider-primary: #059669;
+@rider-primary-dark: #047857;
+@rider-primary-light: #ECFDF5;
+@rider-primary-50: #F0FDF4;
+@rider-accent: #0EA5E9;
+@rider-accent-light: #F0F9FF;
+@rider-success: #16A34A;
+@rider-success-light: #F0FDF4;
+@rider-warning: #EAB308;
+@rider-warning-light: #FEFCE8;
+@rider-danger: #DC2626;
+@rider-danger-light: #FEF2F2;
+@rider-info: #6366F1;
+@rider-info-light: #EEF2FF;
+@rider-bg: #F5F5F5;
+@rider-card: #FFFFFF;
+@rider-border: #F0F0F0;
+@rider-text-primary: #111827;
+@rider-text-secondary: #4B5563;
+@rider-text-muted: #9CA3AF;
+
+// ==================== 通用变量（默认 = 商家端） ====================
+// 切换角色时通过 body class 覆盖（见 global.less）
+@primary: @merchant-primary;
+@primary-light: @merchant-primary-light;
+@primary-hover: @merchant-primary-hover;
+@secondary: @merchant-secondary;
+@success: @merchant-success;
+@success-light: @merchant-success-light;
+@warning: @merchant-warning;
+@warning-light: @merchant-warning-light;
+@danger: @merchant-danger;
+@danger-light: @merchant-danger-light;
+@info: @merchant-info;
+@info-light: @merchant-info-light;
+@bg: @merchant-bg;
+@card: @merchant-card;
+@border: @merchant-border;
+@text-primary: @merchant-text-primary;
+@text-secondary: @merchant-text-secondary;
+@text-muted: @merchant-text-muted;
+@sidebar-w: @merchant-sidebar-w;
+@header-h: @merchant-header-h;
+
+// 圆角 & 阴影（四角色通用）
+@radius: 12px;
+@radius-sm: 8px;
+@radius-xs: 6px;
+@phone-radius: 44px;
+@shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+@shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+@shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.1);
+@transition: all 0.2s ease;
+
+// ==================== 旧版兼容变量（保留以防冲突）====================
+// 一些历史代码引用了这些变量名（@price / @main-yellow / @light-yellow）
+@price: rgb(237, 139, 52);
 @main-yellow: #ffff00;
 @light-yellow: hsl(0, 100%, 74%);
-@price: rgb(237, 139, 52);
+
+// ==================== Element Plus 主题覆盖 ====================
+// 让 el-tabs / el-badge / el-button 等组件适配主题色
+@ep-color-primary: @primary;
+@ep-color-success: @success;
+@ep-color-warning: @warning;
+@ep-color-danger: @danger;
+@ep-color-info: @info;

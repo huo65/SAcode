@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import Login from "@/page/login/index.vue";
 import Home from "@/page/home/index.vue";
+import merchantRoutes from "@/router/modules/merchant";
 import $store from "@/store";
 
 const routes = [
@@ -10,6 +11,7 @@ const routes = [
     path: "/home",
     component: Home,
   },
+  ...merchantRoutes,
 ];
 
 const router = createRouter({

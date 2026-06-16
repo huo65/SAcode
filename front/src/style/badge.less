@@ -1,0 +1,151 @@
+// ============================================================
+//  Badge 状态标签 — 参考 ref/ 各页面 .badge / .nav-badge
+//  使用：<span class="badge badge--success">已完成</span>
+// ============================================================
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+// ==================== 语义色变体 ====================
+
+// 成功 / 已完成 / 已送达
+.badge--success {
+  background: var(--success-light);
+  color: darken(@success, 10%);
+  border-color: fade(@success, 20%);
+}
+
+// 等待中 / 处理中
+.badge--warning {
+  background: var(--warning-light);
+  color: darken(@warning, 18%);
+  border-color: fade(@warning, 25%);
+}
+
+// 已取消 / 已拒绝 / 异常
+.badge--danger {
+  background: var(--danger-light);
+  color: darken(@danger, 8%);
+  border-color: fade(@danger, 20%);
+}
+
+// 信息 / 已支付 / 待处理
+.badge--info {
+  background: var(--info-light);
+  color: darken(@info, 10%);
+  border-color: fade(@info, 20%);
+}
+
+// 默认 / 草稿
+.badge--default {
+  background: var(--bg);
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+// 主色 / 进行中
+.badge--primary {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: fade(@primary, 20%);
+}
+
+// ==================== 尺寸变体 ====================
+
+.badge--sm {
+  padding: 1px 7px;
+  font-size: 11px;
+}
+
+.badge--lg {
+  padding: 4px 14px;
+  font-size: 13px;
+}
+
+.badge--dot {
+  padding: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+
+  &.badge--success { background: var(--success); }
+  &.badge--warning { background: var(--warning); }
+  &.badge--danger  { background: var(--danger); }
+  &.badge--info    { background: var(--info); }
+  &.badge--primary { background: var(--primary); }
+}
+
+// ==================== 带图标的 Badge ====================
+.badge i {
+  font-size: 11px;
+  margin-right: 4px;
+}
+
+.badge--sm i {
+  font-size: 10px;
+  margin-right: 3px;
+}
+
+// ==================== 数量 Badge（导航角标）====================
+// 参考 ref/index.html .nav-badge
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--danger);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+// ==================== 订单状态时间线 Badge ====================
+.timeline-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+
+  &.timeline-badge--success {
+    background: var(--success-light);
+    color: var(--success);
+  }
+
+  &.timeline-badge--warning {
+    background: var(--warning-light);
+    color: darken(@warning, 15%);
+  }
+
+  &.timeline-badge--primary {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  &.timeline-badge--danger {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+}
