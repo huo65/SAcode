@@ -13,7 +13,7 @@ public class StorageProperties {
 
     @Data
     public static class Local {
-        private String baseDir = "./data/storage";
-        private String publicUrlPrefix = "http://127.0.0.1:8080/storage";
+        private String baseDir = "../../front/public/img/uploads";
+        private String publicUrlPrefix = "/img/uploads";
     }
 }

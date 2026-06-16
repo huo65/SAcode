@@ -48,5 +48,6 @@ alipay:
 storage:
   provider: local
   local:
-    baseDir: ./data/storage
-    publicUrlPrefix: http://127.0.0.1:8080/storage
+    # Run from backend/DB-market. Uploaded demo images are committed from front/public/img/uploads.
+    baseDir: ../../front/public/img/uploads
+    publicUrlPrefix: /img/uploads

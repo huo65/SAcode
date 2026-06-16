@@ -18,6 +18,15 @@ source src/main/resources/schema.sql;
 
 JWT secret 从 `DBMARKET_JWT_SECRET` 读取；未配置时使用开发回退值。
 
+## Image Assets
+
+所有可随项目迁移的图片资源统一放在前端静态目录 `front/public/img` 下：
+
+- `front/public/img/demo`：`schema.sql` 初始化演示数据引用的固定图片。
+- `front/public/img/uploads`：本地后端上传头像、菜品图、门店图等图片的默认目录。
+
+后端本地存储默认配置为 `../../front/public/img/uploads`，接口返回 `/img/uploads/...`。需要换设备演示时，把需要保留的上传图片提交到 Git；运行时临时目录 `backend/data` 不再作为演示图片来源。
+
 ## Verification and Run
 
 原项目自带 Maven Wrapper 不完整，建议使用本地 Maven：

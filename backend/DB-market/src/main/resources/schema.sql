@@ -238,10 +238,12 @@ INSERT IGNORE INTO category (name) VALUES
 -- Demo accounts. Passwords are plaintext intentionally; the backend migrates them
 -- to hashed values after successful login.
 INSERT IGNORE INTO user (id, type, name, portrait, password, phone, balance, description, disabled) VALUES
-    ('1', 'admin', 'admin', 'default_avatar', '123456', '13800000000', 200, 'platform administrator', 0),
-    ('2', 'cus', 'customer', 'default_avatar', '123456', '13800000001', 200, 'demo customer', 0),
-    ('3', 'mer', 'merchant', 'default_avatar', '123456', '13800000002', 200, 'demo merchant', 0),
-    ('4', 'driver', 'driver', 'default_avatar', '123456', '13800000003', 200, 'demo driver', 0);
+    ('1', 'admin', 'admin', '/img/default_avatar.jpg', '123456', '13800000000', 200, 'platform administrator', 0),
+    ('2', 'cus', 'customer', '/img/default_avatar.jpg', '123456', '13800000001', 200, 'demo customer', 0),
+    ('3', 'mer', 'merchant', '/img/default_avatar.jpg', '123456', '13800000002', 200, 'demo merchant', 0),
+    ('4', 'driver', 'driver', '/img/default_avatar.jpg', '123456', '13800000003', 200, 'demo driver', 0);
+
+UPDATE user SET portrait = '/img/default_avatar.jpg' WHERE id IN ('1', '2', '3', '4') AND portrait = 'default_avatar';
 
 INSERT IGNORE INTO address (addr_id, usr, location) VALUES
     ('1', '2', 'Customer demo address'),
@@ -249,7 +251,53 @@ INSERT IGNORE INTO address (addr_id, usr, location) VALUES
     ('3', '4', 'Driver service area');
 
 INSERT IGNORE INTO restaurant (id, merchant_id, name, logo, cover, description, notice, status, business_hours, delivery_fee, min_order_amount, service_radius_km, delivery_eta_minutes, feature_tags, menu_categories, address_text, delivery_policy, promo_text) VALUES
-    ('3', '3', 'merchant精选门店', 'default_avatar', 'default_avatar', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠');
+    ('3', '3', 'merchant精选门店', '/img/demo/merchant-logo.jpg', '/img/demo/merchant-cover.jpg', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠');
+
+UPDATE restaurant SET logo = '/img/demo/merchant-logo.jpg', cover = '/img/demo/merchant-cover.jpg' WHERE id = '3';
+
+-- Classroom demo products, orders, review and after-sale data.
+-- Image URLs point to front/public/img/demo, which is tracked by Git.
+INSERT IGNORE INTO product (id, name, description, price, mer, cat_name, number, state, sales_refund, rate_refund, complain, complain_rate) VALUES
+    ('demo-prod-chicken-rice', '自动化演示-蜜汁鸡腿饭', '课堂展示用热销主食，覆盖商品审核、下单和评价链路。', 28, '3', '食品', 79, 1, 0, '0.0', 0, '0.0'),
+    ('demo-prod-tomato-beef', '自动化演示-番茄牛腩饭', '课堂展示用套餐商品，适合演示订单状态流转。', 32, '3', '食品', 68, 1, 0, '0.0', 1, '0.0'),
+    ('demo-prod-lemon-tea', '自动化演示-冰镇柠檬茶', '课堂展示用饮品商品，补充低客单价数据。', 12, '3', '食品', 117, 1, 0, '0.0', 0, '0.0'),
+    ('demo-prod-beef-burger', '自动化演示-香煎牛肉堡', '课堂展示用快餐商品，覆盖库存和支付演示。', 25, '3', '食品', 59, 1, 0, '0.0', 0, '0.0');
+
+INSERT IGNORE INTO prod_img (prod, image) VALUES
+    ('demo-prod-chicken-rice', '/img/demo/honey-chicken-rice.png'),
+    ('demo-prod-chicken-rice', '/img/demo/honey-chicken-rice-detail.png'),
+    ('demo-prod-tomato-beef', '/img/demo/tomato-beef-rice.png'),
+    ('demo-prod-tomato-beef', '/img/demo/tomato-beef-rice-detail.png'),
+    ('demo-prod-lemon-tea', '/img/demo/lemon-tea.jpg'),
+    ('demo-prod-lemon-tea', '/img/demo/lemon-tea-detail.jpg'),
+    ('demo-prod-beef-burger', '/img/demo/beef-burger.png'),
+    ('demo-prod-beef-burger', '/img/demo/beef-burger-detail.png');
+
+INSERT IGNORE INTO order_info (id, cus, mer, prod, prod_num, time, deli_addr, rec_addr, state, account, driver_id, remark, expected_delivery_time, pay_time, complain, complain_reason, refund_reason) VALUES
+    ('demo-order-unpaid', '2', '3', 'demo-prod-chicken-rice', 1, '2026-06-16 16:01:41', '2', '1', -1, 28, NULL, 'AUTO_DEMO_UNPAID', NULL, NULL, '0', NULL, NULL),
+    ('demo-order-paid', '2', '3', 'demo-prod-tomato-beef', 1, '2026-06-16 16:01:41', '2', '1', 0, 32, NULL, 'AUTO_DEMO_PAID', NULL, '2026-06-16 16:01:41', '0', NULL, NULL),
+    ('demo-order-preparing', '2', '3', 'demo-prod-lemon-tea', 2, '2026-06-16 16:01:42', '2', '1', 4, 24, NULL, 'AUTO_DEMO_PREPARING', NULL, '2026-06-16 16:01:42', '0', NULL, NULL),
+    ('demo-order-waiting-driver', '2', '3', 'demo-prod-beef-burger', 1, '2026-06-16 16:01:42', '2', '1', 3, 25, NULL, 'AUTO_DEMO_WAITING_DRIVER', NULL, '2026-06-16 16:01:42', '0', NULL, NULL),
+    ('demo-order-completed-review', '2', '3', 'demo-prod-chicken-rice', 1, '2026-06-16 16:01:42', '2', '1', 2, 28, '4', 'AUTO_DEMO_COMPLETED_REVIEW', NULL, '2026-06-16 16:01:42', '0', NULL, NULL),
+    ('demo-order-after-sale', '2', '3', 'demo-prod-tomato-beef', 1, '2026-06-16 16:03:13', '2', '1', 2, 32, '4', 'AUTO_DEMO_AFTER_SALE', NULL, '2026-06-16 16:03:13', '1', '自动化演示工单：包装轻微破损，申请客服跟进。', NULL),
+    ('demo-order-delivering', '2', '3', 'demo-prod-lemon-tea', 1, '2026-06-16 16:03:13', '2', '1', 1, 12, '4', 'AUTO_DEMO_DELIVERING', NULL, '2026-06-16 16:03:13', '0', NULL, NULL);
+
+INSERT IGNORE INTO order_review (order_id, cus, mer, score, content, created_time, reply_content, reply_time) VALUES
+    ('demo-order-completed-review', '2', '3', 5, '配送及时，餐品状态很好，适合作为课堂展示评价。', '2026-06-16 16:03:13', '感谢评价，我们会继续保持出餐速度和服务质量。', '2026-06-16 16:03:13');
+
+INSERT IGNORE INTO after_sale_ticket (id, order_id, customer_id, merchant_id, type, content, status, handler_id, handler_note, created_time, updated_time) VALUES
+    ('demo-ticket-after-sale', 'demo-order-after-sale', '2', '3', '投诉反馈', '自动化演示工单：包装轻微破损，申请客服跟进。', '待处理', NULL, NULL, '2026-06-16 16:03:13', '2026-06-16 16:03:13');
+
+INSERT IGNORE INTO wallet_transaction (id, user_id, user_name, type, amount, balance_before, balance_after, related_order_id, remark, actor_id, actor_name, actor_type, created_time) VALUES
+    ('demo-wallet-recharge', '2', 'customer', 'RECHARGE', 500, 200, 700, NULL, 'AUTO_DEMO seed balance', '1', 'admin', 'admin', '2026-06-16 16:01:40'),
+    ('demo-wallet-pay-paid', '2', 'customer', 'PAY', -32, 700, 668, 'demo-order-paid', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:41'),
+    ('demo-wallet-pay-preparing', '2', 'customer', 'PAY', -24, 668, 644, 'demo-order-preparing', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:42'),
+    ('demo-wallet-pay-waiting-driver', '2', 'customer', 'PAY', -25, 644, 619, 'demo-order-waiting-driver', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:42'),
+    ('demo-wallet-pay-completed', '2', 'customer', 'PAY', -28, 619, 591, 'demo-order-completed-review', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:42'),
+    ('demo-wallet-pay-after-sale', '2', 'customer', 'PAY', -32, 591, 559, 'demo-order-after-sale', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:03:13'),
+    ('demo-wallet-pay-delivering', '2', 'customer', 'PAY', -12, 559, 547, 'demo-order-delivering', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:03:13');
+
+UPDATE user SET balance = 547 WHERE id = '2';
 
 INSERT IGNORE INTO operation_permission (role_code, permission_key, permission_name, permission_type, scope_code, enabled, updated_time) VALUES
     ('admin', 'admin.menu.goods', '商品治理', 'menu', 'admin', 1, NOW()),

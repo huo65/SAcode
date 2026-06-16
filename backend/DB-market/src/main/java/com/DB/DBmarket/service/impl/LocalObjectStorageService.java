@@ -41,7 +41,9 @@ public class LocalObjectStorageService implements ObjectStorageService {
         Files.createDirectories(categoryDir);
 
         Path targetFile = categoryDir.resolve(fileName);
-        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        try (java.io.InputStream is = file.getInputStream()) {
+            Files.copy(is, targetFile, StandardCopyOption.REPLACE_EXISTING);
+        }
 
         String relativePath = normalizedCategory + "/" + today + "/" + fileName;
         String publicUrlPrefix = storageProperties.getLocal().getPublicUrlPrefix().replaceAll("/+$", "");

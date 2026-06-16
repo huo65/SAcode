@@ -19,6 +19,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Backend runtime uploads
+backend/data/
+
 # Environment and local secrets
 .env
 .env.*

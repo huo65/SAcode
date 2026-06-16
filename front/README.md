@@ -30,6 +30,15 @@ npm test
 | `src/router` | 路由配置 |
 | `tests` | 前端工具函数测试 |
 
+## 图片资源
+
+所有演示图片统一放在 `public/img`，数据库和接口返回值使用 `/img/...` 路径：
+
+- `public/img/demo`：初始化脚本固定引用的演示商品、门店图片。
+- `public/img/uploads`：后端本地上传目录，按 `avatar`、`product`、`restaurant`、`common` 分类保存。
+
+需要跨设备演示的新增图片请提交到 Git，避免依赖后端运行时临时目录。
+
 ## 当前展示范围
 
 - 顾客：餐厅浏览、下单、支付、确认收货、评价、售后。
