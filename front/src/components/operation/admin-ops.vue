@@ -9,8 +9,8 @@
         </p>
       </div>
       <div class="hero-actions">
-        <el-button class="ghost-btn" @click="refreshAll">刷新看板</el-button>
-        <el-tag type="warning" effect="plain">轻量 RBAC 即时生效</el-tag>
+        <button class="btn btn-ghost" @click="refreshAll">刷新看板</button>
+        <span class="badge badge-warning">轻量 RBAC 即时生效</span>
       </div>
     </section>
 
@@ -72,10 +72,23 @@
             <strong>{{ card.value }}</strong>
           </div>
         </div>
-        <el-table :data="stateDistribution" size="small" class="clean-table">
-          <el-table-column prop="label" label="订单状态" />
-          <el-table-column prop="count" label="数量" width="90" />
-        </el-table>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>订单状态</th>
+              <th style="width: 90px;">数量</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in stateDistribution" :key="item.label">
+              <td>{{ item.label }}</td>
+              <td>{{ item.count }}</td>
+            </tr>
+            <tr v-if="stateDistribution.length === 0">
+              <td colspan="2" class="empty-cell">暂无数据</td>
+            </tr>
+          </tbody>
+        </table>
       </article>
     </section>
 
@@ -86,7 +99,7 @@
             <p class="panel-kicker">权限矩阵</p>
             <h4>角色-菜单-动作权限配置</h4>
           </div>
-          <el-tag type="success" effect="plain">修改后立即影响菜单与关键接口</el-tag>
+          <span class="badge badge-success">修改后立即影响菜单与关键接口</span>
         </div>
 
         <div class="permission-groups">
@@ -100,7 +113,7 @@
                 <h5>{{ group.roleName }}</h5>
                 <p>{{ group.roleCode === 'admin' ? '平台治理角色' : '门店运营角色' }}</p>
               </div>
-              <el-tag>{{ enabledCount(group.permissions) }}/{{ group.permissions.length }}</el-tag>
+              <span class="badge badge-primary">{{ enabledCount(group.permissions) }}/{{ group.permissions.length }}</span>
             </div>
             <div class="permission-list">
               <label
@@ -112,10 +125,14 @@
                   <strong>{{ item.permissionName }}</strong>
                   <span>{{ item.permissionKey }}</span>
                 </div>
-                <el-switch
-                  :model-value="item.enabled === 1"
-                  @change="(value) => handlePermissionChange(group.roleCode, item, value)"
-                />
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    :checked="item.enabled === 1"
+                    @change="(e) => handlePermissionChange(group.roleCode, item, e.target.checked)"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
               </label>
             </div>
           </div>
@@ -128,21 +145,41 @@
             <p class="panel-kicker">审计日志</p>
             <h4>关键操作审计日志</h4>
           </div>
-          <el-input
-            v-model="auditKeyword"
-            placeholder="搜索操作人/详情"
-            clearable
-            class="audit-search"
-            @change="fetchAuditLogs"
-          />
+          <div class="audit-search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input
+              v-model="auditKeyword"
+              placeholder="搜索操作人/详情"
+              class="audit-search"
+              @change="fetchAuditLogs"
+            />
+          </div>
         </div>
-        <el-table :data="auditLogs" size="small" class="clean-table">
-          <el-table-column prop="actionType" label="动作" width="160" />
-          <el-table-column prop="actorName" label="操作人" width="120" />
-          <el-table-column prop="targetName" label="目标" width="140" />
-          <el-table-column prop="detail" label="说明" min-width="220" />
-          <el-table-column prop="createdTime" label="时间" width="180" />
-        </el-table>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th style="width: 160px;">动作</th>
+              <th style="width: 120px;">操作人</th>
+              <th style="width: 140px;">目标</th>
+              <th>说明</th>
+              <th style="width: 180px;">时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in auditLogs" :key="item.id || item.createdTime">
+              <td>
+                <span class="badge badge-info">{{ item.actionType }}</span>
+              </td>
+              <td>{{ item.actorName }}</td>
+              <td>{{ item.targetName }}</td>
+              <td class="td-ellipsis">{{ item.detail }}</td>
+              <td>{{ item.createdTime }}</td>
+            </tr>
+            <tr v-if="auditLogs.length === 0">
+              <td colspan="5" class="empty-cell">暂无审计日志</td>
+            </tr>
+          </tbody>
+        </table>
       </article>
     </section>
 
@@ -153,13 +190,29 @@
           <h4>最近订单样本</h4>
         </div>
       </div>
-      <el-table :data="recentOrders" class="clean-table">
-        <el-table-column prop="orderId" label="订单号" min-width="180" />
-        <el-table-column prop="stateLabel" label="状态" width="120" />
-        <el-table-column prop="amount" label="金额" width="100" />
-        <el-table-column prop="itemCount" label="件数" width="90" />
-        <el-table-column prop="time" label="时间" min-width="180" />
-      </el-table>
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>订单号</th>
+            <th style="width: 120px;">状态</th>
+            <th style="width: 100px;">金额</th>
+            <th style="width: 90px;">件数</th>
+            <th>时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in recentOrders" :key="item.orderId">
+            <td>{{ item.orderId }}</td>
+            <td>{{ item.stateLabel }}</td>
+            <td>{{ item.amount }}</td>
+            <td>{{ item.itemCount }}</td>
+            <td>{{ item.time }}</td>
+          </tr>
+          <tr v-if="recentOrders.length === 0">
+            <td colspan="5" class="empty-cell">暂无订单数据</td>
+          </tr>
+        </tbody>
+      </table>
     </section>
   </div>
 </template>
@@ -360,12 +413,6 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
-.ghost-btn {
-  border: none;
-  color: #13284b;
-  background: rgba(255, 255, 255, 0.86);
-}
-
 .metric-grid,
 .content-grid,
 .role-grid {
@@ -540,16 +587,169 @@ onBeforeUnmount(() => {
   padding: 14px 16px;
   border-radius: 18px;
   background: #fff;
+  cursor: pointer;
+}
+
+/* ---- Toggle Switch (replaces el-switch) ---- */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 999px;
+  transition: background 0.3s;
+
+  &::before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: #4F46E5;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* ---- Audit Search ---- */
+.audit-search-wrap {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 .audit-search {
-  width: 240px;
+  width: 220px;
+  padding: 8px 14px 8px 34px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  font-size: 13px;
+  color: #1a1a2e;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  }
+
+  &::placeholder {
+    color: rgba(0, 0, 0, 0.35);
+  }
 }
 
-.clean-table {
+/* ---- Custom Table ---- */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
   margin-top: 16px;
+
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    color: rgba(18, 31, 54, 0.6);
+    border-bottom: 2px solid rgba(79, 70, 229, 0.1);
+    font-size: 12px;
+    background: rgba(79, 70, 229, 0.03);
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    color: #0f1b31;
+  }
+
+  tr:hover td {
+    background: rgba(79, 70, 229, 0.03);
+  }
 }
 
+.td-ellipsis {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-cell {
+  text-align: center;
+  color: rgba(0, 0, 0, 0.35);
+  padding: 30px 12px !important;
+}
+
+/* ---- Badge ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success { color: #059669; background: rgba(5, 150, 105, 0.12); }
+.badge-warning { color: #D97706; background: rgba(217, 119, 6, 0.12); }
+.badge-primary { color: #4F46E5; background: rgba(79, 70, 229, 0.12); }
+.badge-info    { color: #6B7280; background: rgba(107, 114, 128, 0.12); }
+
+/* ---- Button ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.86);
+  color: #13284b;
+  border: none;
+
+  &:hover {
+    background: #fff;
+  }
+}
+
+/* ---- Responsive ---- */
 @media (max-width: 1400px) {
   .metric-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

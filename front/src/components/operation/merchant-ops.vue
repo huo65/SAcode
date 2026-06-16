@@ -9,8 +9,8 @@
         </p>
       </div>
       <div class="hero-actions">
-        <el-button class="light-btn" @click="refreshAll">刷新经营数据</el-button>
-        <el-button type="primary" @click="exportReport">导出经营报表</el-button>
+        <button class="btn btn-outline" @click="refreshAll">刷新经营数据</button>
+        <button class="btn btn-primary" @click="exportReport">导出经营报表</button>
       </div>
     </section>
 
@@ -42,7 +42,7 @@
                 :style="{ width: `${resolveWidth(item.gmv, maxGmv)}%` }"
               />
             </div>
-            <div class="trend-value">¥{{ item.gmv }}</div>
+            <div class="trend-value">&yen;{{ item.gmv }}</div>
           </div>
         </div>
       </article>
@@ -96,11 +96,11 @@
             <div class="rank-no">{{ index + 1 }}</div>
             <div class="rank-main">
               <strong>{{ item.name }}</strong>
-              <span>销量 {{ item.quantity }} · 营收 ¥{{ item.revenue }}</span>
+              <span>销量 {{ item.quantity }} &middot; 营收 &yen;{{ item.revenue }}</span>
             </div>
-            <el-tag size="small" :type="item.state === 1 ? 'success' : 'warning'">
-              {{ item.state === 1 ? "在售" : "待审核" }}
-            </el-tag>
+            <span class="badge" :class="item.state === 1 ? 'badge-success' : 'badge-warning'">
+              {{ item.state === 1 ? '在售' : '待审核' }}
+            </span>
           </div>
         </div>
       </article>
@@ -112,12 +112,27 @@
             <h4>近期订单样本</h4>
           </div>
         </div>
-        <el-table :data="recentOrders" size="small" class="clean-table">
-          <el-table-column prop="orderId" label="订单号" min-width="160" />
-          <el-table-column prop="stateLabel" label="状态" width="110" />
-          <el-table-column prop="amount" label="金额" width="90" />
-          <el-table-column prop="time" label="时间" min-width="180" />
-        </el-table>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>订单号</th>
+              <th>状态</th>
+              <th>金额</th>
+              <th>时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in recentOrders" :key="item.orderId">
+              <td>{{ item.orderId }}</td>
+              <td>{{ item.stateLabel }}</td>
+              <td>{{ item.amount }}</td>
+              <td>{{ item.time }}</td>
+            </tr>
+            <tr v-if="recentOrders.length === 0">
+              <td colspan="4" class="empty-cell">暂无订单数据</td>
+            </tr>
+          </tbody>
+        </table>
       </article>
     </section>
   </div>
@@ -285,12 +300,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 12px;
   align-items: flex-end;
-}
-
-.light-btn {
-  border: none;
-  background: rgba(255, 255, 255, 0.88);
-  color: #4c2d17;
 }
 
 .summary-grid,
@@ -473,10 +482,94 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 
-.clean-table {
-  margin-top: 16px;
+/* ---- Badge ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
+.badge-success {
+  color: #059669;
+  background: rgba(5, 150, 105, 0.12);
+}
+
+.badge-warning {
+  color: #D97706;
+  background: rgba(217, 119, 6, 0.12);
+}
+
+/* ---- Button ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #E8652B;
+  color: #fff;
+
+  &:hover {
+    background: #d55a22;
+    transform: translateY(-1px);
+  }
+}
+
+.btn-outline {
+  background: rgba(255, 255, 255, 0.88);
+  color: #4c2d17;
+  border: 1px solid rgba(76, 45, 23, 0.15);
+
+  &:hover {
+    background: #fff;
+  }
+}
+
+/* ---- Custom Table ---- */
+.custom-table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    color: rgba(46, 26, 14, 0.65);
+    border-bottom: 2px solid rgba(183, 110, 43, 0.12);
+    font-size: 12px;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #2e1a0e;
+  }
+
+  tr:hover td {
+    background: rgba(183, 110, 43, 0.04);
+  }
+}
+
+.empty-cell {
+  text-align: center;
+  color: rgba(0, 0, 0, 0.35);
+  padding: 30px 12px !important;
+}
+
+/* ---- Responsive ---- */
 @media (max-width: 1400px) {
   .summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -132,7 +132,7 @@
 import { ref, reactive } from "vue";
 import { userInfo } from "@/store";
 import fetch from "@/api/fetch";
-import { Alipay, Order, Product } from "@/api/apis";
+import { Order, Product } from "@/api/apis";
 import { ElMessage } from "element-plus";
 import { curStatus } from "../../store";
 import Pay from "./pay.vue";
@@ -214,56 +214,7 @@ const buyProduct = async () => {
   });
 };
 
-const getCurrentOrderIds = () =>
-  [props.orderId || curOrderInfo.value.id].filter(Boolean).join(",");
-
-const startAlipayPayment = async () => {
-  const orderIds = getCurrentOrderIds();
-  if (!orderIds) {
-    ElMessage.error("没有可支付的订单");
-    return;
-  }
-
-  const popup = window.open(
-    `${Alipay.pay.url}?orderIds=${encodeURIComponent(orderIds)}`,
-    "_blank",
-    "width=1200,height=800"
-  );
-  if (!popup) {
-    ElMessage.error("请允许弹出支付窗口后重试");
-    return;
-  }
-
-  const maxAttempts = 120;
-  let attempts = 0;
-  const timer = window.setInterval(() => {
-    attempts += 1;
-    fetch(Alipay.check, { orderIds })
-      .then((data) => {
-        if (data?.paid) {
-          window.clearInterval(timer);
-          if (!popup.closed) {
-            popup.close();
-          }
-          ElMessage.success("支付成功");
-          toPay.value = false;
-          closeDetail();
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (attempts >= maxAttempts) {
-          window.clearInterval(timer);
-        }
-      });
-  }, 1500);
-};
-
-const payBill = (payWay) => {
-  if (payWay === "alipay") {
-    startAlipayPayment();
-    return;
-  }
+const payBill = () => {
   fetch(Order.payOrder2, {
     orderIdList: [props.orderId || curOrderInfo.value.id],
   }).then(() => {
@@ -271,6 +222,8 @@ const payBill = (payWay) => {
     window.dispatchEvent(new CustomEvent("navigate-orders"));
     toPay.value = false;
     closeDetail();
+  }).catch((err) => {
+    ElMessage.error(err.response?.data?.msg || "支付失败，请重试");
   });
 };
 

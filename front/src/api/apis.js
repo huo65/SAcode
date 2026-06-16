@@ -55,6 +55,24 @@ export const User = {
         method: "post",
         url: `${host}/user/disabled`,
     },
+
+    // 充值余额（课堂展示版：模拟第三方支付入账）
+    recharge: {
+        method: "post",
+        url: `${host}/user/recharge`,
+    },
+
+    // 查询钱包信息（余额、累计充值、累计支付、累计退款、最近流水）
+    wallet: {
+        method: "get",
+        url: `${host}/user/wallet`,
+    },
+
+    // 查询钱包流水
+    walletTransactions: {
+        method: "get",
+        url: `${host}/user/wallet/transactions`,
+    },
 };
 
 // 商品相关接口信息
@@ -145,6 +163,16 @@ export const Review = {
         method: "post",
         url: `${host}/review/reply`,
     },
+    // 商家查询本店评价列表
+    merchantList: {
+        method: "get",
+        url: `${host}/review/merchant/list`,
+    },
+    // 顾客查询自己提交过的评价
+    customerList: {
+        method: "get",
+        url: `${host}/review/customer/list`,
+    },
 };
 
 export const AfterSale = {
@@ -194,6 +222,12 @@ export const Ops = {
     auditList: {
         method: "get",
         url: `${host}/ops/audit/list`,
+    },
+
+    // 管理员查询平台钱包流水
+    walletTransactions: {
+        method: "get",
+        url: `${host}/ops/wallet/transactions`,
     },
 };
 

@@ -1,160 +1,228 @@
 <template>
-  <!-- customer/guest 身份 -->
-  <div class="page-shell">
-    <div class="customer">
-      <section class="customer-hero">
-        <div>
-          <span class="micro-tag">{{ curStatus === "guest" ? "游客预览" : "顾客中心" }}</span>
-          <h2>发现附近好店，轻松点餐下单</h2>
-          <p>
-            在同一工作区内快速完成门店浏览、订单查看和个人信息管理，点餐流程更清晰顺手。
-          </p>
-        </div>
-        <div class="hero-stats">
-          <article class="hero-stat">
-            <span>当前模式</span>
-            <strong>{{ curStatus === "guest" ? "游客浏览" : "顾客点餐" }}</strong>
-          </article>
-          <article class="hero-stat">
-            <span>核心入口</span>
-            <strong>{{ curStatus === "guest" ? "门店列表" : "门店 + 订单 + 资料" }}</strong>
-          </article>
-        </div>
-      </section>
+  <div class="page-container">
+    <AppSidebar
+      role="customer"
+      :current-page="currentPage"
+      :mobile-open="mobileOpen"
+      :badges="badges"
+      @navigate="onNavigate"
+      @close-mobile="mobileOpen = false"
+    />
 
-      <el-tabs v-model="activeName" @tab-click="handleClick" class="customer-tab">
-        <el-tab-pane label="店铺" name="first"><Restaurant /></el-tab-pane>
-        <el-tab-pane v-if="curStatus === 'customer'" :label="t('common.order')" name="second">
-          <Order />
-        </el-tab-pane>
-        <el-tab-pane v-if="curStatus === 'customer'" :label="t('common.info')" name="third">
-          <Info />
-        </el-tab-pane>
-      </el-tabs>
+    <div class="page-main">
+      <Header @toggle-mobile="mobileOpen = !mobileOpen" />
+
+      <div class="page-content">
+        <!-- 移动端遮罩 -->
+        <div class="mobile-mask" v-if="mobileOpen" @click="mobileOpen = false"></div>
+
+        <!-- 路由出口 -->
+        <router-view v-slot="{ Component }">
+          <transition name="fade-slide" mode="out-in">
+            <component :is="Component" :key="$route.fullPath" />
+          </transition>
+        </router-view>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import Restaurant from "@/components/restaurant/index.vue";
-import Order from "@/components/order/index.vue";
-import Info from "@/components/info/index.vue";
-import { curStatus, refreshDataFnMap } from "@/store";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import AppSidebar from '@/components/AppSidebar/index.vue';
+import Header from '@/page/home/components/Header.vue';
+import { userInfo, curStatus } from '@/store';
+import { Cart as CartApi } from '@/api/apis';
+import fetch from '@/api/fetch';
 
-const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
-const activeName = ref("first");
+const mobileOpen = ref(false);
+const cartCount = ref(0);
 
-const tabNameMap = {
-  first: "Restaurant",
-  second: "Order",
-  third: "Info",
+const badges = computed(() => ({
+  cartCount: cartCount.value,
+}));
+
+const currentPage = computed(() => {
+  return route.meta?.sidebarKey || 'home';
+});
+
+const onNavigate = ({ key }) => {
+  router.push(`/home/customer/${key}`);
 };
 
-const handleClick = (tab, event) => {
-  const key = tabNameMap[tab.props.name] || tab.props.label;
-  refreshDataFnMap.value?.[key]?.();
+// ==================== 拉取角标 ====================
+let pollTimer = null;
+
+const loadCartCount = () => {
+  if (curStatus.value !== 'customer' || !userInfo.value?.id) return;
+  fetch(CartApi.getCart, { usrId: userInfo.value.id }).then((data) => {
+    const items = data?.data || data?.items || data || [];
+    cartCount.value = Array.isArray(items) ? items.length : 0;
+  }).catch(() => {
+    cartCount.value = 0;
+  });
 };
 
-const openOrderTab = () => {
-  if (curStatus.value !== "customer") return;
-  activeName.value = "second";
-  refreshDataFnMap.value?.Order?.();
+// 给 body 添加角色 class，驱动 CSS 变量覆盖
+const setBodyRoleClass = () => {
+  document.body.classList.remove('role-merchant', 'role-customer', 'role-admin', 'role-rider');
+  document.body.classList.add('role-customer');
 };
 
 onMounted(() => {
-  window.addEventListener("navigate-orders", openOrderTab);
+  setBodyRoleClass();
+  if (route.path === '/home' || route.path === '/home/customer') {
+    router.replace('/home/customer/home');
+  }
+  loadCartCount();
+  pollTimer = setInterval(loadCartCount, 15000);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("navigate-orders", openOrderTab);
+  if (pollTimer) clearInterval(pollTimer);
+});
+
+// 监听路由变化关闭移动端 sidebar
+watch(() => route.fullPath, () => {
+  mobileOpen.value = false;
 });
 </script>
 
 <style lang="less" scoped>
-.customer {
-  padding: 20px 20px 24px;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top left, rgba(255, 200, 87, 0.18), transparent 26%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 250, 244, 0.82));
-  border: 1px solid rgba(92, 46, 20, 0.08);
-  box-shadow: var(--shadow-card);
+.page-content {
+  position: relative;
+  padding: 28px 32px;
+  min-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
 
-  &-tab {
-    padding: 8px 4px 4px;
+.mobile-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 99;
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-mask {
+    display: block;
+  }
+  .page-content {
+    padding: 16px;
   }
 }
 
-.customer-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 12px 6px 20px;
+// 路由切换动画
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s ease;
+}
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>
+
+// ============================================================
+//  顾客端 Sidebar 环境下的子组件全局覆盖（非 scoped）
+//  适配 Sidebar 占用 240px 后的窄内容区
+// ============================================================
+<style lang="less">
+
+// --- 商品网格：Sidebar 后从 3 列改为自适应 ---
+.page-content .list {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
-.customer-hero h2 {
-  margin-top: 14px;
-  color: var(--text-strong);
-  font-size: clamp(30px, 4vw, 46px);
-  font-family: var(--font-display);
+// --- 订单图片：缩小以适应窄布局 ---
+.page-content .item .product-img,
+.page-content .item .info > img {
+  width: 140px;
+  height: 140px;
 }
 
-.customer-hero p {
-  max-width: 760px;
-  margin-top: 12px;
-  color: var(--text-soft);
-  line-height: 1.8;
+// --- el-tag 状态标签覆盖成 badge 风格 ---
+.page-content .el-tag {
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 10px;
+  border: 1px solid transparent;
 }
 
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(150px, 1fr));
+.page-content .el-tag--primary {
+  background: var(--info-light);
+  color: var(--info);
+  border-color: fade(#3B82F6, 20%);
+}
+
+.page-content .el-tag--success {
+  background: var(--success-light);
+  color: var(--success);
+  border-color: fade(#10B981, 20%);
+}
+
+.page-content .el-tag--warning {
+  background: var(--warning-light);
+  color: darken(#F59E0B, 20%);
+  border-color: fade(#F59E0B, 40%);
+}
+
+.page-content .el-tag--danger {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: fade(#EF4444, 20%);
+}
+
+.page-content .el-tag--info {
+  background: #f4f4f5;
+  color: #909399;
+  border-color: #e9e9eb;
+}
+
+// --- 搜索区 section-heading 在窄布局下自动换行 ---
+.page-content .section-heading {
+  flex-wrap: wrap;
   gap: 12px;
-  min-width: 380px;
 }
 
-.hero-stat {
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(92, 46, 20, 0.08);
+.page-content .section-heading > div:first-child h3 {
+  font-size: 20px;
 }
 
-.hero-stat span {
-  display: block;
-  color: var(--text-soft);
-  font-size: 13px;
+// --- 搜索表单：Sidebar 后从 5 列减为 3 列 ---
+.page-content .search-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.hero-stat strong {
-  display: block;
-  margin-top: 8px;
-  color: var(--text-strong);
-  font-size: 22px;
-  font-family: var(--font-display);
-}
-
-@media (max-width: 960px) {
-  .customer {
-    padding: 18px 14px 20px;
+@media (max-width: 1100px) {
+  .page-content .search-form {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .customer-hero {
+  .page-content .item .info {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .hero-stats {
-    min-width: 0;
+  .page-content .item .product-img,
+  .page-content .item .info > img {
+    width: 100%;
+    height: 180px;
+    margin: 0 0 12px;
   }
 }
 
-@media (max-width: 720px) {
-  .hero-stats {
+@media (max-width: 768px) {
+  .page-content .search-form {
     grid-template-columns: 1fr;
   }
 }

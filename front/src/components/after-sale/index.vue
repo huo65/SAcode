@@ -1,144 +1,173 @@
 <template>
-  <div class="after-sale">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">售后服务台</p>
-        <h2>{{ pageTitle }}</h2>
-        <p class="hero-desc">
-          将投诉、退款、配送问题统一汇总到售后工单台，让处理链路和结果反馈一眼可见。
-        </p>
+  <div class="after-sale-page">
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+      <div class="stat-card orange">
+        <div class="stat-icon orange"><i class="fas fa-ticket-alt"></i></div>
+        <div class="stat-label">总工单</div>
+        <div class="stat-value">{{ stats.total || 0 }}</div>
       </div>
-      <div class="hero-stats">
-        <div class="stat-card">
-          <span>总工单</span>
-          <strong>{{ stats.total || 0 }}</strong>
+      <div class="stat-card red">
+        <div class="stat-icon red"><i class="fas fa-exclamation-circle"></i></div>
+        <div class="stat-label">待处理</div>
+        <div class="stat-value">{{ stats.pending || 0 }}</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-icon amber"><i class="fas fa-spinner"></i></div>
+        <div class="stat-label">处理中</div>
+        <div class="stat-value">{{ stats.processing || 0 }}</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon blue"><i class="fas fa-undo-alt"></i></div>
+        <div class="stat-label">退款类</div>
+        <div class="stat-value">{{ stats.refund || 0 }}</div>
+      </div>
+    </div>
+
+    <!-- 筛选栏 -->
+    <div class="card filter-bar">
+      <div class="filter-row">
+        <div class="filter-item">
+          <label class="filter-label">工单状态</label>
+          <select v-model="filters.status" class="filter-select" @change="loadTickets">
+            <option value="">全部状态</option>
+            <option value="待处理">待处理</option>
+            <option value="处理中">处理中</option>
+            <option value="已解决">已解决</option>
+            <option value="已关闭">已关闭</option>
+          </select>
         </div>
-        <div class="stat-card">
-          <span>待处理</span>
-          <strong>{{ stats.pending || 0 }}</strong>
+        <div class="filter-item">
+          <label class="filter-label">问题类型</label>
+          <select v-model="filters.type" class="filter-select" @change="loadTickets">
+            <option value="">全部类型</option>
+            <option value="投诉反馈">投诉反馈</option>
+            <option value="退款问题">退款问题</option>
+            <option value="配送问题">配送问题</option>
+            <option value="商品问题">商品问题</option>
+          </select>
         </div>
-        <div class="stat-card">
-          <span>处理中</span>
-          <strong>{{ stats.processing || 0 }}</strong>
-        </div>
-        <div class="stat-card">
-          <span>退款类</span>
-          <strong>{{ stats.refund || 0 }}</strong>
+        <div class="filter-actions">
+          <button class="btn btn-outline" @click="resetFilters"><i class="fas fa-undo"></i> 重置</button>
+          <button class="btn btn-primary" @click="loadTickets"><i class="fas fa-sync-alt"></i> 刷新</button>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="filter-bar">
-      <el-select v-model="filters.status" clearable placeholder="工单状态">
-        <el-option label="待处理" value="待处理" />
-        <el-option label="处理中" value="处理中" />
-        <el-option label="已解决" value="已解决" />
-        <el-option label="已关闭" value="已关闭" />
-      </el-select>
-      <el-select v-model="filters.type" clearable placeholder="工单类型">
-        <el-option label="投诉反馈" value="投诉反馈" />
-        <el-option label="退款问题" value="退款问题" />
-        <el-option label="配送问题" value="配送问题" />
-        <el-option label="商品问题" value="商品问题" />
-      </el-select>
-      <div class="filter-actions">
-        <el-button @click="resetFilters">重置</el-button>
-        <el-button type="primary" @click="loadTickets">刷新工单</el-button>
+    <!-- 工单表格 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-clipboard-list"></i> 售后工单</div>
+        <span class="card-hint">点击工单行查看详情与处理记录</span>
       </div>
-    </section>
-
-    <section class="board">
-      <div class="board-head">
-        <div>
-          <p class="eyebrow">工单队列</p>
-          <h3>售后处理台</h3>
+      <div class="tbl-wrap">
+        <table v-if="ticketList.length > 0">
+          <thead>
+            <tr>
+              <th>工单号</th>
+              <th>订单号</th>
+              <th>问题类型</th>
+              <th>顾客</th>
+              <th>商家</th>
+              <th>状态</th>
+              <th>金额</th>
+              <th>更新时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in ticketList" :key="row.id" @click="openTicket(row)">
+              <td class="td-id">{{ row.id }}</td>
+              <td>{{ row.orderId }}</td>
+              <td>{{ row.type }}</td>
+              <td>{{ row.customerName || '-' }}</td>
+              <td>{{ row.merchantName || '-' }}</td>
+              <td><span class="badge" :class="getStatusBadgeClass(row.status)">{{ row.status }}</span></td>
+              <td class="td-price">¥{{ row.orderAmount || 0 }}</td>
+              <td class="td-time">{{ row.updatedTime || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="empty-state">
+          <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+          <p class="empty-text">暂无工单数据</p>
         </div>
-        <span class="board-tip">点击某条工单可查看关联订单与处理记录</span>
       </div>
+    </div>
 
-      <el-table :data="ticketList" stripe class="ticket-table" @row-click="openTicket">
-        <el-table-column prop="id" label="工单号" min-width="130" />
-        <el-table-column prop="orderId" label="订单号" min-width="120" />
-        <el-table-column prop="type" label="问题类型" min-width="110" />
-        <el-table-column prop="customerName" label="顾客" min-width="110" />
-        <el-table-column prop="merchantName" label="商家" min-width="120" />
-        <el-table-column label="状态" min-width="110">
-          <template #default="{ row }">
-            <el-tag :type="statusTagType[row.status] || 'info'">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="金额" min-width="90">
-          <template #default="{ row }">￥{{ row.orderAmount || 0 }}</template>
-        </el-table-column>
-        <el-table-column prop="updatedTime" label="更新时间" min-width="170" />
-      </el-table>
-    </section>
-
-    <el-drawer v-model="drawerVisible" title="售后工单详情" size="46%">
-      <template v-if="activeTicket">
-        <div class="drawer-panel">
-          <div class="drawer-meta">
+    <!-- 工单详情弹窗 -->
+    <div v-if="drawerVisible" class="modal-overlay show" @click.self="drawerVisible = false">
+      <div class="modal modal-lg">
+        <div class="modal-header">
+          <h3>售后工单详情</h3>
+          <button class="modal-close" @click="drawerVisible = false"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" v-if="activeTicket">
+          <div class="detail-meta">
             <div class="meta-card">
-              <span>工单状态</span>
-              <strong>{{ activeTicket.status }}</strong>
+              <div class="meta-label">工单状态</div>
+              <span class="badge" :class="getStatusBadgeClass(activeTicket.status)">{{ activeTicket.status }}</span>
             </div>
             <div class="meta-card">
-              <span>问题类型</span>
+              <div class="meta-label">问题类型</div>
               <strong>{{ activeTicket.type }}</strong>
             </div>
             <div class="meta-card">
-              <span>关联订单</span>
+              <div class="meta-label">关联订单</div>
               <strong>{{ activeTicket.orderId }}</strong>
             </div>
           </div>
 
-          <el-descriptions :column="1" border class="ticket-detail">
-            <el-descriptions-item label="问题描述">
-              {{ activeTicket.content || "-" }}
-            </el-descriptions-item>
-            <el-descriptions-item label="顾客 / 商家">
-              {{ activeTicket.customerName || "-" }} / {{ activeTicket.merchantName || "-" }}
-            </el-descriptions-item>
-            <el-descriptions-item label="地址">
-              {{ activeTicket.receiveAddress || "-" }}
-            </el-descriptions-item>
-            <el-descriptions-item label="处理备注">
-              {{ activeTicket.handlerNote || "尚未填写处理备注" }}
-            </el-descriptions-item>
-            <el-descriptions-item label="处理人">
-              {{ activeTicket.handlerName || "待分配" }}
-            </el-descriptions-item>
-          </el-descriptions>
+          <div class="detail-info">
+            <div class="info-row">
+              <span class="info-label">问题描述</span>
+              <span class="info-value">{{ activeTicket.content || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">顾客 / 商家</span>
+              <span class="info-value">{{ activeTicket.customerName || '-' }} / {{ activeTicket.merchantName || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">地址</span>
+              <span class="info-value">{{ activeTicket.receiveAddress || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">处理备注</span>
+              <span class="info-value">{{ activeTicket.handlerNote || '尚未填写' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">处理人</span>
+              <span class="info-value">{{ activeTicket.handlerName || '待分配' }}</span>
+            </div>
+          </div>
 
-          <div v-if="canHandle" class="handle-form">
-            <div class="section-title">更新处理状态</div>
-            <el-form label-width="88px">
-              <el-form-item label="新状态">
-                <el-select v-model="handleForm.status" style="width: 100%">
-                  <el-option label="待处理" value="待处理" />
-                  <el-option label="处理中" value="处理中" />
-                  <el-option label="已解决" value="已解决" />
-                  <el-option v-if="isAdmin" label="已关闭" value="已关闭" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="处理备注">
-                <el-input
-                  v-model="handleForm.handlerNote"
-                  type="textarea"
-                  :rows="4"
-                  maxlength="300"
-                  show-word-limit
-                  placeholder="填写本次处理结果，例如退款说明、补偿方案或沟通记录"
-                />
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="submitHandle">保存处理结果</el-button>
-              </el-form-item>
-            </el-form>
+          <!-- 处理表单 -->
+          <div v-if="canHandle" class="handle-section">
+            <h4 class="handle-title">更新处理状态</h4>
+            <div class="form-group">
+              <label class="form-label">新状态</label>
+              <select v-model="handleForm.status" class="form-select">
+                <option value="待处理">待处理</option>
+                <option value="处理中">处理中</option>
+                <option value="已解决">已解决</option>
+                <option v-if="isAdmin" value="已关闭">已关闭</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">处理备注</label>
+              <textarea
+                v-model="handleForm.handlerNote"
+                class="form-textarea"
+                rows="4"
+                maxlength="300"
+                placeholder="填写本次处理结果，例如退款说明、补偿方案或沟通记录"
+              ></textarea>
+              <div class="form-counter">{{ (handleForm.handlerNote || '').length }}/300</div>
+            </div>
+            <button class="btn btn-primary" @click="submitHandle">保存处理结果</button>
           </div>
         </div>
-      </template>
-    </el-drawer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -179,17 +208,15 @@ const resolvedScope = computed(() => {
 
 const isAdmin = computed(() => userInfo.value.type === "admin");
 const canHandle = computed(() => userInfo.value.type === "admin" || userInfo.value.type === "mer");
-const pageTitle = computed(() => {
-  if (resolvedScope.value === "admin") return "平台售后总控台";
-  if (resolvedScope.value === "merchant") return "商家售后处理台";
-  return "我的售后工单";
-});
 
-const statusTagType = {
-  待处理: "danger",
-  处理中: "warning",
-  已解决: "success",
-  已关闭: "info",
+const getStatusBadgeClass = (status) => {
+  const map = {
+    待处理: "badge-danger",
+    处理中: "badge-warning",
+    已解决: "badge-success",
+    已关闭: "badge-info",
+  };
+  return map[status] || "badge-info";
 };
 
 const loadTickets = () => {
@@ -248,168 +275,411 @@ onMounted(() => {
 </script>
 
 <style lang="less" scoped>
-.after-sale {
-  --ink: #171d2d;
-  --accent: #1c6cff;
-  --accent-soft: rgba(28, 108, 255, 0.12);
-  --panel: rgba(248, 250, 255, 0.88);
-  color: var(--ink);
-}
+@import "@/style/theme.less";
 
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
-  gap: 20px;
-  padding: 30px;
-  border-radius: 30px;
-  background:
-    radial-gradient(circle at top left, rgba(28, 108, 255, 0.22), transparent 34%),
-    linear-gradient(135deg, #f6fbff 0%, #e4edff 100%);
-  border: 1px solid rgba(23, 29, 45, 0.08);
-  box-shadow: 0 30px 70px rgba(23, 29, 45, 0.1);
-}
-
-.eyebrow {
-  margin: 0 0 10px;
-  color: var(--accent);
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
-
-.hero h2 {
-  margin: 0;
-  font-size: 40px;
-  line-height: 1.1;
-  font-family: "Georgia", "Times New Roman", serif;
-}
-
-.hero-desc {
-  margin: 14px 0 0;
-  max-width: 760px;
-  color: rgba(23, 29, 45, 0.72);
-  line-height: 1.8;
-}
-
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.stat-card {
-  padding: 18px 16px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(23, 29, 45, 0.08);
-}
-
-.stat-card span {
-  display: block;
-  color: rgba(23, 29, 45, 0.58);
-  font-size: 13px;
-}
-
-.stat-card strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 28px;
-  font-family: "Georgia", "Times New Roman", serif;
-}
-
-.filter-bar,
-.board {
-  margin-top: 20px;
-  padding: 20px;
-  border-radius: 24px;
-  background: var(--panel);
-  border: 1px solid rgba(23, 29, 45, 0.08);
-}
-
-.filter-bar {
-  display: grid;
-  grid-template-columns: 220px 220px 1fr;
-  gap: 12px;
-  align-items: center;
-}
-
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.board-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 16px;
-  align-items: flex-end;
-}
-
-.board-head h3 {
-  margin: 0;
-  font-size: 28px;
-  font-family: "Georgia", "Times New Roman", serif;
-}
-
-.board-tip {
-  color: rgba(23, 29, 45, 0.52);
-}
-
-.ticket-table {
-  width: 100%;
-}
-
-.drawer-panel {
+.after-sale-page {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== 统计卡片 ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
 }
-
-.drawer-meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+.stat-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  &:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+  &.orange::after { background: var(--primary); }
+  &.red::after { background: var(--danger); }
+  &.amber::after { background: #F59E0B; }
+  &.blue::after { background: var(--info); }
+}
+.stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-bottom: 12px;
+  &.orange { background: var(--primary-light); color: var(--primary); }
+  &.red { background: var(--danger-light); color: var(--danger); }
+  &.amber { background: var(--warning-light); color: #D69E00; }
+  &.blue { background: var(--info-light); color: var(--info); }
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.meta-card {
-  padding: 14px;
-  border-radius: 18px;
-  background: rgba(28, 108, 255, 0.08);
+/* ===== 筛选栏 ===== */
+.filter-bar {
+  padding: 18px 22px;
+}
+.filter-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.filter-select {
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text-primary);
+  outline: none;
+  min-width: 160px;
+  transition: all 0.2s ease;
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(232, 101, 43, 0.08);
+  }
+}
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
 }
 
-.meta-card span {
-  display: block;
-  color: rgba(23, 29, 45, 0.58);
+/* ===== 通用按钮 ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  outline: none;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  &:hover { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(232, 101, 43, 0.3); }
+}
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border);
+  &:hover { border-color: var(--primary); color: var(--primary); }
+}
+
+/* ===== 卡片 ===== */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.card-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  i { color: var(--primary); }
+}
+.card-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ===== 表格 ===== */
+.tbl-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+tr {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  &:hover td {
+    background: rgba(232, 101, 43, 0.03);
+  }
+  &:last-child td {
+    border-bottom: none;
+  }
+}
+.td-id {
+  font-weight: 600;
+  color: var(--primary);
+}
+.td-price {
+  font-weight: 700;
+  color: var(--price, var(--primary));
+}
+.td-time {
+  color: var(--text-muted);
   font-size: 12px;
 }
 
-.meta-card strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 22px;
-  font-family: "Georgia", "Times New Roman", serif;
-}
-
-.handle-form {
-  padding: 20px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(23, 29, 45, 0.08);
-}
-
-.section-title {
-  margin-bottom: 12px;
+/* ===== 徽标 ===== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--ink);
+  white-space: nowrap;
+}
+.badge-danger { background: var(--danger-light); color: #991B1B; }
+.badge-warning { background: var(--warning-light); color: #92600A; }
+.badge-success { background: var(--success-light); color: #065F46; }
+.badge-info { background: var(--info-light); color: #075CAA; }
+
+/* ===== 详情弹窗 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 16px;
+  width: 520px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.modal-lg { width: 600px; }
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 8px; border: none;
+  background: var(--bg); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); transition: all 0.2s ease;
+  &:hover { background: var(--danger-light); color: var(--danger); }
+}
+.modal-body { padding: 24px; }
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
 }
 
-@media (max-width: 1200px) {
-  .hero,
-  .filter-bar,
-  .drawer-meta {
-    grid-template-columns: 1fr;
+/* ===== 详情内部 ===== */
+.detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.meta-card {
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.meta-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.meta-card strong {
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  &:last-child { border-bottom: none; }
+}
+.info-label {
+  color: var(--text-muted);
+  font-weight: 500;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+.info-value {
+  color: var(--text-primary);
+}
+
+/* ===== 处理表单 ===== */
+.handle-section {
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.handle-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.form-select {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+  background: var(--card);
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s ease;
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(232, 101, 43, 0.08);
   }
+}
+.form-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--card);
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(232, 101, 43, 0.08);
+  }
+}
+.form-counter {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ===== 空状态 ===== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-text { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin: 0; }
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .filter-row { flex-direction: column; }
+  .filter-item { width: 100%; }
+  .filter-select { width: 100%; }
+  .filter-actions { margin-left: 0; width: 100%; }
+  .detail-meta { grid-template-columns: 1fr; }
+  .modal-lg { width: calc(100vw - 32px); }
 }
 </style>

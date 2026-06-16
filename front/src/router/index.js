@@ -2,6 +2,9 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import Login from "@/page/login/index.vue";
 import Home from "@/page/home/index.vue";
 import merchantRoutes from "@/router/modules/merchant";
+import adminRoutes from "@/router/modules/admin";
+import customerRoutes from "@/router/modules/customer";
+import driverRoutes from "@/router/modules/driver";
 import $store from "@/store";
 
 const routes = [
@@ -12,6 +15,9 @@ const routes = [
     component: Home,
   },
   ...merchantRoutes,
+  ...adminRoutes,
+  ...customerRoutes,
+  ...driverRoutes,
 ];
 
 const router = createRouter({

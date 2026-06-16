@@ -80,7 +80,7 @@ import $store, { userInfo, cartList } from "@/store/index.js";
 import { Minus, Plus, Delete } from "@element-plus/icons-vue";
 import { ref, computed } from "vue";
 import fetch from "@/api/fetch";
-import { Alipay, Cart, Order } from "@/api/apis";
+import { Cart, Order } from "@/api/apis";
 import Pay from "./pay.vue";
 import { ElMessage } from "element-plus";
 import { resolveImageUrl } from "@/lib/imageHelper";
@@ -111,12 +111,8 @@ let payResolver = null,
 
 const currentOrderIdList = ref([]);
 
-const finishPay = async (payWay) => {
+const finishPay = async () => {
   if (!payResolver) return;
-  if (payWay === "alipay") {
-    await startAlipayPayment();
-    return;
-  }
   fetch(Order.payOrder2, {
     orderIdList: currentOrderIdList.value,
   }).then(() => {
@@ -126,6 +122,8 @@ const finishPay = async (payWay) => {
     payResolver = null;
     payRejecter = null;
     paymentVisible.value = false;
+  }).catch((err) => {
+    ElMessage.error(err.response?.data?.msg || "支付失败，请重试");
   });
 };
 
@@ -136,53 +134,6 @@ const cancelPay = () => {
   payRejecter = null;
   payResolver = null;
   paymentVisible.value = false;
-};
-
-const getOrderIdsParam = () =>
-  [...new Set(currentOrderIdList.value.filter(Boolean))].join(",");
-
-const startAlipayPayment = async () => {
-  const orderIds = getOrderIdsParam();
-  if (!orderIds) {
-    ElMessage.error("没有可支付的订单");
-    return;
-  }
-
-  const popup = window.open(
-    `${Alipay.pay.url}?orderIds=${encodeURIComponent(orderIds)}`,
-    "_blank",
-    "width=1200,height=800"
-  );
-  if (!popup) {
-    ElMessage.error("请允许弹出支付窗口后重试");
-    return;
-  }
-
-  const maxAttempts = 120;
-  let attempts = 0;
-  const timer = window.setInterval(() => {
-    attempts += 1;
-    fetch(Alipay.check, { orderIds })
-      .then((data) => {
-        if (data?.paid) {
-          window.clearInterval(timer);
-          if (!popup.closed) {
-            popup.close();
-          }
-          ElMessage.success("支付成功");
-          payResolver?.();
-          payResolver = null;
-          payRejecter = null;
-          paymentVisible.value = false;
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (attempts >= maxAttempts) {
-          window.clearInterval(timer);
-        }
-      });
-  }, 1500);
 };
 
 const generateOrders = () => {

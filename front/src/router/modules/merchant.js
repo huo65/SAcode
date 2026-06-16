@@ -7,6 +7,7 @@ import Info from "@/components/info/index.vue";
 import StoreManage from "@/components/restaurant/store-manage.vue";
 import AfterSaleBoard from "@/components/after-sale/index.vue";
 import MerchantOps from "@/components/operation/merchant-ops.vue";
+import MerchantReply from "@/components/review/merchant-reply.vue";
 import MerchantDashboard from "@/page/home/merchant/dashboard.vue";
 
 const merchantRoutes = [
@@ -49,6 +50,12 @@ const merchantRoutes = [
     name: "MerchantOps",
     component: MerchantOps,
     meta: { title: "经营分析", sidebarKey: "ops" },
+  },
+  {
+    path: "/home/merchant/review",
+    name: "MerchantReview",
+    component: MerchantReply,
+    meta: { title: "评价回复", sidebarKey: "review" },
   },
   {
     path: "/home/merchant/info",
