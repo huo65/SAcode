@@ -10,7 +10,7 @@
       <el-carousel :interval="4000">
         <el-carousel-item v-for="img in productInfo.image_list">
           <img
-            :src="img"
+            :src="resolveImageUrl(img)"
             :alt="img"
             class="image"
             style="height: 80%; margin: 0 auto"
@@ -136,6 +136,7 @@ import { Alipay, Order, Product } from "@/api/apis";
 import { ElMessage } from "element-plus";
 import { curStatus } from "../../store";
 import Pay from "./pay.vue";
+import { resolveImageUrl } from "@/lib/imageHelper";
 
 const props = defineProps({
   visible: {

@@ -48,7 +48,7 @@
           </el-tag>
         </div>
         <div class="info">
-          <img class="product-img" :src="item.imgList?.[0]" />
+          <img class="product-img" :src="resolveImageUrl(item.imgList?.[0])" />
           <el-descriptions class="detail" :column="2" :border="true">
             <el-descriptions-item label-align="center" :span="2">
               <template #label>
@@ -508,6 +508,7 @@ import {
   isDriverOwnedOrder,
   normalizeOrderItems,
 } from "@/lib/orderDriverHelper";
+import { resolveImageUrl } from "@/lib/imageHelper";
 
 const orderList = ref([]);
 const afterSaleMap = ref({});

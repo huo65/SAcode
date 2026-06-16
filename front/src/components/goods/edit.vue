@@ -85,6 +85,7 @@ import { Product } from "@/api/apis.js";
 import { userInfo } from "@/store";
 import {
   getFileNameFromUrl,
+  resolveImageUrl,
   uploadImageFromRawFileWithProgress,
   validateImageFile,
 } from "@/lib/imageHelper";
@@ -146,7 +147,7 @@ const productInfoRules = reactive({
 /* 上传图片 */
 const fileList = ref([]);
 const resolveUploadedUrl = (file) =>
-  file?.url || file?.response?.url || file?.response?.data?.url || "";
+  file?.storedUrl || file?.response?.url || file?.response?.data?.url || file?.url || "";
 
 const normalizeUploadFiles = (uploadFiles = []) =>
   uploadFiles.map((item) => {
@@ -156,7 +157,8 @@ const normalizeUploadFiles = (uploadFiles = []) =>
     }
     return {
       ...item,
-      url,
+      storedUrl: url,
+      url: resolveImageUrl(url),
       name: item.name || getFileNameFromUrl(url),
       status: item.status === "fail" ? "fail" : "success",
       percentage: 100,
@@ -215,13 +217,15 @@ const uploadSingleImage = async (options) => {
     );
     const targetFile = fileList.value.find((item) => item.uid === file.uid);
     if (targetFile) {
-      targetFile.url = url;
+      targetFile.storedUrl = url;
+      targetFile.url = resolveImageUrl(url);
       targetFile.response = { url };
       targetFile.status = "success";
       targetFile.percentage = 100;
       targetFile.name = targetFile.name || file.name || getFileNameFromUrl(url);
     }
-    file.url = url;
+    file.storedUrl = url;
+    file.url = resolveImageUrl(url);
     onSuccess?.({ url }, file);
     fileList.value = normalizeUploadFiles(fileList.value);
     syncImageList();
@@ -260,7 +264,8 @@ const close = () => {
 const buildExistingFileList = (imageList = []) =>
   imageList.map((url) => ({
     name: getFileNameFromUrl(url),
-    url,
+    storedUrl: url,
+    url: resolveImageUrl(url),
     status: "success",
   }));
 

@@ -231,6 +231,8 @@ CREATE TABLE IF NOT EXISTS order_review (
 INSERT IGNORE INTO category (name) VALUES
     ('数码产品'),
     ('食品'),
+    ('饮品'),
+    ('生鲜蔬菜'),
     ('服装'),
     ('家居'),
     ('其他');
@@ -238,12 +240,12 @@ INSERT IGNORE INTO category (name) VALUES
 -- Demo accounts. Passwords are plaintext intentionally; the backend migrates them
 -- to hashed values after successful login.
 INSERT IGNORE INTO user (id, type, name, portrait, password, phone, balance, description, disabled) VALUES
-    ('1', 'admin', 'admin', '/img/default_avatar.jpg', '123456', '13800000000', 200, 'platform administrator', 0),
-    ('2', 'cus', 'customer', '/img/default_avatar.jpg', '123456', '13800000001', 200, 'demo customer', 0),
-    ('3', 'mer', 'merchant', '/img/default_avatar.jpg', '123456', '13800000002', 200, 'demo merchant', 0),
-    ('4', 'driver', 'driver', '/img/default_avatar.jpg', '123456', '13800000003', 200, 'demo driver', 0);
+    ('1', 'admin', 'admin', '/storage/avatar/default_avatar.jpg', '123456', '13800000000', 200, 'platform administrator', 0),
+    ('2', 'cus', 'customer', '/storage/avatar/default_avatar.jpg', '123456', '13800000001', 200, 'demo customer', 0),
+    ('3', 'mer', 'merchant', '/storage/avatar/default_avatar.jpg', '123456', '13800000002', 200, 'demo merchant', 0),
+    ('4', 'driver', 'driver', '/storage/avatar/default_avatar.jpg', '123456', '13800000003', 200, 'demo driver', 0);
 
-UPDATE user SET portrait = '/img/default_avatar.jpg' WHERE id IN ('1', '2', '3', '4') AND portrait = 'default_avatar';
+UPDATE user SET portrait = '/storage/avatar/default_avatar.jpg' WHERE id IN ('1', '2', '3', '4') AND (portrait = 'default_avatar' OR portrait LIKE '/img/%');
 
 INSERT IGNORE INTO address (addr_id, usr, location) VALUES
     ('1', '2', 'Customer demo address'),
@@ -251,27 +253,79 @@ INSERT IGNORE INTO address (addr_id, usr, location) VALUES
     ('3', '4', 'Driver service area');
 
 INSERT IGNORE INTO restaurant (id, merchant_id, name, logo, cover, description, notice, status, business_hours, delivery_fee, min_order_amount, service_radius_km, delivery_eta_minutes, feature_tags, menu_categories, address_text, delivery_policy, promo_text) VALUES
-    ('3', '3', 'merchant精选门店', '/img/demo/merchant-logo.jpg', '/img/demo/merchant-cover.jpg', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠');
+    ('3', '3', 'merchant精选门店', '/storage/restaurant/merchant-logo.jpg', '/storage/restaurant/merchant-cover.jpg', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品,新鲜蔬菜,数码优选', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠');
 
-UPDATE restaurant SET logo = '/img/demo/merchant-logo.jpg', cover = '/img/demo/merchant-cover.jpg' WHERE id = '3';
+UPDATE restaurant SET logo = '/storage/restaurant/merchant-logo.jpg', cover = '/storage/restaurant/merchant-cover.jpg' WHERE id = '3';
 
 -- Classroom demo products, orders, review and after-sale data.
--- Image URLs point to front/public/img/demo, which is tracked by Git.
+-- Image URLs point to backend/DB-market/data/storage and are served by /storage/**.
 INSERT IGNORE INTO product (id, name, description, price, mer, cat_name, number, state, sales_refund, rate_refund, complain, complain_rate) VALUES
     ('demo-prod-chicken-rice', '自动化演示-蜜汁鸡腿饭', '课堂展示用热销主食，覆盖商品审核、下单和评价链路。', 28, '3', '食品', 79, 1, 0, '0.0', 0, '0.0'),
     ('demo-prod-tomato-beef', '自动化演示-番茄牛腩饭', '课堂展示用套餐商品，适合演示订单状态流转。', 32, '3', '食品', 68, 1, 0, '0.0', 1, '0.0'),
-    ('demo-prod-lemon-tea', '自动化演示-冰镇柠檬茶', '课堂展示用饮品商品，补充低客单价数据。', 12, '3', '食品', 117, 1, 0, '0.0', 0, '0.0'),
+    ('demo-prod-lemon-tea', '自动化演示-冰镇柠檬茶', '课堂展示用饮品商品，补充低客单价数据。', 12, '3', '饮品', 117, 1, 0, '0.0', 0, '0.0'),
     ('demo-prod-beef-burger', '自动化演示-香煎牛肉堡', '课堂展示用快餐商品，覆盖库存和支付演示。', 25, '3', '食品', 59, 1, 0, '0.0', 0, '0.0');
 
+INSERT IGNORE INTO product (id, name, description, price, mer, cat_name, number, state, sales_refund, rate_refund, complain, complain_rate) VALUES
+    ('asset-prod-braised-beef', '红烧牛肉饭', '迁移自前端素材的主食商品，适合展示热销餐品。', 30, '3', '食品', 88, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-pork-set', '香煎猪排套餐', '迁移自前端素材的套餐商品，展示多图菜品详情。', 29, '3', '食品', 82, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-tomato-meal', '番茄浓汤套餐', '番茄风味套餐，补充餐品类展示数据。', 26, '3', '食品', 76, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-coca', '可口可乐', '饮品素材商品，适合展示低价饮品。', 6, '3', '饮品', 180, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-pepsi', '百事可乐', '饮品素材商品，丰富饮品分类。', 6, '3', '饮品', 180, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-sprite', '雪碧', '清爽饮品，用于丰富购物车和订单演示。', 6, '3', '饮品', 160, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-cabbage', '新鲜卷心菜', '生鲜蔬菜素材商品，展示非餐品分类。', 8, '3', '生鲜蔬菜', 120, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-celery', '清香芹菜', '生鲜蔬菜素材商品，适合筛选展示。', 9, '3', '生鲜蔬菜', 120, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-chives', '新鲜韭菜', '生鲜蔬菜素材商品，补充门店菜单。', 7, '3', '生鲜蔬菜', 120, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-onion', '紫皮洋葱', '生鲜蔬菜素材商品，丰富展示数据。', 7, '3', '生鲜蔬菜', 120, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-pepper', '彩椒组合', '生鲜蔬菜素材商品，支持多图轮播展示。', 10, '3', '生鲜蔬菜', 110, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-iphone15', 'iPhone 15 展示机', '数码产品素材商品，用于丰富平台商品类型。', 5999, '3', '数码产品', 12, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-mate60', 'Mate 60 Pro 展示机', '数码产品素材商品，展示高客单价商品。', 6999, '3', '数码产品', 10, 1, 0, '0.0', 0, '0.0'),
+    ('asset-prod-laptop', '轻薄笔记本电脑', '数码产品素材商品，展示多图商品详情。', 5299, '3', '数码产品', 8, 1, 0, '0.0', 0, '0.0');
+
 INSERT IGNORE INTO prod_img (prod, image) VALUES
-    ('demo-prod-chicken-rice', '/img/demo/honey-chicken-rice.png'),
-    ('demo-prod-chicken-rice', '/img/demo/honey-chicken-rice-detail.png'),
-    ('demo-prod-tomato-beef', '/img/demo/tomato-beef-rice.png'),
-    ('demo-prod-tomato-beef', '/img/demo/tomato-beef-rice-detail.png'),
-    ('demo-prod-lemon-tea', '/img/demo/lemon-tea.jpg'),
-    ('demo-prod-lemon-tea', '/img/demo/lemon-tea-detail.jpg'),
-    ('demo-prod-beef-burger', '/img/demo/beef-burger.png'),
-    ('demo-prod-beef-burger', '/img/demo/beef-burger-detail.png');
+    ('demo-prod-chicken-rice', '/storage/product/food/beef-1.png'),
+    ('demo-prod-chicken-rice', '/storage/product/food/beef-2.png'),
+    ('demo-prod-tomato-beef', '/storage/product/food/tomato-meal-1.png'),
+    ('demo-prod-tomato-beef', '/storage/product/food/tomato-meal-2.png'),
+    ('demo-prod-lemon-tea', '/storage/product/drink/coca-1.jpg'),
+    ('demo-prod-lemon-tea', '/storage/product/drink/pepsi-1.jpg'),
+    ('demo-prod-beef-burger', '/storage/product/food/pork-1.png'),
+    ('demo-prod-beef-burger', '/storage/product/food/pork-2.png'),
+    ('asset-prod-braised-beef', '/storage/product/food/beef-1.png'),
+    ('asset-prod-braised-beef', '/storage/product/food/beef-2.png'),
+    ('asset-prod-pork-set', '/storage/product/food/pork-1.png'),
+    ('asset-prod-pork-set', '/storage/product/food/pork-2.png'),
+    ('asset-prod-pork-set', '/storage/product/food/pork-3.png'),
+    ('asset-prod-tomato-meal', '/storage/product/food/tomato-meal-1.png'),
+    ('asset-prod-tomato-meal', '/storage/product/food/tomato-meal-2.png'),
+    ('asset-prod-tomato-meal', '/storage/product/food/tomato-meal-3.png'),
+    ('asset-prod-coca', '/storage/product/drink/coca-1.jpg'),
+    ('asset-prod-coca', '/storage/product/drink/coca-2.jpg'),
+    ('asset-prod-coca', '/storage/product/drink/coca-3.jpg'),
+    ('asset-prod-pepsi', '/storage/product/drink/pepsi-1.jpg'),
+    ('asset-prod-pepsi', '/storage/product/drink/pepsi-2.jpg'),
+    ('asset-prod-pepsi', '/storage/product/drink/pepsi-3.jpg'),
+    ('asset-prod-sprite', '/storage/product/drink/sprite-1.png'),
+    ('asset-prod-sprite', '/storage/product/drink/sprite-2.png'),
+    ('asset-prod-cabbage', '/storage/product/vegetable/cabbage-1.png'),
+    ('asset-prod-cabbage', '/storage/product/vegetable/cabbage-2.png'),
+    ('asset-prod-cabbage', '/storage/product/vegetable/cabbage-3.png'),
+    ('asset-prod-celery', '/storage/product/vegetable/celery-1.png'),
+    ('asset-prod-celery', '/storage/product/vegetable/celery-2.png'),
+    ('asset-prod-celery', '/storage/product/vegetable/celery-3.png'),
+    ('asset-prod-chives', '/storage/product/vegetable/chives-1.png'),
+    ('asset-prod-chives', '/storage/product/vegetable/chives-2.png'),
+    ('asset-prod-onion', '/storage/product/vegetable/onion-1.png'),
+    ('asset-prod-onion', '/storage/product/vegetable/onion-2.png'),
+    ('asset-prod-pepper', '/storage/product/vegetable/pepper-1.png'),
+    ('asset-prod-pepper', '/storage/product/vegetable/pepper-2.png'),
+    ('asset-prod-pepper', '/storage/product/vegetable/pepper-3.png'),
+    ('asset-prod-iphone15', '/storage/product/digital/iphone15-1.png'),
+    ('asset-prod-iphone15', '/storage/product/digital/iphone15-2.png'),
+    ('asset-prod-mate60', '/storage/product/digital/mate60-pro-1.png'),
+    ('asset-prod-mate60', '/storage/product/digital/mate60-pro-2.png'),
+    ('asset-prod-laptop', '/storage/product/digital/laptop-1.png'),
+    ('asset-prod-laptop', '/storage/product/digital/laptop-2.png'),
+    ('asset-prod-laptop', '/storage/product/digital/laptop-3.png');
 
 INSERT IGNORE INTO order_info (id, cus, mer, prod, prod_num, time, deli_addr, rec_addr, state, account, driver_id, remark, expected_delivery_time, pay_time, complain, complain_reason, refund_reason) VALUES
     ('demo-order-unpaid', '2', '3', 'demo-prod-chicken-rice', 1, '2026-06-16 16:01:41', '2', '1', -1, 28, NULL, 'AUTO_DEMO_UNPAID', NULL, NULL, '0', NULL, NULL),

@@ -69,7 +69,7 @@
         @click="openDetail(item)"
       >
         <div class="good-item">
-          <img :src="item.image_list[0]" class="image" />
+          <img :src="resolveImageUrl(item.image_list?.[0])" class="image" />
           <!-- <img :src="imageUrlMap[item.image_list[0]]" class="image" /> -->
         </div>
         <div class="info">
@@ -122,6 +122,7 @@ import $store, { userInfo, productCategories, cartList } from "@/store";
 import fetch from "@/api/fetch.js";
 import { User, Product, Cart } from "@/api/apis.js";
 import { Search, ShoppingCart, Plus } from "@element-plus/icons-vue";
+import { resolveImageUrl } from "@/lib/imageHelper";
 
 const { t } = useI18n();
 

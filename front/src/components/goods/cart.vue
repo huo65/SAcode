@@ -36,7 +36,7 @@
       <div class="content">
         <div v-for="item in cartList" class="product">
           <div class="img-box">
-            <img :src="item.firstImage" :alt="item.name" />
+            <img :src="resolveImageUrl(item.firstImage)" :alt="item.name" />
           </div>
           <div class="info-box">
             <p class="title">{{ item.name }}</p>
@@ -83,6 +83,7 @@ import fetch from "@/api/fetch";
 import { Alipay, Cart, Order } from "@/api/apis";
 import Pay from "./pay.vue";
 import { ElMessage } from "element-plus";
+import { resolveImageUrl } from "@/lib/imageHelper";
 
 const props = defineProps({
   visible: {

@@ -23,12 +23,13 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { resolveImageUrl } from "@/lib/imageHelper";
 const emits = defineEmits(["pay"]);
 const payWay = ref("mock");
 const payQRCodeUrlMap = {
-  alipay: "/img/alipay_QR.png",
+  alipay: "/storage/payment/alipay_QR.png",
 };
-const payQRCodeUrl = computed(() => payQRCodeUrlMap[payWay.value]);
+const payQRCodeUrl = computed(() => resolveImageUrl(payQRCodeUrlMap[payWay.value]));
 
 const payBill = () => {
   emits("pay", payWay.value);

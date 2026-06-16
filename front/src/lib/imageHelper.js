@@ -4,6 +4,36 @@ import { Storage } from "@/api/apis";
 const getRawFile = (file) => file?.raw || file;
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const storageUploadPath = "/storage/upload";
+
+export const getStorageOrigin = () => {
+  const uploadUrl = Storage.upload.url || "";
+  const index = uploadUrl.indexOf(storageUploadPath);
+  if (index >= 0) {
+    return uploadUrl.slice(0, index);
+  }
+  return "";
+};
+
+export const resolveImageUrl = (url, fallback = "") => {
+  const value = url || fallback;
+  if (!value) {
+    return "";
+  }
+  if (/^(https?:)?\/\//.test(value) || value.startsWith("data:") || value.startsWith("blob:")) {
+    return value;
+  }
+  if (value === "default_avatar") {
+    return `${getStorageOrigin()}/storage/avatar/default_avatar.jpg`;
+  }
+  if (value.startsWith("/storage/")) {
+    return `${getStorageOrigin()}${value}`;
+  }
+  if (value.startsWith("storage/")) {
+    return `${getStorageOrigin()}/${value}`;
+  }
+  return value;
+};
 
 const buildFormData = (files, category) => {
   const formData = new FormData();

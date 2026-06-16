@@ -11,7 +11,6 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.Locale;
@@ -36,7 +35,7 @@ public class LocalObjectStorageService implements ObjectStorageService {
         }
 
         LocalDate today = LocalDate.now();
-        Path rootDir = Paths.get(storageProperties.getLocal().getBaseDir()).toAbsolutePath().normalize();
+        Path rootDir = storageProperties.getLocal().resolveBaseDir();
         Path categoryDir = rootDir.resolve(normalizedCategory).resolve(today.toString());
         Files.createDirectories(categoryDir);
 

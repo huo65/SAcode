@@ -20,12 +20,14 @@ JWT secret 从 `DBMARKET_JWT_SECRET` 读取；未配置时使用开发回退值�
 
 ## Image Assets
 
-所有可随项目迁移的图片资源统一放在前端静态目录 `front/public/img` 下：
+所有可随项目迁移的业务图片资源统一放在后端固定目录 `backend/DB-market/data/storage` 下，并由后端 `/storage/**` 暴露给前端：
 
-- `front/public/img/demo`：`schema.sql` 初始化演示数据引用的固定图片。
-- `front/public/img/uploads`：本地后端上传头像、菜品图、门店图等图片的默认目录。
+- `data/storage/avatar`：头像图片。
+- `data/storage/product`：菜品、饮品、生鲜、数码等商品图片。
+- `data/storage/restaurant`：门店 logo 和封面。
+- `data/storage/payment`：支付展示图片。
 
-后端本地存储默认配置为 `../../front/public/img/uploads`，接口返回 `/img/uploads/...`。需要换设备演示时，把需要保留的上传图片提交到 Git；运行时临时目录 `backend/data` 不再作为演示图片来源。
+后端本地存储默认配置为 `data/storage`，接口返回 `/storage/...`。需要换设备演示时，把需要保留的上传图片提交到 Git；前端只负责通过后端 URL 显示图片，不再作为业务图片存储位置。
 
 ## Verification and Run
 

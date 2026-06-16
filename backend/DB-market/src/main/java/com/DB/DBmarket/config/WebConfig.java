@@ -8,9 +8,6 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.Resource;
-import java.nio.file.Paths;
-
-
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
     //拦截器
@@ -41,8 +38,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String baseDir = Paths.get(storageProperties.getLocal().getBaseDir())
-                .toAbsolutePath()
+        String baseDir = storageProperties.getLocal().resolveBaseDir()
                 .normalize()
                 .toString()
                 .replace("\\", "/");

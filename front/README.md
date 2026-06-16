@@ -32,12 +32,13 @@ npm test
 
 ## 图片资源
 
-所有演示图片统一放在 `public/img`，数据库和接口返回值使用 `/img/...` 路径：
+业务图片由后端统一管理，前端只显示后端返回的 URL：
 
-- `public/img/demo`：初始化脚本固定引用的演示商品、门店图片。
-- `public/img/uploads`：后端本地上传目录，按 `avatar`、`product`、`restaurant`、`common` 分类保存。
+- 后端目录：`backend/DB-market/data/storage`
+- 浏览器路径：`/storage/...`
+- 前端显示：通过 `src/lib/imageHelper.js` 的 `resolveImageUrl` 转成后端可访问地址。
 
-需要跨设备演示的新增图片请提交到 Git，避免依赖后端运行时临时目录。
+需要跨设备演示的新增头像、菜品图、门店图，请提交后端 `data/storage` 中的对应图片文件。`public/img` 只保留前端自身静态素材，不再承载业务上传图片。
 
 ## 当前展示范围
 

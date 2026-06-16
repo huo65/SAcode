@@ -48,6 +48,6 @@ alipay:
 storage:
   provider: local
   local:
-    # Run from backend/DB-market. Uploaded demo images are committed from front/public/img/uploads.
-    baseDir: ../../front/public/img/uploads
-    publicUrlPrefix: /img/uploads
+    # Fixed backend storage directory. The code resolves it under backend/DB-market.
+    baseDir: data/storage
+    publicUrlPrefix: /storage

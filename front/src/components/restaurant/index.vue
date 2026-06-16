@@ -86,7 +86,7 @@
         <div class="card-cover-wrap">
           <img
             v-if="restaurant.cover || restaurant.portrait"
-            :src="restaurant.cover || restaurant.portrait"
+            :src="resolveImageUrl(restaurant.cover || restaurant.portrait)"
             class="cover"
             alt="店铺封面"
           />
@@ -173,6 +173,7 @@ import $store, { curStatus, productCategories, userInfo } from "@/store";
 import fetch from "@/api/fetch";
 import { Product, Restaurant, User } from "@/api/apis";
 import RestaurantDetail from "./restaurant-dialog.vue";
+import { resolveImageUrl } from "@/lib/imageHelper";
 
 const searchCondition = reactive({
   category: null,

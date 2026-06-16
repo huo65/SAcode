@@ -5,7 +5,7 @@ import fetch from "@/api/fetch";
 import { User } from "@/api/apis";
 import { ElMessage } from "element-plus";
 import { STATUS_MAP } from "@/constant";
-import { uploadImageFromRawFile, validateImageFile } from "@/lib/imageHelper.js";
+import { resolveImageUrl, uploadImageFromRawFile, validateImageFile } from "@/lib/imageHelper.js";
 const modifyFormVisible = ref(false);
 const modifyAddressVisible = ref(false);
 const formLabelWidth = "140px";
@@ -268,7 +268,7 @@ onMounted(() => {
         />
         <img
           v-else
-          :src="userInfo.portrait || '/default_avatar.jpg'"
+          :src="resolveImageUrl(userInfo.portrait, '/storage/avatar/default_avatar.jpg')"
           @click="chooseFile"
           class="preview-image"
         />

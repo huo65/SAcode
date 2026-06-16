@@ -9,7 +9,7 @@
       <div class="hero">
         <img
           v-if="restaurantInfo.cover || restaurantInfo.portrait"
-          :src="restaurantInfo.cover || restaurantInfo.portrait"
+          :src="resolveImageUrl(restaurantInfo.cover || restaurantInfo.portrait)"
           class="cover"
           alt="店铺封面"
         />
@@ -45,7 +45,7 @@
             >
               <img
                 v-if="product.image_list?.[0]"
-                :src="product.image_list[0]"
+                :src="resolveImageUrl(product.image_list[0])"
                 class="product-image"
                 alt="商品图片"
               />
@@ -76,6 +76,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import GoodsDetail from "@/components/goods/detail.vue";
+import { resolveImageUrl } from "@/lib/imageHelper";
 
 const props = defineProps({
   visible: {

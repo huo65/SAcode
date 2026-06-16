@@ -182,7 +182,7 @@
         </template>
 
         <div class="preview-cover">
-          <img v-if="form.cover || form.logo" :src="form.cover || form.logo" alt="cover" />
+          <img v-if="form.cover || form.logo" :src="resolveImageUrl(form.cover || form.logo)" alt="cover" />
           <div v-else class="preview-empty">店铺封面</div>
         </div>
         <div class="preview-content">
@@ -231,6 +231,7 @@ import fetch from "@/api/fetch";
 import $store from "@/store";
 import {
   getFileNameFromUrl,
+  resolveImageUrl,
   uploadImageFromRawFile,
   validateImageFile,
 } from "@/lib/imageHelper";
@@ -278,7 +279,8 @@ const buildUploadFileList = (url = "") =>
     ? [
         {
           name: getFileNameFromUrl(url),
-          url,
+          storedUrl: url,
+          url: resolveImageUrl(url),
           status: "success",
         },
       ]
