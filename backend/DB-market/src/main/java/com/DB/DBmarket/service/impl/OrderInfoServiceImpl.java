@@ -311,8 +311,10 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             }
             return orderInfoMapper.getOrdersById(orderId).get(0);
         } else if (targetState == 2) {
-            if (!currentUser.isCustomer() || !currentUser.getId().equals(first.getCus()) || currentState != 1) {
-                throw new IllegalArgumentException("仅顾客可确认收货");
+            boolean customerCanReceive = currentUser.isCustomer() && currentUser.getId().equals(first.getCus());
+            boolean driverCanComplete = currentUser.isDriver() && currentUser.getId().equals(first.getDriverId());
+            if ((!customerCanReceive && !driverCanComplete) || currentState != 1) {
+                throw new IllegalArgumentException("仅顾客或当前配送骑手可确认送达");
             }
         } else if (targetState == -2) {
             if (!currentUser.isCustomer() || !currentUser.getId().equals(first.getCus()) || !(currentState == 1 || currentState == 2)) {

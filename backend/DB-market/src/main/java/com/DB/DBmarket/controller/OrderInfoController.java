@@ -21,7 +21,7 @@ import java.util.Objects;
 public class OrderInfoController {
     @Resource
     private OrderInfoService orderInfoService;
-    @PostMapping("/get")
+    @RequestMapping(value = "/get", method = {RequestMethod.GET, RequestMethod.POST})
     public Result getOrderInfo(
             @RequestParam(required = false) String usrId,
             @RequestParam(required = false) String userId,
@@ -31,14 +31,15 @@ public class OrderInfoController {
         if (state != null && (state < -3 || state > 4)) {
             return Result.error("Invalid value for state parameter");
         }
-        if (timeOrder != null && (timeOrder != 0 && timeOrder != 1)) {
+        Integer resolvedTimeOrder = normalizeTimeOrder(timeOrder);
+        if (resolvedTimeOrder != null && (resolvedTimeOrder != 0 && resolvedTimeOrder != 1)) {
             return Result.error("Invalid value for timeOrder parameter");
         }
 
         CurrentUser currentUser = CurrentUserHolder.require();
         String requestedId = hasText(usrId) ? usrId : userId;
         String targetId = currentUser.isAdmin() && hasText(requestedId) ? requestedId : currentUser.getId();
-        OrderList orderList = orderInfoService.getOrderInfo(targetId, state, timeOrder);
+        OrderList orderList = orderInfoService.getOrderInfo(targetId, state, resolvedTimeOrder);
         return Result.success(orderList);
     }
 
@@ -46,7 +47,13 @@ public class OrderInfoController {
     @PostMapping("/update")
     public Result updateOrderState(@RequestBody Map<String, Object> request) {
         //判断当订单状态由-2->-3（退货退款）时，调用退款的api:     src/main/java/com/DB/DBmarket/controller/AliPayController.java--refund
-        String id = (String) request.get("id");
+        String id = request.get("id") == null ? null : String.valueOf(request.get("id"));
+        if (!hasText(id)) {
+            id = request.get("orderId") == null ? null : String.valueOf(request.get("orderId"));
+        }
+        if (!hasText(id)) {
+            return Result.error("Missing order id.");
+        }
         Object rawState = request.containsKey("targetState") ? request.get("targetState") : request.get("state");
         int state = rawState instanceof Integer ? (Integer) rawState : Integer.parseInt(String.valueOf(rawState));
         String complain = (String) request.get("complain");
@@ -93,5 +100,15 @@ public class OrderInfoController {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private Integer normalizeTimeOrder(Integer timeOrder) {
+        if (timeOrder == null) {
+            return null;
+        }
+        if (timeOrder == -1) {
+            return 1;
+        }
+        return timeOrder;
     }
 }

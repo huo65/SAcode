@@ -246,7 +246,7 @@ const statusMap = {
 
 const loadRecent = () => {
   if (userInfo.value.type !== 'mer') return;
-  fetch(OrderApi.getOrderList, { usrId: userInfo.value.id, state: -1, timeOrder: -1, pageSize: 5 }).then((data) => {
+  fetch(OrderApi.getOrderList, { usrId: userInfo.value.id, state: -1, timeOrder: 1, pageSize: 5 }).then((data) => {
     const list = data?.merList || data?.list || [];
     recentOrders.value = list.slice(0, 5).map(o => {
       const s = statusMap[o.state] || { label: '未知', tone: 'info' };

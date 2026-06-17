@@ -61,6 +61,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <div class="category-route">
   <!-- 新增分类弹窗 -->
   <div v-if="AddCategoryVisible" class="modal-overlay" @click.self="AddCategoryVisible = false; NewCategory = ''">
     <div class="modal modal-sm">
@@ -113,6 +114,7 @@ onMounted(() => {
       </tbody>
     </table>
   </section>
+  </div>
 </template>
 
 <style lang="less" scoped>

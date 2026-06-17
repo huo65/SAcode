@@ -470,6 +470,41 @@ class OrderInfoServiceImplTests {
     }
 
     @Test
+    void assignedDriverCanCompleteDelivery() {
+        CurrentUser driver = new CurrentUser("driver001", "driver", "driver");
+        OrderInfo deliveringOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 1, 1, 30);
+        deliveringOrder.setDriverId("driver001");
+        OrderInfo completedOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 2, 1, 30);
+        completedOrder.setDriverId("driver001");
+
+        when(orderInfoMapper.getOrdersById("order-1"))
+                .thenReturn(Collections.singletonList(deliveringOrder))
+                .thenReturn(Collections.singletonList(completedOrder));
+        when(orderInfoMapper.updateOrderState(eq("order-1"), eq(2), anyString(), isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(1);
+
+        OrderInfo result = orderInfoService.transitionOrder(driver, "order-1", 2, null, null, null);
+
+        assertNotNull(result);
+        assertEquals(Integer.valueOf(2), result.getState());
+    }
+
+    @Test
+    void otherDriverCannotCompleteDelivery() {
+        CurrentUser driver = new CurrentUser("driver002", "driver", "driver");
+        OrderInfo deliveringOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 1, 1, 30);
+        deliveringOrder.setDriverId("driver001");
+
+        when(orderInfoMapper.getOrdersById("order-1")).thenReturn(Collections.singletonList(deliveringOrder));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderInfoService.transitionOrder(driver, "order-1", 2, null, null, null));
+
+        assertEquals("仅顾客或当前配送骑手可确认送达", ex.getMessage());
+        verify(orderInfoMapper, never()).updateOrderState(eq("order-1"), eq(2), anyString(), isNull(), isNull(), isNull(), isNull(), isNull());
+    }
+
+    @Test
     void refundRequestPassesRefundReasonToOrderUpdate() {
         CurrentUser customer = new CurrentUser("cus001", "customer", "cus");
         OrderInfo deliveringOrder = buildOrder("order-1", "cus001", "mer001", "prod001", 1, 1, 30);

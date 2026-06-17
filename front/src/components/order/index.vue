@@ -443,7 +443,8 @@
 </template>
 
 <script setup>
-import { computed, ref, reactive, onMounted, onUnmounted } from "vue";
+import { computed, ref, reactive, onMounted, onUnmounted, watch } from "vue";
+import { useRoute } from "vue-router";
 import { AfterSale, Order, Review } from "@/api/apis.js";
 import fetch from "@/api/fetch.js";
 import $store, { userInfo } from "@/store";
@@ -460,6 +461,7 @@ const orderList = ref([]);
 const afterSaleMap = ref({});
 const curOrder = ref({});
 const searchKeyword = ref("");
+const route = useRoute();
 const orderCondition = reactive({
   state: null,
   timeOrder: 0,
@@ -1004,6 +1006,10 @@ onMounted(() => {
   });
   initOrderData();
   startDriverAutoRefresh();
+});
+
+watch(() => route.fullPath, () => {
+  initOrderData();
 });
 
 onUnmounted(() => {

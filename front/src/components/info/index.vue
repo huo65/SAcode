@@ -16,6 +16,10 @@ const fileInput = ref(null);
 const router = useRouter();
 
 const chooseFile = () => {
+  if (!fileInput.value) {
+    ElMessage.warning("头像上传控件未就绪，请稍后重试");
+    return;
+  }
   fileInput.value.click();
 };
 
@@ -65,11 +69,23 @@ const customerServiceLinks = [
   { label: "售后工单", icon: "fas fa-headset", path: "/home/customer/after-sale" },
   { label: "地址管理", icon: "fas fa-location-dot", path: "/home/customer/address" },
 ];
+const customerQuickActions = [
+  { label: "去点餐", icon: "fas fa-utensils", path: "/home/customer/restaurants" },
+  { label: "购物车", icon: "fas fa-shopping-cart", path: "/home/customer/cart" },
+  { label: "订单", icon: "fas fa-receipt", path: "/home/customer/orders" },
+  { label: "地址", icon: "fas fa-location-dot", path: "/home/customer/address" },
+];
 const driverServiceLinks = [
   { label: "待接订单", icon: "fas fa-list-check", path: "/home/driver/available" },
   { label: "配送中", icon: "fas fa-motorcycle", path: "/home/driver/delivering" },
   { label: "历史订单", icon: "fas fa-clock-rotate-left", path: "/home/driver/history" },
   { label: "收益明细", icon: "fas fa-coins", path: "/home/driver/earnings" },
+];
+const driverQuickActions = [
+  { label: "接单大厅", icon: "fas fa-list-ul", path: "/home/driver/available" },
+  { label: "配送中", icon: "fas fa-motorcycle", path: "/home/driver/delivering" },
+  { label: "收益", icon: "fas fa-coins", path: "/home/driver/earnings" },
+  { label: "历史", icon: "fas fa-clock-rotate-left", path: "/home/driver/history" },
 ];
 const profileServiceLinks = computed(() => {
   if (isCustomerUser.value) return customerServiceLinks;
@@ -78,7 +94,8 @@ const profileServiceLinks = computed(() => {
 });
 
 const goService = (path) => {
-  if (path) router.push(path);
+  if (!path) return;
+  router.push(path).catch(() => {});
 };
 const driverProfileFields = computed(() => ({
   driverIdCard: modifyData.driverIdCard || "",
@@ -86,6 +103,19 @@ const driverProfileFields = computed(() => ({
   driverEmergencyContact: modifyData.driverEmergencyContact || "",
   driverServiceArea: modifyData.driverServiceArea || userInfo.value.driverServiceArea || "",
 }));
+const isDriverOnline = computed(() => userInfo.value?.driverWorkStatus !== "rest");
+const driverMaskedId = computed(() => {
+  const raw = String(userInfo.value?.driverIdCard || modifyData.driverIdCard || "");
+  return raw ? `${raw.slice(0, 4)}********${raw.slice(-4)}` : "暂未填写";
+});
+const driverServiceAreaText = computed(() =>
+  userInfo.value?.driverServiceArea || modifyData.driverServiceArea || "全城接单"
+);
+const toggleDriverWorkStatus = () => {
+  const next = isDriverOnline.value ? "rest" : "online";
+  $store.commit("setDriverWorkStatus", next);
+  ElMessage.success(next === "online" ? "已切换为在线接单" : "已切换为休息中");
+};
 
 const addressData = ref([]);
 const currentUserType = computed(() => {
@@ -211,6 +241,13 @@ const fetchWalletData = async () => {
   }
 };
 
+const formatMoney = (value) => Number(value || 0).toFixed(2);
+const recentWalletTransactions = computed(() => walletTransactions.value.slice(0, 3));
+const primaryAddress = computed(() => {
+  const address = addressData.value?.[0];
+  return address?.location || address?.detail || address?.address || "";
+});
+
 const handleRecharge = async () => {
   if (!rechargeAmount.value || rechargeAmount.value <= 0) {
     ElMessage.warning("请输入正确的充值金额");
@@ -235,6 +272,9 @@ const getTxTypeBadge = (type) => {
     RECHARGE: { label: '充值', cls: 'badge-success' },
     PAY: { label: '支付', cls: 'badge-primary' },
     REFUND: { label: '退款', cls: 'badge-warning' },
+    recharge: { label: '充值', cls: 'badge-success' },
+    pay: { label: '支付', cls: 'badge-primary' },
+    refund: { label: '退款', cls: 'badge-warning' },
   };
   return map[type] || { label: type, cls: 'badge-info' };
 };
@@ -249,6 +289,14 @@ onMounted(() => {
 </script>
 
 <template>
+  <div class="profile-route" :class="{ 'profile-route--customer': isCustomerUser, 'profile-route--driver': isDriverUser }">
+  <input
+    type="file"
+    ref="fileInput"
+    accept="image/*"
+    @change="uploadFile"
+    class="visually-hidden-file"
+  />
   <!-- 编辑资料弹窗 -->
   <div v-if="modifyFormVisible" class="modal-overlay" @click.self="modifyFormVisible = false">
     <div class="modal">
@@ -356,7 +404,221 @@ onMounted(() => {
     </div>
   </div>
 
-  <div class="profile-shell">
+  <section v-if="isCustomerUser" class="customer-mine">
+    <div class="mine-hero">
+      <button type="button" class="mine-avatar" @click="chooseFile" aria-label="更新头像">
+        <img
+          :src="previewImageUrl || resolveImageUrl(userInfo.portrait, '/storage/avatar/default_avatar.jpg')"
+          alt="用户头像"
+        />
+        <span><i class="fas fa-camera"></i></span>
+      </button>
+      <div class="mine-user">
+        <span class="mine-kicker">欢迎回来</span>
+        <h2>{{ userInfo.name || "当前账号" }}</h2>
+        <p>{{ userInfo.phone || "暂无手机号" }}</p>
+      </div>
+      <button type="button" class="mine-icon-btn" aria-label="编辑资料" @click="modifyFormVisible = true">
+        <i class="fas fa-pen"></i>
+      </button>
+    </div>
+
+    <div class="mine-wallet-card">
+      <div>
+        <span>钱包余额</span>
+        <strong>&yen;{{ formatMoney(walletData.balance) }}</strong>
+      </div>
+      <button type="button" @click="showRechargeDialog = true">
+        <i class="fas fa-plus"></i>
+        充值
+      </button>
+    </div>
+
+    <div class="mine-stats">
+      <div class="mine-stat">
+        <span>累计充值</span>
+        <strong>&yen;{{ formatMoney(walletData.totalRecharge) }}</strong>
+      </div>
+      <div class="mine-stat">
+        <span>累计消费</span>
+        <strong>&yen;{{ formatMoney(walletData.totalPay) }}</strong>
+      </div>
+      <div class="mine-stat">
+        <span>累计退款</span>
+        <strong>&yen;{{ formatMoney(walletData.totalRefund) }}</strong>
+      </div>
+    </div>
+
+    <div class="mine-section">
+      <div class="mine-section-head">
+        <h3>快捷入口</h3>
+      </div>
+      <div class="mine-actions-grid">
+        <button
+          v-for="item in customerQuickActions"
+          :key="item.path"
+          type="button"
+          class="mine-action"
+          @click="goService(item.path)"
+        >
+          <span><i :class="item.icon"></i></span>
+          <em>{{ item.label }}</em>
+        </button>
+      </div>
+    </div>
+
+    <div class="mine-section">
+      <div class="mine-section-head">
+        <h3>我的服务</h3>
+      </div>
+      <div class="mine-service-list">
+        <button
+          v-for="item in customerServiceLinks"
+          :key="item.path"
+          type="button"
+          class="mine-service-row"
+          @click="goService(item.path)"
+        >
+          <span class="service-row-icon"><i :class="item.icon"></i></span>
+          <span>{{ item.label }}</span>
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="mine-section">
+      <div class="mine-section-head">
+        <h3>常用地址</h3>
+        <button type="button" @click="goService('/home/customer/address')">管理</button>
+      </div>
+      <div class="mine-address-box">
+        <i class="fas fa-location-dot"></i>
+        <p>{{ primaryAddress || "暂无常用地址，添加后下单会更方便" }}</p>
+      </div>
+    </div>
+
+    <div class="mine-section">
+      <div class="mine-section-head">
+        <h3>最近流水</h3>
+        <button type="button" @click="goService('/home/customer/wallet')">查看</button>
+      </div>
+      <div v-if="recentWalletTransactions.length" class="mine-tx-list">
+        <div v-for="row in recentWalletTransactions" :key="row.id || row.transactionId" class="mine-tx-row">
+          <span class="mine-tx-badge" :class="getTxTypeBadge(row.type).cls">
+            {{ getTxTypeBadge(row.type).label }}
+          </span>
+          <p>{{ row.description || row.desc || "钱包交易" }}</p>
+          <strong :class="Number(row.amount || 0) >= 0 ? 'amount-positive' : 'amount-negative'">
+            {{ Number(row.amount || 0) >= 0 ? '+' : '' }}{{ formatMoney(row.amount) }}
+          </strong>
+        </div>
+      </div>
+      <div v-else class="mine-empty">
+        <i class="fas fa-receipt"></i>
+        <span>暂无交易记录</span>
+      </div>
+    </div>
+  </section>
+
+  <section v-if="isDriverUser" class="driver-mine">
+    <div class="driver-hero">
+      <button type="button" class="driver-avatar" @click="chooseFile" aria-label="更新头像">
+        <img
+          :src="previewImageUrl || resolveImageUrl(userInfo.portrait, '/storage/avatar/default_avatar.jpg')"
+          alt="骑手头像"
+        />
+        <span><i class="fas fa-camera"></i></span>
+      </button>
+      <div class="driver-user">
+        <span class="driver-kicker">骑手工作台</span>
+        <h2>{{ userInfo.name || "骑手" }}</h2>
+        <p>{{ userInfo.phone || "暂无手机号" }}</p>
+      </div>
+      <button type="button" class="driver-edit-btn" aria-label="编辑资料" @click="modifyFormVisible = true">
+        <i class="fas fa-pen"></i>
+      </button>
+    </div>
+
+    <div class="driver-status-card">
+      <div>
+        <span>当前状态</span>
+        <strong>{{ isDriverOnline ? "在线接单" : "休息中" }}</strong>
+        <p>{{ isDriverOnline ? "可接收服务区域内的新订单" : "暂不接收新订单提醒" }}</p>
+      </div>
+      <button
+        type="button"
+        :class="{ 'is-resting': isDriverOnline }"
+        @click="toggleDriverWorkStatus"
+      >
+        <i :class="isDriverOnline ? 'fas fa-moon' : 'fas fa-bolt'"></i>
+        {{ isDriverOnline ? "切换休息" : "开始接单" }}
+      </button>
+    </div>
+
+    <div class="driver-section">
+      <div class="driver-section-head">
+        <h3>快捷入口</h3>
+      </div>
+      <div class="driver-actions-grid">
+        <button
+          v-for="item in driverQuickActions"
+          :key="item.path"
+          type="button"
+          class="driver-action"
+          @click="goService(item.path)"
+        >
+          <span><i :class="item.icon"></i></span>
+          <em>{{ item.label }}</em>
+        </button>
+      </div>
+    </div>
+
+    <div class="driver-section">
+      <div class="driver-section-head">
+        <h3>配送资料</h3>
+        <button type="button" @click="modifyFormVisible = true">编辑</button>
+      </div>
+      <div class="driver-info-list">
+        <div class="driver-info-row">
+          <span><i class="fas fa-location-dot"></i>服务区域</span>
+          <strong>{{ driverServiceAreaText }}</strong>
+        </div>
+        <div class="driver-info-row">
+          <span><i class="fas fa-bicycle"></i>交通工具</span>
+          <strong>{{ userInfo.driverVehicle || modifyData.driverVehicle || "暂未填写" }}</strong>
+        </div>
+        <div class="driver-info-row">
+          <span><i class="fas fa-id-card"></i>身份证号</span>
+          <strong>{{ driverMaskedId }}</strong>
+        </div>
+        <div class="driver-info-row">
+          <span><i class="fas fa-phone-volume"></i>紧急联系人</span>
+          <strong>{{ userInfo.driverEmergencyContact || modifyData.driverEmergencyContact || "暂未填写" }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="driver-section">
+      <div class="driver-section-head">
+        <h3>我的服务</h3>
+      </div>
+      <div class="driver-service-list">
+        <button
+          v-for="item in driverServiceLinks"
+          :key="item.path"
+          type="button"
+          class="driver-service-row"
+          @click="goService(item.path)"
+        >
+          <span class="driver-service-icon"><i :class="item.icon"></i></span>
+          <span>{{ item.label }}</span>
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div v-if="!isCustomerUser && !isDriverUser" class="profile-shell">
     <aside class="profile-aside card">
       <span class="micro-tag">个人中心</span>
       <div class="avatar-wrap">
@@ -374,13 +636,6 @@ onMounted(() => {
           class="preview-image"
         />
       </div>
-      <input
-        type="file"
-        ref="fileInput"
-        accept="image/*"
-        @change="uploadFile"
-        style="display: none"
-      />
       <div class="profile-copy">
         <h3>{{ userInfo.name || "当前账号" }}</h3>
         <p>{{ currentUserType.label }}</p>
@@ -577,9 +832,742 @@ onMounted(() => {
       </div>
     </section>
   </div>
+  </div>
 </template>
 
 <style lang="less" scoped>
+.profile-route {
+  position: relative;
+  min-height: 100%;
+}
+
+.visually-hidden-file {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.customer-mine {
+  padding: 2px 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--text-primary, #1F2937);
+}
+
+.mine-hero {
+  min-height: 128px;
+  padding: 18px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(249, 115, 22, 0.92)),
+    #ef4444;
+  color: #fff;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 18px 36px rgba(239, 68, 68, 0.22);
+}
+
+.mine-avatar {
+  width: 72px;
+  height: 72px;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(127, 29, 29, 0.24);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  span {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px 0 18px 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(17, 24, 39, 0.72);
+    color: #fff;
+    font-size: 11px;
+  }
+}
+
+.mine-user {
+  min-width: 0;
+
+  .mine-kicker {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0.82;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.15;
+    font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  p {
+    margin: 7px 0 0;
+    font-size: 12px;
+    opacity: 0.78;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.mine-icon-btn {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+}
+
+.mine-wallet-card {
+  min-height: 106px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--card, #fff);
+  border: 1px solid rgba(239, 68, 68, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+
+  span {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary, #6B7280);
+  }
+
+  strong {
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 900;
+    color: var(--text-primary, #1F2937);
+  }
+
+  button {
+    height: 38px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary, #EF4444);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(239, 68, 68, 0.22);
+  }
+}
+
+.mine-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mine-stat {
+  min-width: 0;
+  padding: 12px 8px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--border, #F0F0F0);
+  text-align: center;
+
+  span {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    color: var(--text-muted, #9CA3AF);
+  }
+
+  strong {
+    display: block;
+    color: var(--text-primary, #1F2937);
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+}
+
+.mine-section {
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #F0F0F0);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+.mine-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-primary, #1F2937);
+    font-weight: 900;
+  }
+
+  button {
+    border: 0;
+    background: transparent;
+    color: var(--primary, #EF4444);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+}
+
+.mine-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mine-action {
+  min-width: 0;
+  height: 74px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--primary-light, #FEF3F2);
+  color: var(--primary, #EF4444);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  span {
+    width: 30px;
+    height: 30px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    box-shadow: 0 5px 14px rgba(239, 68, 68, 0.1);
+  }
+
+  em {
+    max-width: 100%;
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.mine-service-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mine-service-row {
+  height: 48px;
+  border: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: transparent;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-primary, #1F2937);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  .service-row-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-light, #FEF3F2);
+    color: var(--primary, #EF4444);
+  }
+
+  i:last-child {
+    color: var(--text-muted, #9CA3AF);
+    font-size: 11px;
+  }
+}
+
+.mine-address-box {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #F9FAFB;
+
+  i {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-light, #FFF7ED);
+    color: var(--accent, #F97316);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary, #6B7280);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}
+
+.mine-tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mine-tx-row {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+
+  p {
+    margin: 0;
+    min-width: 0;
+    color: var(--text-secondary, #6B7280);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  strong {
+    font-size: 13px;
+  }
+}
+
+.mine-tx-badge {
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mine-empty {
+  min-height: 78px;
+  border-radius: 16px;
+  background: #F9FAFB;
+  color: var(--text-muted, #9CA3AF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.profile-route--customer .modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  align-items: flex-end;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.profile-route--customer .modal {
+  width: 100%;
+  max-width: 360px;
+  max-height: 78vh;
+  border-radius: 24px;
+}
+
+.driver-mine {
+  padding: 2px 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--text-primary, #111827);
+}
+
+.driver-hero {
+  min-height: 128px;
+  padding: 18px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(5, 150, 105, 0.96), rgba(14, 165, 233, 0.88)),
+    #059669;
+  color: #fff;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 18px 36px rgba(5, 150, 105, 0.22);
+}
+
+.driver-avatar {
+  width: 72px;
+  height: 72px;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(6, 78, 59, 0.24);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  span {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px 0 18px 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(17, 24, 39, 0.72);
+    color: #fff;
+    font-size: 11px;
+  }
+}
+
+.driver-user {
+  min-width: 0;
+
+  .driver-kicker {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 800;
+    opacity: 0.84;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.15;
+    font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  p {
+    margin: 7px 0 0;
+    font-size: 12px;
+    opacity: 0.78;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.driver-edit-btn {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+}
+
+.driver-status-card {
+  min-height: 112px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--card, #fff);
+  border: 1px solid rgba(5, 150, 105, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+
+  span {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-secondary, #4B5563);
+  }
+
+  strong {
+    display: block;
+    color: var(--text-primary, #111827);
+    font-size: 24px;
+    line-height: 1.1;
+    font-weight: 900;
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: var(--text-muted, #9CA3AF);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  button {
+    min-width: 98px;
+    height: 40px;
+    border: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--primary, #059669);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
+
+    &.is-resting {
+      background: var(--warning, #EAB308);
+      box-shadow: 0 8px 18px rgba(234, 179, 8, 0.2);
+    }
+  }
+}
+
+.driver-section {
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #F0F0F0);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+.driver-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-primary, #111827);
+    font-weight: 900;
+  }
+
+  button {
+    border: 0;
+    background: transparent;
+    color: var(--primary, #059669);
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+}
+
+.driver-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.driver-action {
+  min-width: 0;
+  height: 74px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--primary-light, #ECFDF5);
+  color: var(--primary, #059669);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  span {
+    width: 30px;
+    height: 30px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    box-shadow: 0 5px 14px rgba(5, 150, 105, 0.1);
+  }
+
+  em {
+    max-width: 100%;
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.driver-info-list,
+.driver-service-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.driver-info-row {
+  min-height: 48px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 10px;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  span {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary, #4B5563);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  i {
+    width: 16px;
+    color: var(--primary, #059669);
+  }
+
+  strong {
+    min-width: 0;
+    color: var(--text-primary, #111827);
+    font-size: 13px;
+    font-weight: 900;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.driver-service-row {
+  height: 48px;
+  border: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: transparent;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-primary, #111827);
+  font-size: 14px;
+  font-weight: 900;
+  text-align: left;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  .driver-service-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-light, #ECFDF5);
+    color: var(--primary, #059669);
+  }
+
+  i:last-child {
+    color: var(--text-muted, #9CA3AF);
+    font-size: 11px;
+  }
+}
+
+.profile-route--driver .modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  align-items: flex-end;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.profile-route--driver .modal {
+  width: 100%;
+  max-width: 360px;
+  max-height: 78vh;
+  border-radius: 24px;
+}
+
 .profile-shell {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);

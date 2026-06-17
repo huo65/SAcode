@@ -1,4 +1,5 @@
 <template>
+  <div class="cart-dialog-root">
   <el-drawer
     :model-value="visible"
     title="购物车"
@@ -73,6 +74,7 @@
   <el-dialog v-model="paymentVisible" :before-close="cancelPay">
     <Pay :pay-amount="totalAccount" @pay="finishPay" />
   </el-dialog>
+  </div>
 </template>
 
 <script setup>

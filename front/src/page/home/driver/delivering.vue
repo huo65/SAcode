@@ -64,7 +64,7 @@
             订单金额 <strong>¥{{ Number(order.orderInfo?.account || 0).toFixed(0) }}</strong>
             <span class="delivery-fee">配送费 ¥{{ calcDeliveryFee(order) }}</span>
           </div>
-          <el-button type="primary" round @click="completeDelivery(order)">
+          <el-button type="primary" round @click="openDeliveryConfirm(order)">
             <i class="fas fa-check" style="margin-right:4px"></i>确认送达
           </el-button>
         </div>
@@ -76,12 +76,42 @@
       <span>暂无配送中的订单</span>
       <p>接单后订单将出现在这里</p>
     </div>
+
+    <div v-if="confirmVisible" class="delivery-confirm-mask" @click.self="closeDeliveryConfirm">
+      <div class="delivery-confirm-panel">
+        <button class="confirm-close" type="button" @click="closeDeliveryConfirm">
+          <i class="fas fa-xmark"></i>
+        </button>
+        <div class="confirm-icon">
+          <i class="fas fa-flag-checkered"></i>
+        </div>
+        <h4>确认送达</h4>
+        <p>确认订单已送达顾客手中？完成后订单将进入已完成状态。</p>
+        <div class="confirm-order-meta">
+          <span>#{{ pendingOrder?.orderInfo?.id || '-' }}</span>
+          <strong>¥{{ Number(pendingOrder?.orderInfo?.account || 0).toFixed(0) }}</strong>
+        </div>
+        <div class="confirm-actions">
+          <button class="confirm-btn confirm-btn--ghost" type="button" @click="closeDeliveryConfirm">
+            取消
+          </button>
+          <button
+            class="confirm-btn confirm-btn--primary"
+            type="button"
+            :disabled="confirming"
+            @click="confirmDelivery"
+          >
+            {{ confirming ? '提交中...' : '确认送达' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { userInfo } from '@/store';
 import { Order as OrderApi } from '@/api/apis';
 import fetch from '@/api/fetch';
@@ -90,6 +120,9 @@ import { isDriverOwnedOrder, normalizeOrderItems } from '@/lib/orderDriverHelper
 const DELIVERY_RATE = 0.1;
 const MIN_DELIVERY_FEE = 4;
 const driverOrders = ref([]);
+const confirmVisible = ref(false);
+const confirming = ref(false);
+const pendingOrder = ref(null);
 let pollTimer = null;
 
 const deliveringOrders = computed(() =>
@@ -103,20 +136,36 @@ const calcDeliveryFee = (item) => {
   return Math.max(MIN_DELIVERY_FEE, Math.round(amount * DELIVERY_RATE));
 };
 
-const completeDelivery = (order) => {
-  ElMessageBox.confirm('确认订单已送达？', '确认送达', { type: 'success' })
-    .then(() => {
-      fetch(OrderApi.updateOrder, {
-        orderId: order.orderInfo?.id,
-        state: 2,
-      }).then(() => {
-        ElMessage.success('已确认送达！');
-        refreshOrders();
-      }).catch((err) => {
-        ElMessage.error(err?.message || '操作失败');
-      });
-    })
-    .catch(() => {});
+const openDeliveryConfirm = (order) => {
+  pendingOrder.value = order;
+  confirmVisible.value = true;
+};
+
+const closeDeliveryConfirm = () => {
+  if (confirming.value) return;
+  confirmVisible.value = false;
+  pendingOrder.value = null;
+};
+
+const confirmDelivery = () => {
+  if (!pendingOrder.value?.orderInfo?.id) {
+    ElMessage.error('订单信息异常，请刷新后重试');
+    return;
+  }
+  confirming.value = true;
+  fetch(OrderApi.updateOrder, {
+    id: pendingOrder.value.orderInfo.id,
+    targetState: 2,
+  }).then(() => {
+    ElMessage.success('已确认送达！');
+    confirmVisible.value = false;
+    pendingOrder.value = null;
+    refreshOrders();
+  }).catch((err) => {
+    ElMessage.error(err?.message || '操作失败');
+  }).finally(() => {
+    confirming.value = false;
+  });
 };
 
 const refreshOrders = () => {
@@ -138,7 +187,132 @@ onBeforeUnmount(() => {
 
 <style lang="less" scoped>
 .driver-delivering {
+  position: relative;
+  min-height: 100%;
   padding: 0 0 24px;
+}
+
+.delivery-confirm-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.delivery-confirm-panel {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  padding: 22px 18px 18px;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
+  animation: confirmSlideUp 0.18s ease-out;
+}
+
+.confirm-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #006b4f 0%, #00a878 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.delivery-confirm-panel h4 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.delivery-confirm-panel p {
+  margin: 8px 0 14px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.confirm-order-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: #f3faf7;
+  color: #006b4f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.confirm-order-meta strong {
+  font-size: 18px;
+  color: #111827;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.confirm-btn {
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.confirm-btn--ghost {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.confirm-btn--primary {
+  background: linear-gradient(135deg, #006b4f 0%, #008f67 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 18px rgba(0, 107, 79, 0.22);
+}
+
+.confirm-btn:disabled {
+  opacity: 0.65;
+}
+
+@keyframes confirmSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header {

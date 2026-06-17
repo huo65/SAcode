@@ -109,9 +109,8 @@ const isUrgent = (item) => {
 
 const acceptOrder = (order) => {
   fetch(OrderApi.updateOrder, {
-    orderId: order.orderInfo?.id,
-    state: 1,
-    driverId: userInfo.value.id,
+    id: order.orderInfo?.id,
+    targetState: 1,
   }).then(() => {
     ElMessage.success('接单成功！');
     refreshOrders();
