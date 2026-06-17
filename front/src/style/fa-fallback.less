@@ -1,0 +1,102 @@
+// Local fallback for the Font Awesome class names used across the app.
+// The project does not ship Font Awesome, so these rules keep existing
+// <i class="fas fa-..."> markers visible without a network dependency.
+.fas,
+.far,
+.fa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  font-family: "Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  text-rendering: auto;
+}
+
+.fas::before,
+.far::before,
+.fa::before {
+  content: "\25cf";
+}
+
+.fa-arrow-down::before { content: "\2193"; }
+.fa-arrow-up::before { content: "\2191"; }
+.fa-bars::before { content: "\2630"; }
+.fa-battery-three-quarters::before { content: "\25b0"; }
+.fa-bell::before { content: "\25d6"; }
+.fa-bicycle::before { content: "\25c7"; }
+.fa-bolt::before { content: "\26a1"; }
+.fa-box-open::before { content: "\25a3"; }
+.fa-camera::before { content: "\25c9"; }
+.fa-chart-line::before { content: "\2571"; }
+.fa-chart-pie::before { content: "\25d4"; }
+.fa-check::before { content: "\2713"; }
+.fa-check-circle::before { content: "\2714"; }
+.fa-chevron-right::before { content: "\203a"; }
+.fa-clipboard-list::before { content: "\2637"; }
+.fa-clock::before,
+.fa-clock-rotate-left::before { content: "\25f4"; }
+.fa-coins::before { content: "\25ce"; }
+.fa-comment-dots::before { content: "\2026"; }
+.fa-exclamation-circle::before,
+.fa-exclamation-triangle::before { content: "\0021"; }
+.fa-file-alt::before { content: "\25a4"; }
+.fa-fire::before { content: "\25b2"; }
+.fa-flag-checkered::before { content: "\2691"; }
+.fa-gauge-high::before,
+.fa-tachometer-alt::before { content: "\25d2"; }
+.fa-headset::before { content: "\260e"; }
+.fa-history::before,
+.fa-rotate-left::before,
+.fa-sync-alt::before,
+.fa-undo::before,
+.fa-undo-alt::before { content: "\21ba"; }
+.fa-home::before { content: "\2302"; }
+.fa-id-card::before { content: "\25a7"; }
+.fa-inbox::before { content: "\25bd"; }
+.fa-info-circle::before { content: "\0069"; }
+.fa-landmark::before { content: "\25e7"; }
+.fa-list-check::before,
+.fa-list-ul::before { content: "\2637"; }
+.fa-location-dot::before,
+.fa-map-marker-alt::before { content: "\25c9"; }
+.fa-minus::before { content: "\2212"; }
+.fa-moon::before { content: "\263e"; }
+.fa-motorcycle::before,
+.fa-route::before,
+.fa-shipping-fast::before { content: "\27a4"; }
+.fa-pen::before { content: "\270e"; }
+.fa-phone-volume::before { content: "\260e"; }
+.fa-plus::before { content: "\002b"; }
+.fa-receipt::before { content: "\25a4"; }
+.fa-right-from-bracket::before { content: "\21b1"; }
+.fa-search::before { content: "\2315"; }
+.fa-shield-alt::before { content: "\25c8"; }
+.fa-shopping-cart::before { content: "\25b1"; }
+.fa-signal::before { content: "\25e2"; }
+.fa-sliders-h::before { content: "\2261"; }
+.fa-sort-amount-down::before { content: "\2193"; }
+.fa-sort-amount-up::before { content: "\2191"; }
+.fa-spinner::before { content: "\25cc"; }
+.fa-star::before { content: "\2605"; }
+.fa-star-o::before { content: "\2606"; }
+.fa-store::before,
+.fa-store-alt::before { content: "\25a6"; }
+.fa-store-slash::before { content: "\2298"; }
+.fa-tags::before { content: "\25c8"; }
+.fa-ticket-alt::before { content: "\25ac"; }
+.fa-times::before,
+.fa-xmark::before { content: "\00d7"; }
+.fa-toggle-off::before { content: "\25cb"; }
+.fa-toggle-on::before { content: "\25cf"; }
+.fa-trash::before { content: "\232b"; }
+.fa-user::before,
+.fa-user-circle::before { content: "\25c9"; }
+.fa-users::before { content: "\25c9\25c9"; letter-spacing: -0.35em; }
+.fa-utensils::before { content: "\25d6"; }
+.fa-wallet::before { content: "\25ad"; }
+.fa-wifi::before { content: "\25dc"; }
+.fa-yen-sign::before { content: "\00a5"; }
