@@ -4,7 +4,16 @@
   父组件监听 navigate 事件，跳转对应路由
 -->
 <template>
-  <aside class="side-bar" :class="[`role-${role}`, { 'side-bar--dark': role === 'admin' }]">
+  <aside
+    class="sidebar"
+    :class="[
+      `role-${role}`,
+      {
+        'sidebar--dark': role === 'admin',
+        'sidebar--open': mobileOpen,
+      },
+    ]"
+  >
     <!-- 品牌区 -->
     <div class="sidebar-brand">
       <div class="brand-icon"><i :class="brandIcon"></i></div>
@@ -71,6 +80,7 @@ const props = defineProps({
   currentPage: { type: String, default: 'dashboard' },
   badges: { type: Object, default: () => ({}) },
   storeOpen: { type: Boolean, default: true },
+  mobileOpen: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['navigate', 'toggle-store-status']);

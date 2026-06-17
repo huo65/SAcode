@@ -78,7 +78,8 @@
   --header-h: 60px;
 }
 
-.role-rider {
+.role-rider,
+.role-driver {
   --primary: #059669;
   --primary-dark: #047857;
   --primary-light: #ECFDF5;
@@ -99,6 +100,304 @@
   --text-primary: #111827;
   --text-secondary: #4B5563;
   --text-muted: #9CA3AF;
+}
+
+// ==================== 顾客/骑手手机壳布局 ====================
+.phone-app-shell {
+  min-height: 100vh;
+  background: #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.phone-frame {
+  width: min(390px, calc(100vw - 24px));
+  height: min(844px, calc(100vh - 24px));
+  min-height: 640px;
+  background: var(--bg);
+  border-radius: 44px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.phone-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.phone-status-bar {
+  height: 48px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.phone-status-bar .time {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.phone-status-bar .icons {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.phone-logout {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 24, 39, 0.08);
+  color: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.18s ease, color 0.18s ease;
+
+  &:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+}
+
+.phone-screen {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 0 14px;
+}
+
+.phone-screen::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-tab-bar {
+  height: 82px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.phone-tab-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 4px 0;
+  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  position: relative;
+}
+
+.phone-tab-item i {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.phone-tab-item span {
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.phone-tab-item.active {
+  color: var(--primary);
+}
+
+.phone-tab-badge {
+  position: absolute;
+  top: -2px;
+  right: 50%;
+  transform: translateX(18px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+@media (max-width: 480px) {
+  .phone-app-shell {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .phone-frame {
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+}
+
+// ==================== 手机壳内复用后台组件的兜底适配 ====================
+.phone-screen {
+  .page-header,
+  .cart-header,
+  .wallet-header,
+  .page-title-bar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .page-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding-top: 8px;
+    padding-bottom: 12px;
+  }
+
+  .page-header-left,
+  .page-header-actions {
+    width: 100%;
+  }
+
+  .page-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .page-title,
+  .page-header h2,
+  .page-header h3 {
+    font-size: 20px !important;
+    line-height: 1.25;
+    font-family: inherit !important;
+  }
+
+  .page-subtitle {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .header-search,
+  .filter-bar,
+  .result-bar,
+  .order-list,
+  .goods-grid,
+  .profile-shell,
+  .after-sale-page,
+  .review-page,
+  .category-page,
+  .user-page {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .header-search {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .header-search input {
+    width: 100%;
+  }
+
+  .filter-row,
+  .search-form {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .goods-grid,
+  .list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .order-card,
+  .goods-card,
+  .profile-card,
+  .card,
+  .panel {
+    border-radius: 14px !important;
+  }
+
+  .order-card-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .order-card-img {
+    width: 100% !important;
+    height: 126px !important;
+    margin: 0 0 12px !important;
+  }
+
+  .order-card-info {
+    width: 100%;
+  }
+
+  .order-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .order-card-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .profile-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px;
+  }
+
+  .profile-aside,
+  .profile-main {
+    width: 100% !important;
+  }
+
+  .custom-table,
+  .profile-card table {
+    min-width: 560px;
+  }
+
+  .table-wrap,
+  .profile-card {
+    overflow-x: auto;
+  }
 }
 
 // ==================== CSS 变量兜底（无 class 时） ====================

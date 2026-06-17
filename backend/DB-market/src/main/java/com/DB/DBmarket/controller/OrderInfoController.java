@@ -23,7 +23,8 @@ public class OrderInfoController {
     private OrderInfoService orderInfoService;
     @PostMapping("/get")
     public Result getOrderInfo(
-            @RequestParam String usrId,
+            @RequestParam(required = false) String usrId,
+            @RequestParam(required = false) String userId,
             @RequestParam(required = false) Integer state,
             @RequestParam(required = false) Integer timeOrder
     ) {
@@ -35,7 +36,8 @@ public class OrderInfoController {
         }
 
         CurrentUser currentUser = CurrentUserHolder.require();
-        String targetId = currentUser.isAdmin() && usrId != null ? usrId : currentUser.getId();
+        String requestedId = hasText(usrId) ? usrId : userId;
+        String targetId = currentUser.isAdmin() && hasText(requestedId) ? requestedId : currentUser.getId();
         OrderList orderList = orderInfoService.getOrderInfo(targetId, state, timeOrder);
         return Result.success(orderList);
     }
@@ -87,5 +89,9 @@ public class OrderInfoController {
             orders = orderInfoService.getAllOrders();
             return Result.success(orders, "No 'state' parameter provided. Returning all orders by default!");
         }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

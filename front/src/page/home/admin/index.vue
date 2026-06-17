@@ -1,30 +1,25 @@
-<!--
-  管理端 · 入口页
-  集成 AppSidebar 侧边栏 + Header + router-view 三段式布局
-  通过 role=admin 自动给 body 添加 role-admin class，驱动 CSS 变量切换
--->
 <template>
-  <div class="merchant-layout" :class="`role-${userInfo.type}`">
-    <Header @toggle-sidebar="mobileOpen = !mobileOpen" />
+  <div class="page-container role-admin">
+    <AppSidebar
+      role="admin"
+      :current-page="currentSidebarKey"
+      :badges="badges"
+      :mobile-open="mobileOpen"
+      @navigate="handleNavigate"
+    />
 
-    <div class="layout-body">
-      <AppSidebar
-        role="admin"
-        :current-page="currentSidebarKey"
-        :badges="badges"
-        @navigate="handleNavigate"
-      />
+    <div class="page-main">
+      <Header @toggle-mobile="mobileOpen = !mobileOpen" />
 
       <main class="page-content">
+        <div v-if="mobileOpen" class="mobile-mask" @click="mobileOpen = false" />
         <router-view v-slot="{ Component }">
           <transition name="fade-slide" mode="out-in">
-            <component :is="Component" />
+            <component :is="Component" :key="$route.fullPath" />
           </transition>
         </router-view>
       </main>
     </div>
-
-    <div v-if="mobileOpen" class="mobile-mask" @click="mobileOpen = false" />
   </div>
 </template>
 
@@ -33,7 +28,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Header from "@/page/home/components/Header.vue";
 import AppSidebar from "@/components/AppSidebar/index.vue";
-import { userInfo } from "@/store";
 import fetch from "@/api/fetch";
 import { AfterSale } from "@/api/apis";
 
@@ -47,78 +41,59 @@ const badges = computed(() => ({
   pendingAfterSale: pendingAfterSale.value,
 }));
 
-// 根据当前路由计算 sidebar 当前选中 key
-const currentSidebarKey = computed(() => {
-  return route.meta?.sidebarKey || "dashboard";
-});
+const currentSidebarKey = computed(() => route.meta?.sidebarKey || "dashboard");
 
-const handleNavigate = ({ key, label, path }) => {
+const handleNavigate = ({ path }) => {
   mobileOpen.value = false;
-  if (path) {
-    router.push(path);
-  }
+  if (path && route.path !== path) router.push(path);
 };
 
 let pollTimer = null;
 const pollAfterSale = () => {
-  fetch(AfterSale.stats, { scope: "admin" }).then((data) => {
-    pendingAfterSale.value = Number(data?.stats?.pending || 0);
-  });
+  fetch(AfterSale.stats, { scope: "admin" })
+    .then((data) => {
+      pendingAfterSale.value = Number(data?.stats?.pending || 0);
+    })
+    .catch(() => {
+      pendingAfterSale.value = 0;
+    });
 };
 
-// 给 body 添加角色 class，驱动 CSS 变量覆盖
 const setBodyRoleClass = () => {
-  document.body.classList.remove("role-merchant", "role-customer", "role-admin", "role-rider");
-  document.body.classList.add(`role-${userInfo.value?.type || "admin"}`);
+  document.body.classList.remove("role-merchant", "role-customer", "role-admin", "role-rider", "role-driver");
+  document.body.classList.add("role-admin");
 };
 
-watch(
-  () => userInfo.value?.type,
-  () => setBodyRoleClass(),
-  { immediate: false }
-);
+watch(() => route.fullPath, () => {
+  mobileOpen.value = false;
+});
 
 onMounted(() => {
   setBodyRoleClass();
+  if (route.path === "/home" || route.path === "/home/admin") {
+    router.replace("/home/admin/dashboard");
+  }
   pollAfterSale();
   pollTimer = window.setInterval(pollAfterSale, 15000);
 });
 
 onBeforeUnmount(() => {
-  if (pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = null;
-  }
+  if (pollTimer) window.clearInterval(pollTimer);
 });
 </script>
 
 <style lang="less" scoped>
-.merchant-layout {
-  min-height: 100vh;
-  background: #f5f6fa;
-  display: flex;
-  flex-direction: column;
-}
-
-.layout-body {
-  position: relative;
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
 .page-content {
   position: relative;
-  padding: 28px 32px;
-  min-height: calc(100vh - 64px);
+  padding: 24px 28px;
+  min-height: calc(100vh - var(--header-h));
   overflow-y: auto;
-  flex: 1;
 }
 
 .mobile-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(15, 23, 42, 0.42);
   z-index: 99;
   display: none;
 }
@@ -127,6 +102,7 @@ onBeforeUnmount(() => {
   .mobile-mask {
     display: block;
   }
+
   .page-content {
     padding: 16px;
   }
@@ -134,12 +110,14 @@ onBeforeUnmount(() => {
 
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
 }
+
 .fade-slide-enter-from {
   opacity: 0;
   transform: translateY(6px);
 }
+
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateY(-4px);

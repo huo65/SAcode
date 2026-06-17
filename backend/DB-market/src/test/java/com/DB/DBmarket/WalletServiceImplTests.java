@@ -96,6 +96,17 @@ class WalletServiceImplTests {
         verify(walletTransactionMapper).list("2", null, 100);
     }
 
+    @Test
+    void walletTypeAllMeansNoTypeFilter() {
+        CurrentUser admin = new CurrentUser("1", "admin", "admin");
+        when(walletTransactionMapper.list(null, null, 100)).thenReturn(Collections.emptyList());
+
+        List<WalletTransaction> transactions = walletService.listTransactions(admin, null, "all", null);
+
+        assertTrue(transactions.isEmpty());
+        verify(walletTransactionMapper).list(null, null, 100);
+    }
+
     private User buildUser(String id, String name, Integer balance) {
         User user = new User();
         user.setId(id);

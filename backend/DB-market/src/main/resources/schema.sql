@@ -1,10 +1,14 @@
--- DB-market Database Initialization Script
--- Create database if not exists
+-- DB-market database initialization script.
+-- Always import this file with an UTF-8 client, for example:
+-- mysql --default-character-set=utf8mb4 -uroot -p < schema.sql
+
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS market DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE market;
 
--- User table
 CREATE TABLE IF NOT EXISTS user (
     id VARCHAR(64) PRIMARY KEY COMMENT '用户唯一标识',
     type VARCHAR(32) NOT NULL COMMENT '用户类型',
@@ -20,12 +24,10 @@ CREATE TABLE IF NOT EXISTS user (
     INDEX idx_user_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
--- Category table
 CREATE TABLE IF NOT EXISTS category (
     name VARCHAR(64) PRIMARY KEY COMMENT '商品类别名称'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品类别表';
 
--- Product table
 CREATE TABLE IF NOT EXISTS product (
     id VARCHAR(64) PRIMARY KEY COMMENT '商品ID',
     name VARCHAR(256) NOT NULL COMMENT '商品名称',
@@ -34,7 +36,7 @@ CREATE TABLE IF NOT EXISTS product (
     mer VARCHAR(64) NOT NULL COMMENT '商家id',
     cat_name VARCHAR(64) COMMENT '商品类别',
     number INT DEFAULT 0 COMMENT '商品库存',
-    state INT DEFAULT 0 COMMENT '商品状态(-1 未通过审核 0审核中 1审核通过)',
+    state INT DEFAULT 0 COMMENT '商品状态(-1 未通过审核 0 审核中 1 审核通过)',
     sales_refund INT DEFAULT 0 COMMENT '该商品退货量',
     rate_refund VARCHAR(32) COMMENT '该商品退货率 %',
     complain INT DEFAULT 0 COMMENT '该商品投诉量',
@@ -45,7 +47,6 @@ CREATE TABLE IF NOT EXISTS product (
     FOREIGN KEY (cat_name) REFERENCES category(name) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品表';
 
--- Product Image table
 CREATE TABLE IF NOT EXISTS prod_img (
     prod VARCHAR(64) NOT NULL COMMENT '商品id',
     image VARCHAR(512) NOT NULL COMMENT '商品图片',
@@ -54,7 +55,6 @@ CREATE TABLE IF NOT EXISTS prod_img (
     FOREIGN KEY (prod) REFERENCES product(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品图片表';
 
--- Address table
 CREATE TABLE IF NOT EXISTS address (
     addr_id VARCHAR(64) PRIMARY KEY COMMENT '地址id',
     usr VARCHAR(64) NOT NULL COMMENT '用户id',
@@ -63,7 +63,6 @@ CREATE TABLE IF NOT EXISTS address (
     FOREIGN KEY (usr) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='地址表';
 
--- Restaurant / Store table
 CREATE TABLE IF NOT EXISTS restaurant (
     id VARCHAR(64) PRIMARY KEY COMMENT '门店id',
     merchant_id VARCHAR(64) NOT NULL COMMENT '所属商家id',
@@ -88,7 +87,6 @@ CREATE TABLE IF NOT EXISTS restaurant (
     FOREIGN KEY (merchant_id) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='门店表';
 
--- Cart table
 CREATE TABLE IF NOT EXISTS cart (
     cus VARCHAR(64) NOT NULL COMMENT '用户id',
     prod VARCHAR(64) NOT NULL COMMENT '商品id',
@@ -100,7 +98,6 @@ CREATE TABLE IF NOT EXISTS cart (
     FOREIGN KEY (prod) REFERENCES product(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='购物车表';
 
--- Order Info table
 CREATE TABLE IF NOT EXISTS order_info (
     id VARCHAR(64) NOT NULL COMMENT '订单id',
     cus VARCHAR(64) NOT NULL COMMENT '买家Id',
@@ -110,13 +107,13 @@ CREATE TABLE IF NOT EXISTS order_info (
     time DATETIME NOT NULL COMMENT '下单时间',
     deli_addr VARCHAR(64) COMMENT '发货地址id',
     rec_addr VARCHAR(64) COMMENT '收货地址id',
-    state INT NOT NULL DEFAULT -1 COMMENT '订单状态 -3已退货/退款 -2退货中 -1下单未支付 0已支付 1已发货 2已收货',
+    state INT NOT NULL DEFAULT -1 COMMENT '订单状态(-3已退款 -2退货中 -1下单未支付 0已支付 1已发货 2已收货 3待接单 4备餐中)',
     account INT NOT NULL COMMENT '订单金额',
     driver_id VARCHAR(64) COMMENT 'driver user id',
     remark VARCHAR(500) COMMENT 'customer remark',
     expected_delivery_time DATETIME COMMENT 'expected delivery time',
     pay_time DATETIME COMMENT 'payment time',
-    complain VARCHAR(32) DEFAULT '0' COMMENT '是否被投诉 0未被投诉，1被投诉',
+    complain VARCHAR(32) DEFAULT '0' COMMENT '是否被投诉 0未被投诉 1被投诉',
     complain_reason TEXT COMMENT '投诉理由',
     refund_reason TEXT COMMENT '退款理由，请求退款',
     PRIMARY KEY (id, prod),
@@ -130,11 +127,10 @@ CREATE TABLE IF NOT EXISTS order_info (
     FOREIGN KEY (prod) REFERENCES product(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
 
--- Message table
 CREATE TABLE IF NOT EXISTS message (
     time_slot DATETIME NOT NULL COMMENT '发送时间',
     sender VARCHAR(64) NOT NULL COMMENT '发送人id',
-    receiver VARCHAR(64) NOT NULL COMMENT '接受人id',
+    receiver VARCHAR(64) NOT NULL COMMENT '接收人id',
     content TEXT NOT NULL COMMENT '信息内容',
     PRIMARY KEY (time_slot, sender, receiver),
     INDEX idx_message_sender (sender),
@@ -211,7 +207,6 @@ CREATE TABLE IF NOT EXISTS wallet_transaction (
     FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钱包余额流水表';
 
--- Order Review table
 CREATE TABLE IF NOT EXISTS order_review (
     order_id VARCHAR(64) PRIMARY KEY COMMENT '订单id',
     cus VARCHAR(64) NOT NULL COMMENT '评价顾客id',
@@ -227,7 +222,6 @@ CREATE TABLE IF NOT EXISTS order_review (
     FOREIGN KEY (mer) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单评价表';
 
--- Insert default categories
 INSERT IGNORE INTO category (name) VALUES
     ('数码产品'),
     ('食品'),
@@ -237,35 +231,59 @@ INSERT IGNORE INTO category (name) VALUES
     ('家居'),
     ('其他');
 
--- Demo accounts. Passwords are plaintext intentionally; the backend migrates them
--- to hashed values after successful login.
-INSERT IGNORE INTO user (id, type, name, portrait, password, phone, balance, description, disabled) VALUES
+UPDATE product SET cat_name = '食品' WHERE HEX(cat_name) = 'E6A48BE786B7E690A7';
+UPDATE product SET cat_name = '饮品' WHERE HEX(cat_name) = 'E6A5973FE690A7';
+UPDATE product SET cat_name = '生鲜蔬菜' WHERE HEX(cat_name) = 'E990A2E786BCE79F9EE992843FE5BD8D';
+UPDATE product SET cat_name = '数码产品' WHERE HEX(cat_name) = 'E98F81E689AEE7889CE6B59CD183E690A7';
+UPDATE product SET cat_name = '服装' WHERE HEX(cat_name) = 'E98F88E5B6883F';
+UPDATE product SET cat_name = '家居' WHERE HEX(cat_name) = 'E780B9E8B7BAE79CB3';
+UPDATE product SET cat_name = '其他' WHERE HEX(cat_name) = 'E98D8FE69CB5E7B2AC';
+
+INSERT INTO user (id, type, name, portrait, password, phone, balance, description, disabled) VALUES
     ('1', 'admin', 'admin', '/storage/avatar/default_avatar.jpg', '123456', '13800000000', 200, 'platform administrator', 0),
     ('2', 'cus', 'customer', '/storage/avatar/default_avatar.jpg', '123456', '13800000001', 200, 'demo customer', 0),
     ('3', 'mer', 'merchant', '/storage/avatar/default_avatar.jpg', '123456', '13800000002', 200, 'demo merchant', 0),
-    ('4', 'driver', 'driver', '/storage/avatar/default_avatar.jpg', '123456', '13800000003', 200, 'demo driver', 0);
+    ('4', 'driver', 'driver', '/storage/avatar/default_avatar.jpg', '123456', '13800000003', 200, 'demo driver', 0)
+ON DUPLICATE KEY UPDATE
+    portrait = VALUES(portrait),
+    phone = VALUES(phone),
+    description = VALUES(description),
+    disabled = VALUES(disabled);
 
-UPDATE user SET portrait = '/storage/avatar/default_avatar.jpg' WHERE id IN ('1', '2', '3', '4') AND (portrait = 'default_avatar' OR portrait LIKE '/img/%');
+UPDATE user
+SET portrait = '/storage/avatar/default_avatar.jpg'
+WHERE id IN ('1', '2', '3', '4') AND (portrait = 'default_avatar' OR portrait LIKE '/img/%');
 
 INSERT IGNORE INTO address (addr_id, usr, location) VALUES
     ('1', '2', 'Customer demo address'),
     ('2', '3', 'Merchant demo address'),
     ('3', '4', 'Driver service area');
 
-INSERT IGNORE INTO restaurant (id, merchant_id, name, logo, cover, description, notice, status, business_hours, delivery_fee, min_order_amount, service_radius_km, delivery_eta_minutes, feature_tags, menu_categories, address_text, delivery_policy, promo_text) VALUES
-    ('3', '3', 'merchant精选门店', '/storage/restaurant/merchant-logo.jpg', '/storage/restaurant/merchant-cover.jpg', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品,新鲜蔬菜,数码优选', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠');
+INSERT INTO restaurant (id, merchant_id, name, logo, cover, description, notice, status, business_hours, delivery_fee, min_order_amount, service_radius_km, delivery_eta_minutes, feature_tags, menu_categories, address_text, delivery_policy, promo_text) VALUES
+    ('3', '3', 'merchant精选门店', '/storage/restaurant/merchant-logo.jpg', '/storage/restaurant/merchant-cover.jpg', '课堂展示版门店示例，支持门店资料、排序筛选和详情展示。', '欢迎光临，当前门店已切换为课堂展示版资料。', 1, '10:00-21:30', 4, 18, 5, 28, '品牌门店,课堂展示推荐,当日现做', '招牌套餐,热销主食,小吃饮品,新鲜蔬菜,数码优选', 'Merchant demo address', '满18元起送，支持骑手课堂展示版配送。', '新客首单享门店展示优惠')
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    logo = VALUES(logo),
+    cover = VALUES(cover),
+    description = VALUES(description),
+    notice = VALUES(notice),
+    status = VALUES(status),
+    business_hours = VALUES(business_hours),
+    delivery_fee = VALUES(delivery_fee),
+    min_order_amount = VALUES(min_order_amount),
+    service_radius_km = VALUES(service_radius_km),
+    delivery_eta_minutes = VALUES(delivery_eta_minutes),
+    feature_tags = VALUES(feature_tags),
+    menu_categories = VALUES(menu_categories),
+    address_text = VALUES(address_text),
+    delivery_policy = VALUES(delivery_policy),
+    promo_text = VALUES(promo_text);
 
-UPDATE restaurant SET logo = '/storage/restaurant/merchant-logo.jpg', cover = '/storage/restaurant/merchant-cover.jpg' WHERE id = '3';
-
--- Classroom demo products, orders, review and after-sale data.
--- Image URLs point to backend/DB-market/data/storage and are served by /storage/**.
-INSERT IGNORE INTO product (id, name, description, price, mer, cat_name, number, state, sales_refund, rate_refund, complain, complain_rate) VALUES
+INSERT INTO product (id, name, description, price, mer, cat_name, number, state, sales_refund, rate_refund, complain, complain_rate) VALUES
     ('demo-prod-chicken-rice', '自动化演示-蜜汁鸡腿饭', '课堂展示用热销主食，覆盖商品审核、下单和评价链路。', 28, '3', '食品', 79, 1, 0, '0.0', 0, '0.0'),
     ('demo-prod-tomato-beef', '自动化演示-番茄牛腩饭', '课堂展示用套餐商品，适合演示订单状态流转。', 32, '3', '食品', 68, 1, 0, '0.0', 1, '0.0'),
     ('demo-prod-lemon-tea', '自动化演示-冰镇柠檬茶', '课堂展示用饮品商品，补充低客单价数据。', 12, '3', '饮品', 117, 1, 0, '0.0', 0, '0.0'),
-    ('demo-prod-beef-burger', '自动化演示-香煎牛肉堡', '课堂展示用快餐商品，覆盖库存和支付演示。', 25, '3', '食品', 59, 1, 0, '0.0', 0, '0.0');
-
-INSERT IGNORE INTO product (id, name, description, price, mer, cat_name, number, state, sales_refund, rate_refund, complain, complain_rate) VALUES
+    ('demo-prod-beef-burger', '自动化演示-香煎牛肉堡', '课堂展示用快餐商品，覆盖库存和支付演示。', 25, '3', '食品', 59, 1, 0, '0.0', 0, '0.0'),
     ('asset-prod-braised-beef', '红烧牛肉饭', '迁移自前端素材的主食商品，适合展示热销餐品。', 30, '3', '食品', 88, 1, 0, '0.0', 0, '0.0'),
     ('asset-prod-pork-set', '香煎猪排套餐', '迁移自前端素材的套餐商品，展示多图菜品详情。', 29, '3', '食品', 82, 1, 0, '0.0', 0, '0.0'),
     ('asset-prod-tomato-meal', '番茄浓汤套餐', '番茄风味套餐，补充餐品类展示数据。', 26, '3', '食品', 76, 1, 0, '0.0', 0, '0.0'),
@@ -279,7 +297,19 @@ INSERT IGNORE INTO product (id, name, description, price, mer, cat_name, number,
     ('asset-prod-pepper', '彩椒组合', '生鲜蔬菜素材商品，支持多图轮播展示。', 10, '3', '生鲜蔬菜', 110, 1, 0, '0.0', 0, '0.0'),
     ('asset-prod-iphone15', 'iPhone 15 展示机', '数码产品素材商品，用于丰富平台商品类型。', 5999, '3', '数码产品', 12, 1, 0, '0.0', 0, '0.0'),
     ('asset-prod-mate60', 'Mate 60 Pro 展示机', '数码产品素材商品，展示高客单价商品。', 6999, '3', '数码产品', 10, 1, 0, '0.0', 0, '0.0'),
-    ('asset-prod-laptop', '轻薄笔记本电脑', '数码产品素材商品，展示多图商品详情。', 5299, '3', '数码产品', 8, 1, 0, '0.0', 0, '0.0');
+    ('asset-prod-laptop', '轻薄笔记本电脑', '数码产品素材商品，展示多图商品详情。', 5299, '3', '数码产品', 8, 1, 0, '0.0', 0, '0.0')
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    description = VALUES(description),
+    price = VALUES(price),
+    mer = VALUES(mer),
+    cat_name = VALUES(cat_name),
+    number = VALUES(number),
+    state = VALUES(state),
+    sales_refund = VALUES(sales_refund),
+    rate_refund = VALUES(rate_refund),
+    complain = VALUES(complain),
+    complain_rate = VALUES(complain_rate);
 
 INSERT IGNORE INTO prod_img (prod, image) VALUES
     ('demo-prod-chicken-rice', '/storage/product/food/beef-1.png'),
@@ -327,33 +357,65 @@ INSERT IGNORE INTO prod_img (prod, image) VALUES
     ('asset-prod-laptop', '/storage/product/digital/laptop-2.png'),
     ('asset-prod-laptop', '/storage/product/digital/laptop-3.png');
 
-INSERT IGNORE INTO order_info (id, cus, mer, prod, prod_num, time, deli_addr, rec_addr, state, account, driver_id, remark, expected_delivery_time, pay_time, complain, complain_reason, refund_reason) VALUES
+INSERT INTO order_info (id, cus, mer, prod, prod_num, time, deli_addr, rec_addr, state, account, driver_id, remark, expected_delivery_time, pay_time, complain, complain_reason, refund_reason) VALUES
     ('demo-order-unpaid', '2', '3', 'demo-prod-chicken-rice', 1, '2026-06-16 16:01:41', '2', '1', -1, 28, NULL, 'AUTO_DEMO_UNPAID', NULL, NULL, '0', NULL, NULL),
     ('demo-order-paid', '2', '3', 'demo-prod-tomato-beef', 1, '2026-06-16 16:01:41', '2', '1', 0, 32, NULL, 'AUTO_DEMO_PAID', NULL, '2026-06-16 16:01:41', '0', NULL, NULL),
     ('demo-order-preparing', '2', '3', 'demo-prod-lemon-tea', 2, '2026-06-16 16:01:42', '2', '1', 4, 24, NULL, 'AUTO_DEMO_PREPARING', NULL, '2026-06-16 16:01:42', '0', NULL, NULL),
     ('demo-order-waiting-driver', '2', '3', 'demo-prod-beef-burger', 1, '2026-06-16 16:01:42', '2', '1', 3, 25, NULL, 'AUTO_DEMO_WAITING_DRIVER', NULL, '2026-06-16 16:01:42', '0', NULL, NULL),
     ('demo-order-completed-review', '2', '3', 'demo-prod-chicken-rice', 1, '2026-06-16 16:01:42', '2', '1', 2, 28, '4', 'AUTO_DEMO_COMPLETED_REVIEW', NULL, '2026-06-16 16:01:42', '0', NULL, NULL),
     ('demo-order-after-sale', '2', '3', 'demo-prod-tomato-beef', 1, '2026-06-16 16:03:13', '2', '1', 2, 32, '4', 'AUTO_DEMO_AFTER_SALE', NULL, '2026-06-16 16:03:13', '1', '自动化演示工单：包装轻微破损，申请客服跟进。', NULL),
-    ('demo-order-delivering', '2', '3', 'demo-prod-lemon-tea', 1, '2026-06-16 16:03:13', '2', '1', 1, 12, '4', 'AUTO_DEMO_DELIVERING', NULL, '2026-06-16 16:03:13', '0', NULL, NULL);
+    ('demo-order-delivering', '2', '3', 'demo-prod-lemon-tea', 1, '2026-06-16 16:03:13', '2', '1', 1, 12, '4', 'AUTO_DEMO_DELIVERING', NULL, '2026-06-16 16:03:13', '0', NULL, NULL)
+ON DUPLICATE KEY UPDATE
+    state = VALUES(state),
+    account = VALUES(account),
+    driver_id = VALUES(driver_id),
+    remark = VALUES(remark),
+    pay_time = VALUES(pay_time),
+    complain = VALUES(complain),
+    complain_reason = VALUES(complain_reason),
+    refund_reason = VALUES(refund_reason);
 
-INSERT IGNORE INTO order_review (order_id, cus, mer, score, content, created_time, reply_content, reply_time) VALUES
-    ('demo-order-completed-review', '2', '3', 5, '配送及时，餐品状态很好，适合作为课堂展示评价。', '2026-06-16 16:03:13', '感谢评价，我们会继续保持出餐速度和服务质量。', '2026-06-16 16:03:13');
+INSERT INTO order_review (order_id, cus, mer, score, content, created_time, reply_content, reply_time) VALUES
+    ('demo-order-completed-review', '2', '3', 5, '配送及时，餐品状态很好，适合作为课堂展示评价。', '2026-06-16 16:03:13', '感谢评价，我们会继续保持出餐速度和服务质量。', '2026-06-16 16:03:13')
+ON DUPLICATE KEY UPDATE
+    score = VALUES(score),
+    content = VALUES(content),
+    reply_content = VALUES(reply_content),
+    reply_time = VALUES(reply_time);
 
-INSERT IGNORE INTO after_sale_ticket (id, order_id, customer_id, merchant_id, type, content, status, handler_id, handler_note, created_time, updated_time) VALUES
-    ('demo-ticket-after-sale', 'demo-order-after-sale', '2', '3', '投诉反馈', '自动化演示工单：包装轻微破损，申请客服跟进。', '待处理', NULL, NULL, '2026-06-16 16:03:13', '2026-06-16 16:03:13');
+INSERT INTO after_sale_ticket (id, order_id, customer_id, merchant_id, type, content, status, handler_id, handler_note, created_time, updated_time) VALUES
+    ('demo-ticket-after-sale', 'demo-order-after-sale', '2', '3', '投诉反馈', '自动化演示工单：包装轻微破损，申请客服跟进。', '待处理', NULL, NULL, '2026-06-16 16:03:13', '2026-06-16 16:03:13')
+ON DUPLICATE KEY UPDATE
+    type = VALUES(type),
+    content = VALUES(content),
+    status = VALUES(status),
+    handler_id = VALUES(handler_id),
+    handler_note = VALUES(handler_note),
+    updated_time = VALUES(updated_time);
 
-INSERT IGNORE INTO wallet_transaction (id, user_id, user_name, type, amount, balance_before, balance_after, related_order_id, remark, actor_id, actor_name, actor_type, created_time) VALUES
+INSERT INTO wallet_transaction (id, user_id, user_name, type, amount, balance_before, balance_after, related_order_id, remark, actor_id, actor_name, actor_type, created_time) VALUES
     ('demo-wallet-recharge', '2', 'customer', 'RECHARGE', 500, 200, 700, NULL, 'AUTO_DEMO seed balance', '1', 'admin', 'admin', '2026-06-16 16:01:40'),
     ('demo-wallet-pay-paid', '2', 'customer', 'PAY', -32, 700, 668, 'demo-order-paid', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:41'),
     ('demo-wallet-pay-preparing', '2', 'customer', 'PAY', -24, 668, 644, 'demo-order-preparing', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:42'),
     ('demo-wallet-pay-waiting-driver', '2', 'customer', 'PAY', -25, 644, 619, 'demo-order-waiting-driver', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:42'),
     ('demo-wallet-pay-completed', '2', 'customer', 'PAY', -28, 619, 591, 'demo-order-completed-review', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:01:42'),
     ('demo-wallet-pay-after-sale', '2', 'customer', 'PAY', -32, 591, 559, 'demo-order-after-sale', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:03:13'),
-    ('demo-wallet-pay-delivering', '2', 'customer', 'PAY', -12, 559, 547, 'demo-order-delivering', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:03:13');
+    ('demo-wallet-pay-delivering', '2', 'customer', 'PAY', -12, 559, 547, 'demo-order-delivering', 'AUTO_DEMO wallet pay', '2', 'customer', 'cus', '2026-06-16 16:03:13')
+ON DUPLICATE KEY UPDATE
+    user_name = VALUES(user_name),
+    type = VALUES(type),
+    amount = VALUES(amount),
+    balance_before = VALUES(balance_before),
+    balance_after = VALUES(balance_after),
+    related_order_id = VALUES(related_order_id),
+    remark = VALUES(remark),
+    actor_id = VALUES(actor_id),
+    actor_name = VALUES(actor_name),
+    actor_type = VALUES(actor_type);
 
 UPDATE user SET balance = 547 WHERE id = '2';
 
-INSERT IGNORE INTO operation_permission (role_code, permission_key, permission_name, permission_type, scope_code, enabled, updated_time) VALUES
+INSERT INTO operation_permission (role_code, permission_key, permission_name, permission_type, scope_code, enabled, updated_time) VALUES
     ('admin', 'admin.menu.goods', '商品治理', 'menu', 'admin', 1, NOW()),
     ('admin', 'admin.menu.order', '订单总览', 'menu', 'admin', 1, NOW()),
     ('admin', 'admin.menu.category', '分类管理', 'menu', 'admin', 1, NOW()),
@@ -379,4 +441,24 @@ INSERT IGNORE INTO operation_permission (role_code, permission_key, permission_n
     ('mer', 'merchant.action.report.export', '导出经营报表', 'action', 'merchant', 1, NOW()),
     ('mer', 'merchant.action.afterSale.handle', '处理售后工单', 'action', 'merchant', 1, NOW()),
     ('mer', 'merchant.action.store.manage', '维护门店资料', 'action', 'merchant', 1, NOW()),
-    ('mer', 'merchant.action.audit.view', '查看操作日志', 'action', 'merchant', 1, NOW());
+    ('mer', 'merchant.action.audit.view', '查看操作日志', 'action', 'merchant', 1, NOW())
+ON DUPLICATE KEY UPDATE
+    permission_name = VALUES(permission_name),
+    permission_type = VALUES(permission_type),
+    scope_code = VALUES(scope_code),
+    enabled = VALUES(enabled),
+    updated_time = VALUES(updated_time);
+
+DELETE c
+FROM category c
+LEFT JOIN product p ON p.cat_name = c.name
+WHERE p.cat_name IS NULL
+  AND HEX(c.name) IN (
+      'E6A48BE786B7E690A7',
+      'E6A5973FE690A7',
+      'E780B9E8B7BAE79CB3',
+      'E98D8FE69CB5E7B2AC',
+      'E98F81E689AEE7889CE6B59CD183E690A7',
+      'E98F88E5B6883F',
+      'E990A2E786BCE79F9EE992843FE5BD8D'
+  );

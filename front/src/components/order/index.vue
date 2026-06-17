@@ -276,6 +276,7 @@
     <Detail
       :visible="detailVisible"
       :orderId="curOrder.id"
+      :pay-amount="Number(curOrder.account || 0)"
       :curStatus="'customer'"
       @close="closeDetail"
     />
@@ -623,7 +624,7 @@ const displayedOrderList = computed(() => {
 
 const getOrderList = () => {
   fetch(Order.getOrderList, {
-    userId: userInfo.value.id,
+    usrId: userInfo.value.id,
     state: orderCondition.state,
     timeOrder: orderCondition.timeOrder,
   }).then((data) => {

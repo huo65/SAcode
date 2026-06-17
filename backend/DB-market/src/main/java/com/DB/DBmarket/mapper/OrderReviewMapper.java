@@ -21,6 +21,9 @@ public interface OrderReviewMapper {
     @Select("SELECT * FROM order_review WHERE mer = #{merchantId} ORDER BY created_time DESC")
     List<OrderReview> listByMerchantId(@Param("merchantId") String merchantId);
 
+    @Select("SELECT * FROM order_review WHERE cus = #{customerId} ORDER BY created_time DESC")
+    List<OrderReview> listByCustomerId(@Param("customerId") String customerId);
+
     @Update("UPDATE order_review SET reply_content = #{replyContent}, reply_time = #{replyTime} WHERE order_id = #{orderId}")
     int replyReview(@Param("orderId") String orderId, @Param("replyContent") String replyContent, @Param("replyTime") java.time.LocalDateTime replyTime);
 }

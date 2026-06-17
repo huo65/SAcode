@@ -141,16 +141,11 @@ const fetchAudit = async () => {
       page: page.value,
       pageSize: pageSize.value,
     });
-    const data = res?.data || res || {};
-    if (data.code === 200) {
-      const payload = data.data || {};
-      auditLogs.value = payload.list || [];
-      total.value = payload.total || 0;
-      if (payload.stats) {
-        stats.value = payload.stats;
-      }
-    } else {
-      useMockData();
+    const payload = res || {};
+    auditLogs.value = payload.list || payload.auditLogs || [];
+    total.value = Number(payload.total ?? auditLogs.value.length);
+    if (payload.stats) {
+      stats.value = payload.stats;
     }
   } catch (err) {
     useMockData();

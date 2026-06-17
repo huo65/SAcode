@@ -184,8 +184,11 @@ public class WalletServiceImpl implements WalletService {
             return null;
         }
         String normalized = type.trim().toUpperCase();
+        if ("ALL".equals(normalized)) {
+            return null;
+        }
         if (!TYPE_RECHARGE.equals(normalized) && !TYPE_PAY.equals(normalized) && !TYPE_REFUND.equals(normalized) && !"ADJUST".equals(normalized)) {
-            throw new IllegalArgumentException("Invalid wallet transaction type.");
+            throw new IllegalArgumentException("Invalid wallet transaction type. Allowed values: RECHARGE, PAY, REFUND.");
         }
         return normalized;
     }

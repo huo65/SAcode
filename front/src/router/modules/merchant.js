@@ -1,6 +1,4 @@
-// 商家端子路由
-// 在 src/router/index.js 中通过 ...merchantRoutes 引入
-
+import MerchantLayout from "@/page/home/merchant/index.vue";
 import Goods from "@/components/goods/index.vue";
 import Order from "@/components/order/index.vue";
 import Info from "@/components/info/index.vue";
@@ -13,55 +11,58 @@ import MerchantDashboard from "@/page/home/merchant/dashboard.vue";
 const merchantRoutes = [
   {
     path: "/home/merchant",
+    component: MerchantLayout,
     redirect: "/home/merchant/dashboard",
-  },
-  {
-    path: "/home/merchant/dashboard",
-    name: "MerchantDashboard",
-    component: MerchantDashboard,
-    meta: { title: "经营概览", sidebarKey: "dashboard" },
-  },
-  {
-    path: "/home/merchant/goods",
-    name: "MerchantGoods",
-    component: Goods,
-    meta: { title: "商品管理", sidebarKey: "goods" },
-  },
-  {
-    path: "/home/merchant/orders",
-    name: "MerchantOrders",
-    component: Order,
-    meta: { title: "订单管理", sidebarKey: "orders" },
-  },
-  {
-    path: "/home/merchant/after-sale",
-    name: "MerchantAfterSale",
-    component: AfterSaleBoard,
-    meta: { title: "售后管理", sidebarKey: "after-sale" },
-  },
-  {
-    path: "/home/merchant/store",
-    name: "MerchantStore",
-    component: StoreManage,
-    meta: { title: "门店资料", sidebarKey: "store" },
-  },
-  {
-    path: "/home/merchant/ops",
-    name: "MerchantOps",
-    component: MerchantOps,
-    meta: { title: "经营分析", sidebarKey: "ops" },
-  },
-  {
-    path: "/home/merchant/review",
-    name: "MerchantReview",
-    component: MerchantReply,
-    meta: { title: "评价回复", sidebarKey: "review" },
-  },
-  {
-    path: "/home/merchant/info",
-    name: "MerchantInfo",
-    component: Info,
-    meta: { title: "账号信息", sidebarKey: "info" },
+    children: [
+      {
+        path: "dashboard",
+        name: "MerchantDashboard",
+        component: MerchantDashboard,
+        meta: { title: "经营概览", sidebarKey: "dashboard" },
+      },
+      {
+        path: "goods",
+        name: "MerchantGoods",
+        component: Goods,
+        meta: { title: "商品管理", sidebarKey: "goods" },
+      },
+      {
+        path: "orders",
+        name: "MerchantOrders",
+        component: Order,
+        meta: { title: "订单管理", sidebarKey: "orders" },
+      },
+      {
+        path: "after-sale",
+        name: "MerchantAfterSale",
+        component: AfterSaleBoard,
+        meta: { title: "售后管理", sidebarKey: "after-sale" },
+      },
+      {
+        path: "store",
+        name: "MerchantStore",
+        component: StoreManage,
+        meta: { title: "门店资料", sidebarKey: "store" },
+      },
+      {
+        path: "ops",
+        name: "MerchantOps",
+        component: MerchantOps,
+        meta: { title: "经营分析", sidebarKey: "ops" },
+      },
+      {
+        path: "review",
+        name: "MerchantReview",
+        component: MerchantReply,
+        meta: { title: "评价回复", sidebarKey: "review" },
+      },
+      {
+        path: "info",
+        name: "MerchantInfo",
+        component: Info,
+        meta: { title: "账号信息", sidebarKey: "info" },
+      },
+    ],
   },
 ];
 

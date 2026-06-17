@@ -1,42 +1,31 @@
 server:
   port: 8080
 
-
 spring:
   datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/market?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Shanghai
+    username: root
+    password: your_password_here
 
-      type: com.alibaba.druid.pool.DruidDataSource
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/market   #数据库地址
-      username: root                                                             #用户名
-      password: your_password_here                                               #密码
-
-    #Mybatis配置
 mybatis:
   configuration:
-      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-      map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
 
-#日志等级
 logging:
   level:
     org.springframework.jdbc.support.JdbcTransactionManager: debug
 
-#阿里云
-aliyun:
-  oss:
-    endpoint: https://oss-cn-beijing.aliyuncs.com
-    accessKeyId: your_access_key_id_here
-    accessKeySecret: your_access_key_secret_here
-    bucketName: your_bucket_name_here
+storage:
+  local:
+    # Fixed backend storage directory. The code resolves it under backend/DB-market.
+    base-dir: data/storage
+    public-url-prefix: /storage
 
-#alipay:
-#  appId: your_alipay_app_id
-#  appPrivateKey: your_app_private_key
-#  alipayPublicKey: your_alipay_public_key
-#  notifyUrl: http://localhost:8080/alipay/notify
-#  returnUrl:
-
+# Classroom demo uses wallet balance recharge/pay/refund.
+# Alipay sandbox is kept as a later extension and disabled by placeholder values.
 alipay:
   appId: your_alipay_app_id
   appPrivateKey: your_app_private_key
@@ -44,10 +33,3 @@ alipay:
   gatewayUrl: https://openapi-sandbox.dl.alipaydev.com/gateway.do
   notifyUrl: https://your-public-domain/alipay/notify
   returnUrl: http://127.0.0.1:8080/alipay/return
-
-storage:
-  provider: local
-  local:
-    # Fixed backend storage directory. The code resolves it under backend/DB-market.
-    baseDir: data/storage
-    publicUrlPrefix: /storage

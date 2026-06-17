@@ -29,8 +29,11 @@ public class CartController {
     private OrderInfoService orderInfoService;
     //获取购物车
     @GetMapping("/getCart")
-    public Result getCart(@RequestParam("id") String id){
+    public Result getCart(@RequestParam(value = "id", required = false) String id){
         CurrentUser currentUser = CurrentUserHolder.require();
+        if (currentUser.isAdmin() && (id == null || id.isEmpty())) {
+            return Result.error("管理员查询购物车需要提供用户id");
+        }
         String targetId = currentUser.isAdmin() ? id : currentUser.getId();
         log.info("getCart id:{}",targetId);
         CartList cartList = cartService.getCart(targetId);

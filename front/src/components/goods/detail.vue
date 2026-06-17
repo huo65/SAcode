@@ -85,6 +85,7 @@
         <el-button
           v-if="curStatus === 'customer'"
           type="primary"
+          :loading="creatingOrder"
           @click="buyProduct"
           >立即购买</el-button
         >
@@ -116,7 +117,7 @@
     </div>
 
     <div v-else>
-      <Pay @pay="payBill" />
+      <Pay :pay-amount="detailPayAmount" @pay="payBill" />
       <div class="footer">
         <el-button
           v-if="!orderId"
@@ -129,7 +130,7 @@
   </el-dialog>
 </template>
 <script setup>
-import { ref, reactive } from "vue";
+import { computed, ref, reactive } from "vue";
 import { userInfo } from "@/store";
 import fetch from "@/api/fetch";
 import { Order, Product } from "@/api/apis";
@@ -155,6 +156,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  payAmount: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const emit = defineEmits(["close", "add", "openEdit"]);
@@ -162,6 +167,12 @@ const emit = defineEmits(["close", "add", "openEdit"]);
 /* 购买商品，弹出支付页面 */
 const paymentVisible = ref(Boolean(props.orderId));
 const toPay = ref(Boolean(props.orderId));
+const creatingOrder = ref(false);
+const detailPayAmount = computed(() => {
+  const orderAmount = Number(props.payAmount || curOrderInfo.value.account || 0);
+  if (orderAmount > 0) return orderAmount;
+  return Number(props.productInfo?.price || 0) * Number(orderForm.prod_num || 1);
+});
 
 /* 顾客下单 */
 const curOrderInfo = ref({});
@@ -191,27 +202,31 @@ const createOrder = async () => {
     expected_delivery_time: orderForm.expected_delivery_time,
   };
 
-  fetch(Order.createOrder, params).then((data) => {
-    ElMessage.success("订单创建成功");
-    console.log("创建订单成功", data.order_info);
-    curOrderInfo.value = { ...curOrderInfo.value, ...data.order_info };
-  });
+  const data = await fetch(Order.createOrder, params);
+  ElMessage.success("订单创建成功");
+  console.log("创建订单成功", data.order_info);
+  curOrderInfo.value = { ...curOrderInfo.value, ...data.order_info };
+  return curOrderInfo.value;
 };
 const buyProduct = async () => {
   console.log("buy", props.productInfo);
-  orderFormRef.value.validate((valid) => {
-    if (valid) {
-      console.log("@@@valid");
-      paymentVisible.value = true;
-      // 发送请求生成订单
-      if (!toPay.value) {
-        createOrder();
-        toPay.value = true;
-      }
-    } else {
-      ElMessage.error("请完善订单信息");
-    }
-  });
+  const valid = await orderFormRef.value.validate().catch(() => false);
+  if (!valid) {
+    ElMessage.error("请完善订单信息");
+    return;
+  }
+  if (toPay.value) {
+    paymentVisible.value = true;
+    return;
+  }
+  creatingOrder.value = true;
+  try {
+    await createOrder();
+    toPay.value = true;
+    paymentVisible.value = true;
+  } finally {
+    creatingOrder.value = false;
+  }
 };
 
 const payBill = () => {

@@ -48,7 +48,8 @@ const pendingTicketCount = ref(0);
 
 const badges = computed(() => ({
   pendingOrders: pendingOrderCount.value,
-  pendingTickets: pendingTicketCount.value,
+  pendingAfterSale: pendingTicketCount.value,
+  pendingReviews: 0,
 }));
 
 const currentPage = computed(() => {
@@ -84,7 +85,7 @@ const loadPendingCounts = () => {
 
 // 给 body 添加角色 class，驱动 CSS 变量覆盖
 const setBodyRoleClass = () => {
-  document.body.classList.remove('role-merchant', 'role-customer', 'role-admin', 'role-rider');
+  document.body.classList.remove('role-merchant', 'role-customer', 'role-admin', 'role-rider', 'role-driver');
   document.body.classList.add('role-merchant');
 };
 

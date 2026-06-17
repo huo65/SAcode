@@ -105,6 +105,7 @@ import { useRouter } from 'vue-router';
 import { userInfo } from '@/store';
 import { Restaurant as RestaurantApi, Product as ProductApi } from '@/api/apis';
 import fetch from '@/api/fetch';
+import { resolveImageUrl } from '@/lib/imageHelper';
 
 const router = useRouter();
 const searchText = ref('');
@@ -152,19 +153,19 @@ const placeholderEmojis = ['🍗', '🐟', '🍔', '🍣', '🥗', '🍜', '🍰
 
 const loadRestaurants = () => {
   fetch(RestaurantApi.list).then((data) => {
-    const list = data?.data || data?.list || data || [];
+    const list = data?.restaurant_list || data?.data || data?.list || data || [];
     restaurants.value = (Array.isArray(list) ? list : []).map((r, idx) => ({
       id: r.id || r.restaurantId,
       name: r.name || r.restaurantName || '未知餐厅',
-      image: r.image || r.imageUrl || '',
-      rating: r.rating || r.score || null,
-      monthSales: r.monthSales || r.saleNum || null,
-      minOrder: r.minOrder || r.startPrice || null,
-      distance: r.distance || null,
-      cuisine: r.cuisine || r.categoryName || null,
-      deliveryTime: r.deliveryTime || r.avgDeliveryTime || null,
-      tag: r.tag || (idx === 0 ? '品牌' : idx === 1 ? '人气' : ''),
-      discount: r.discount || (idx < 2 ? `满${30 + idx * 20}减${5 + idx * 3}` : ''),
+      image: resolveImageUrl(r.cover || r.logo || r.portrait || r.image || r.imageUrl || ''),
+      rating: r.averageScore || r.rating || r.score || null,
+      monthSales: r.reviewCount || r.monthSales || r.saleNum || null,
+      minOrder: r.minOrderAmount || r.minOrder || r.startPrice || 0,
+      distance: r.distanceKm ? `${Number(r.distanceKm).toFixed(1)}km` : r.distance || null,
+      cuisine: r.menuCategories?.[0] || r.cuisine || r.categoryName || null,
+      deliveryTime: r.deliveryEtaMinutes || r.deliveryTime || r.avgDeliveryTime || null,
+      tag: r.status === 1 ? '营业中' : (idx === 0 ? '品牌' : idx === 1 ? '人气' : ''),
+      discount: r.promoText || r.discount || (idx < 2 ? `满${30 + idx * 20}减${5 + idx * 3}` : ''),
       placeholderBg: placeholderBgs[idx % placeholderBgs.length],
       emoji: placeholderEmojis[idx % placeholderEmojis.length],
     }));

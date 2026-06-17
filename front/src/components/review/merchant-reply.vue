@@ -272,30 +272,29 @@ const replying = ref(false);
 const fetchReviews = async () => {
   loading.value = true;
   try {
-    const res = await fetch(Review.list || Review.merchantList || {
+    const reviewListApi = Review.list || Review.merchantList || {
       method: "get",
       url: "/review/merchant/list",
-    }, {
+    };
+    const res = await fetch({ ...reviewListApi, silent: true }, {
       keyword: keyword.value,
       rating: ratingFilter.value,
-      replyStatus: replyFilter.value,
+      replyStatus: replyFilter.value === "all" ? "" : replyFilter.value,
     });
-    const data = res?.data || res || {};
-    if (data.code === 200) {
-      const payload = data.data || {};
-      reviews.value = (payload.list || []).map((item) => ({
-        ...item,
-        productImage: item.productImage ? resolveImageUrl(item.productImage) : "",
-        images: (item.images || []).map(resolveImageUrl),
-      }));
-      if (payload.overview) {
-        overviewStats.value = payload.overview;
-      }
-      if (payload.ratingDistribution) {
-        ratingDistribution.value = payload.ratingDistribution;
-      }
-    } else {
-      useMockData();
+    const payload = res || {};
+    reviews.value = (payload.list || payload.reviews || []).map((item) => ({
+      ...item,
+      id: item.id || item.reviewId || item.orderId,
+      reviewId: item.reviewId || item.id || item.orderId,
+      reply: item.reply || item.replyContent || "",
+      productImage: item.productImage ? resolveImageUrl(item.productImage) : "",
+      images: (item.images || []).map(resolveImageUrl),
+    }));
+    if (payload.overview) {
+      overviewStats.value = payload.overview;
+    }
+    if (payload.ratingDistribution) {
+      ratingDistribution.value = payload.ratingDistribution;
     }
   } catch (err) {
     useMockData();
@@ -364,10 +363,10 @@ const submitReply = async () => {
   replying.value = true;
   try {
     const res = await fetch(Review.reply, {
-      reviewId: currentReview.value.id,
-      reply: replyText.value,
+      reviewId: currentReview.value.reviewId || currentReview.value.id,
+      replyContent: replyText.value,
     });
-    if (res?.data?.code === 200 || res?.code === 200) {
+    if (res !== undefined) {
       ElMessage.success("回复成功");
       currentReview.value.replied = true;
       currentReview.value.reply = replyText.value;

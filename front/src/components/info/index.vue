@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import $store, { userInfo } from "@/store";
 import fetch from "@/api/fetch";
 import { User } from "@/api/apis";
@@ -12,6 +13,7 @@ const modifyAddressVisible = ref(false);
 const modifyAddressData = ref("");
 const previewImageUrl = ref(null);
 const fileInput = ref(null);
+const router = useRouter();
 
 const chooseFile = () => {
   fileInput.value.click();
@@ -55,6 +57,29 @@ const modifyData = reactive({
 });
 
 const isDriverUser = computed(() => userInfo.value?.type === "driver");
+const isCustomerUser = computed(() => ["cus", "customer"].includes(userInfo.value?.type));
+const customerServiceLinks = [
+  { label: "钱包中心", icon: "fas fa-wallet", path: "/home/customer/wallet" },
+  { label: "我的订单", icon: "fas fa-receipt", path: "/home/customer/orders" },
+  { label: "我的评价", icon: "fas fa-star", path: "/home/customer/review" },
+  { label: "售后工单", icon: "fas fa-headset", path: "/home/customer/after-sale" },
+  { label: "地址管理", icon: "fas fa-location-dot", path: "/home/customer/address" },
+];
+const driverServiceLinks = [
+  { label: "待接订单", icon: "fas fa-list-check", path: "/home/driver/available" },
+  { label: "配送中", icon: "fas fa-motorcycle", path: "/home/driver/delivering" },
+  { label: "历史订单", icon: "fas fa-clock-rotate-left", path: "/home/driver/history" },
+  { label: "收益明细", icon: "fas fa-coins", path: "/home/driver/earnings" },
+];
+const profileServiceLinks = computed(() => {
+  if (isCustomerUser.value) return customerServiceLinks;
+  if (isDriverUser.value) return driverServiceLinks;
+  return [];
+});
+
+const goService = (path) => {
+  if (path) router.push(path);
+};
 const driverProfileFields = computed(() => ({
   driverIdCard: modifyData.driverIdCard || "",
   driverVehicle: modifyData.driverVehicle || "",
@@ -156,7 +181,7 @@ const modifyUserPortrait = () => {
 
 const initInfoData = () => {
   fetchAddressData();
-  if (userInfo.value?.type === "customer") {
+  if (isCustomerUser.value) {
     fetchWalletData();
   }
 };
@@ -179,12 +204,8 @@ const fetchWalletData = async () => {
       fetch(User.wallet),
       fetch(User.walletTransactions, { page: 1, pageSize: 10 }),
     ]);
-    if (walletRes.data.code === 200) {
-      walletData.value = walletRes.data.data || walletData.value;
-    }
-    if (txRes.data.code === 200) {
-      walletTransactions.value = txRes.data.data?.list || [];
-    }
+    walletData.value = walletRes || walletData.value;
+    walletTransactions.value = txRes?.list || txRes || [];
   } catch (err) {
     console.error("获取钱包数据失败", err);
   }
@@ -197,15 +218,11 @@ const handleRecharge = async () => {
   }
   recharging.value = true;
   try {
-    const res = await fetch(User.recharge, { amount: rechargeAmount.value });
-    if (res.data.code === 200) {
-      ElMessage.success(`充值成功，充值金额：¥${rechargeAmount.value}`);
-      showRechargeDialog.value = false;
-      rechargeAmount.value = 0;
-      await fetchWalletData();
-    } else {
-      ElMessage.error(res.data.msg || "充值失败");
-    }
+    await fetch(User.recharge, { amount: rechargeAmount.value });
+    ElMessage.success(`充值成功，充值金额：¥${rechargeAmount.value}`);
+    showRechargeDialog.value = false;
+    rechargeAmount.value = 0;
+    await fetchWalletData();
   } catch (err) {
     ElMessage.error(err.response?.data?.msg || "充值失败，请稍后重试");
   } finally {
@@ -374,7 +391,7 @@ onMounted(() => {
       </div>
 
       <!-- 钱包余额卡片（仅顾客可见） -->
-      <div v-if="userInfo.type === 'customer'" class="wallet-card">
+      <div v-if="isCustomerUser" class="wallet-card">
         <div class="wallet-label">钱包余额</div>
         <div class="wallet-balance">
           <span class="wallet-symbol">&yen;</span>
@@ -391,6 +408,20 @@ onMounted(() => {
           </div>
         </div>
         <button class="btn btn-wallet-recharge" @click="showRechargeDialog = true">充值余额</button>
+      </div>
+
+      <div v-if="profileServiceLinks.length" class="service-card">
+        <div class="service-card-title">常用服务</div>
+        <button
+          v-for="item in profileServiceLinks"
+          :key="item.path"
+          type="button"
+          class="service-link"
+          @click="goService(item.path)"
+        >
+          <span><i :class="item.icon"></i>{{ item.label }}</span>
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </aside>
 
@@ -503,7 +534,7 @@ onMounted(() => {
       </div>
 
       <!-- 钱包流水（仅顾客可见） -->
-      <div v-if="userInfo.type === 'customer'" class="profile-card card">
+      <div v-if="isCustomerUser" class="profile-card card">
         <div class="section-heading">
           <div>
             <span class="micro-tag">钱包流水</span>
@@ -882,6 +913,60 @@ onMounted(() => {
 
   &:hover {
     background: rgba(255, 255, 255, 0.3) !important;
+  }
+}
+
+.service-card {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.06);
+}
+
+.service-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 10px;
+}
+
+.service-link {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 10px;
+  transition: background 0.18s ease, color 0.18s ease;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  i:first-child {
+    width: 16px;
+    color: var(--primary, #E8652B);
+  }
+
+  i:last-child {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.32);
+  }
+
+  &:hover {
+    background: rgba(232, 101, 43, 0.08);
+    color: var(--primary, #E8652B);
   }
 }
 

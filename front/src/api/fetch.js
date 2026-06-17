@@ -47,7 +47,7 @@ const shakeData = (data) => {
 };
 
 const fetch = (info, data) => {
-  const { method, url, inQuery } = info;
+  const { method, url, inQuery, silent } = info;
 
   if (data) {
     // console.log("shake之前的data", data);
@@ -90,13 +90,13 @@ const fetch = (info, data) => {
     .catch((err) => {
       // 处理请求失败
       // console.log("第一层catch的err", err);
-      message.error("request failed");
+      if (!silent) message.error("request failed");
       return Promise.reject(err);
     })
     .then((res) => {
       // console.log("第二层then中的res", res)
       if (!res.data) {
-        message.error("the response is empty");
+        if (!silent) message.error("the response is empty");
         return Promise.reject();
       }
       return Promise.resolve(res.data);
@@ -107,11 +107,11 @@ const fetch = (info, data) => {
       if (res.code === -1) {
         $store.commit("clearUserInfo");
         router.push({ path: "/login" });
-        message.error(res.msg ?? "please log in first");
+        if (!silent) message.error(res.msg ?? "please log in first");
         return Promise.reject(res.data);
       }
       if (!/mock/.test(url) && res.code !== 1) {
-        message.error(res.msg ?? "res.code error");
+        if (!silent) message.error(res.msg ?? "res.code error");
         return Promise.reject(res.data);
       } else {
         return Promise.resolve(res.data);

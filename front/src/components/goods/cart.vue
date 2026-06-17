@@ -71,7 +71,7 @@
     </div>
   </el-drawer>
   <el-dialog v-model="paymentVisible" :before-close="cancelPay">
-    <Pay @pay="finishPay" />
+    <Pay :pay-amount="totalAccount" @pay="finishPay" />
   </el-dialog>
 </template>
 

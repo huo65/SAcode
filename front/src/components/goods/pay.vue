@@ -74,6 +74,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { User } from "@/api/apis";
+import fetch from "@/api/fetch";
 import { ElMessage } from "element-plus";
 
 const props = defineProps({
@@ -93,10 +94,8 @@ const quickAmounts = [10, 50, 100, 200, 500];
 // 获取余额
 const fetchBalance = async () => {
   try {
-    const res = await User.wallet();
-    if (res.data.code === 200) {
-      balance.value = res.data.data.balance || 0;
-    }
+    const data = await fetch(User.wallet);
+    balance.value = Number(data?.balance ?? data?.data?.balance ?? 0);
   } catch (err) {
     console.error("获取余额失败", err);
   }
@@ -120,15 +119,11 @@ const handleRecharge = async () => {
   }
   recharging.value = true;
   try {
-    const res = await User.recharge({ amount: rechargeAmount.value });
-    if (res.data.code === 200) {
-      ElMessage.success(`充值成功，充值金额：¥${rechargeAmount.value}`);
-      rechargeAmount.value = 0;
-      await fetchBalance();
-      emits("recharge-success");
-    } else {
-      ElMessage.error(res.data.msg || "充值失败");
-    }
+    await fetch(User.recharge, { amount: rechargeAmount.value });
+    ElMessage.success(`充值成功，充值金额：¥${rechargeAmount.value}`);
+    rechargeAmount.value = 0;
+    await fetchBalance();
+    emits("recharge-success");
   } catch (err) {
     ElMessage.error(err.response?.data?.msg || "充值失败，请稍后重试");
   } finally {

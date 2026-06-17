@@ -169,6 +169,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRoute } from "vue-router";
 import $store, { curStatus, productCategories, userInfo } from "@/store";
 import fetch from "@/api/fetch";
 import { Product, Restaurant, User } from "@/api/apis";
@@ -182,6 +183,7 @@ const searchCondition = reactive({
   onlyOpen: true,
   minScore: null,
 });
+const route = useRoute();
 
 const restaurantList = ref([]);
 const currentRestaurant = ref(null);
@@ -264,9 +266,18 @@ const resetFilters = () => {
 };
 
 const initRestaurantData = () => {
+  if (route.query.keyword) {
+    searchCondition.keyword = String(route.query.keyword);
+  }
+  if (route.query.category) {
+    searchCondition.category = String(route.query.category);
+  }
   getCategories();
   getAddrList();
   loadRestaurants();
+  if (route.query.id) {
+    openRestaurant(route.query.id);
+  }
 };
 
 onMounted(() => {
@@ -566,5 +577,250 @@ onMounted(() => {
   .card {
     grid-template-columns: 1fr;
   }
+}
+
+/* 顾客手机端重绘：对齐 ref/user.html 的点餐页，而不是旧米色桌面设计 */
+.phone-screen .restaurant,
+.restaurant {
+  color: var(--text-primary);
+}
+
+.phone-screen .restaurant {
+  padding: 0 16px 18px;
+}
+
+.phone-screen .restaurant .hero {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.phone-screen .restaurant .hero-copy {
+  padding: 8px 4px 2px;
+}
+
+.phone-screen .restaurant .eyebrow {
+  color: var(--primary);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.phone-screen .restaurant .hero h2 {
+  font-size: 22px;
+  font-family: inherit;
+  font-weight: 800;
+}
+
+.phone-screen .restaurant .hero-desc {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.phone-screen .restaurant .hero-meta {
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.phone-screen .restaurant .hero-meta span {
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary-50);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.phone-screen .restaurant .hero-spotlight {
+  display: none;
+}
+
+.phone-screen .restaurant .filter-panel {
+  margin: 12px 0 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.phone-screen .restaurant .filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.phone-screen .restaurant .filter-grid > .el-input {
+  grid-column: 1 / -1;
+}
+
+.phone-screen .restaurant .filter-actions {
+  grid-column: 1 / -1;
+  justify-content: stretch;
+}
+
+.phone-screen .restaurant .filter-actions .el-button {
+  flex: 1;
+}
+
+.phone-screen .restaurant .result-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 2px 12px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.phone-screen .restaurant .result-bar .muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.phone-screen .restaurant .list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.phone-screen .restaurant .card {
+  display: block;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.phone-screen .restaurant .card:active {
+  transform: scale(0.985);
+}
+
+.phone-screen .restaurant .card-cover-wrap {
+  border-radius: 0;
+  height: 126px;
+}
+
+.phone-screen .restaurant .cover,
+.phone-screen .restaurant .cover-placeholder {
+  min-height: 0;
+  height: 126px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #FFECD2, #FCB69F);
+  color: var(--primary);
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.phone-screen .restaurant .cover-overlay {
+  inset: 8px 8px auto 8px;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  color: var(--text-primary);
+}
+
+.phone-screen .restaurant .cover-overlay > span {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.phone-screen .restaurant .info {
+  padding: 12px 14px 14px;
+}
+
+.phone-screen .restaurant .header {
+  align-items: flex-start;
+}
+
+.phone-screen .restaurant .header h3 {
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 800;
+}
+
+.phone-screen .restaurant .summary-line {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.phone-screen .restaurant .price-box {
+  min-width: 58px;
+}
+
+.phone-screen .restaurant .price-box strong {
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.phone-screen .restaurant .price-box span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.phone-screen .restaurant .description,
+.phone-screen .restaurant .address,
+.phone-screen .restaurant .notice {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.phone-screen .restaurant .notice {
+  padding-left: 8px;
+  border-left: 2px solid var(--primary);
+}
+
+.phone-screen .restaurant .metric-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.phone-screen .restaurant .metric-pill {
+  padding: 7px 6px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 0;
+  text-align: center;
+}
+
+.phone-screen .restaurant .metric-pill strong {
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.phone-screen .restaurant .metric-pill span {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.phone-screen .restaurant .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
 }
 </style>

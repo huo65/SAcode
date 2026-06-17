@@ -4,10 +4,10 @@
 
 后端使用 Spring Boot + MyBatis + MySQL，按 Controller / Service / Mapper / POJO 分层组织。
 
-初始化数据库只使用一个脚本：
+初始化数据库只使用一个脚本。导入时必须显式指定 UTF-8 客户端字符集，避免中文种子数据被按本机默认编码写成乱码：
 
-```sql
-source src/main/resources/schema.sql;
+```bash
+mysql --default-character-set=utf8mb4 -uroot -p < src/main/resources/schema.sql
 ```
 
 `schema.sql` 包含核心表结构、索引、配送/订单字段、钱包流水、演示账号和种子地址。演示账号默认密码为 `123456`，首次成功登录后会迁移为 SHA-256 哈希。

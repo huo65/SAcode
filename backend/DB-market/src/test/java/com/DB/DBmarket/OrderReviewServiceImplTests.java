@@ -101,17 +101,19 @@ class OrderReviewServiceImplTests {
     }
 
     @Test
-    void replyRejectsSecondReply() {
+    void merchantCanUpdateExistingReply() {
         CurrentUser merchant = new CurrentUser("mer001", "merchant", "mer");
         OrderReview existing = new OrderReview("order-1", "cus001", "mer001", 5, "great", null, "already replied", null, null);
+        OrderReview updated = new OrderReview("order-1", "cus001", "mer001", 5, "great", null, "updated thanks", null, "customer");
 
-        when(orderReviewMapper.getByOrderId("order-1")).thenReturn(existing);
+        when(orderReviewMapper.getByOrderId("order-1")).thenReturn(existing, updated);
+        when(userMapper.getNameById("cus001")).thenReturn("customer");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> orderReviewService.replyReview(merchant, "order-1", "thanks"));
+        OrderReview result = orderReviewService.replyReview(merchant, "order-1", "updated thanks");
 
-        assertEquals("This review has already been replied.", ex.getMessage());
-        verify(orderReviewMapper, never()).replyReview(org.mockito.ArgumentMatchers.eq("order-1"), org.mockito.ArgumentMatchers.eq("thanks"), any(java.time.LocalDateTime.class));
+        assertNotNull(result);
+        assertEquals("updated thanks", result.getReplyContent());
+        verify(orderReviewMapper).replyReview(org.mockito.ArgumentMatchers.eq("order-1"), org.mockito.ArgumentMatchers.eq("updated thanks"), any(java.time.LocalDateTime.class));
     }
 
     private OrderInfo buildOrder(String id, String cus, String mer, Integer state) {

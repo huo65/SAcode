@@ -182,30 +182,35 @@ const overviewCards = computed(() => [
   { label: "净流入", value: `¥${platformStats.value.netInflow.toLocaleString()}`, tip: "充值 - 退款", tone: "success" },
 ]);
 
+const normalizeTransaction = (row = {}) => ({
+  ...row,
+  amount: Number(row.amount || 0),
+  balanceAfter: row.balanceAfter == null ? null : Number(row.balanceAfter),
+  orderId: row.orderId || row.relatedOrderId || "-",
+  description: row.description || row.remark || "-",
+  createdAt: row.createdAt || row.createdTime || "-",
+});
+
 const fetchWallet = async () => {
   loading.value = true;
   try {
-    const res = await fetch(Ops.walletTransactions, {
+    const params = {
       keyword: keyword.value,
-      type: typeFilter.value,
+      type: typeFilter.value === "all" ? "" : typeFilter.value,
       startDate: dateRange.value?.[0] || "",
       endDate: dateRange.value?.[1] || "",
       page: page.value,
       pageSize: pageSize.value,
-    });
-    const data = res?.data || res || {};
-    if (data.code === 200) {
-      const payload = data.data || {};
-      transactions.value = payload.list || [];
-      total.value = payload.total || 0;
-      if (payload.platformStats) {
-        platformStats.value = payload.platformStats;
-      }
-      if (payload.typeDistribution) {
-        typeDistribution.value = payload.typeDistribution;
-      }
-    } else {
-      useMockData();
+    };
+    const res = await fetch(Ops.walletTransactions, params);
+    const payload = res || {};
+    transactions.value = (payload.list || payload.transactions || []).map(normalizeTransaction);
+    total.value = Number(payload.total ?? transactions.value.length);
+    if (payload.platformStats) {
+      platformStats.value = payload.platformStats;
+    }
+    if (payload.typeDistribution) {
+      typeDistribution.value = payload.typeDistribution;
     }
   } catch (err) {
     useMockData();
