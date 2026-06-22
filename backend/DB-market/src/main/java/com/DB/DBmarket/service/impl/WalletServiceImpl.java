@@ -21,6 +21,8 @@ public class WalletServiceImpl implements WalletService {
     public static final String TYPE_RECHARGE = "RECHARGE";
     public static final String TYPE_PAY = "PAY";
     public static final String TYPE_REFUND = "REFUND";
+    public static final String TYPE_MERCHANT_INCOME = "MERCHANT_INCOME";
+    public static final String TYPE_MERCHANT_REFUND = "MERCHANT_REFUND";
 
     @Resource
     private WalletTransactionMapper walletTransactionMapper;
@@ -64,6 +66,35 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public WalletTransaction creditMerchantOrder(CurrentUser currentUser, String merchantId, Integer amount, String orderId) {
+        if (!hasText(merchantId)) {
+            throw new IllegalArgumentException("Merchant is required.");
+        }
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Merchant income amount must be greater than zero.");
+        }
+        User merchant = requireUser(merchantId.trim());
+        if (!"mer".equals(merchant.getType()) && !"merchant".equals(merchant.getType())) {
+            throw new IllegalArgumentException("Order merchant is invalid.");
+        }
+        return changeBalance(currentUser, merchant.getId(), TYPE_MERCHANT_INCOME, amount, orderId, "订单收入入账");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public WalletTransaction reverseMerchantOrderIncome(CurrentUser currentUser, String merchantId, Integer amount, String orderId, String remark) {
+        if (!hasText(merchantId)) {
+            throw new IllegalArgumentException("Merchant is required.");
+        }
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Merchant refund amount must be greater than zero.");
+        }
+        return changeBalance(currentUser, merchantId.trim(), TYPE_MERCHANT_REFUND, -amount, orderId,
+                hasText(remark) ? remark.trim() : "订单退款扣回收入");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public WalletTransaction refundOrder(CurrentUser currentUser, String userId, Integer amount, String orderId, String remark) {
         if (currentUser == null) {
             throw new IllegalArgumentException("Please login first.");
@@ -93,6 +124,8 @@ public class WalletServiceImpl implements WalletService {
         wallet.put("totalRecharge", safeAbsSum(targetUserId, TYPE_RECHARGE));
         wallet.put("totalPay", safeAbsSum(targetUserId, TYPE_PAY));
         wallet.put("totalRefund", safeAbsSum(targetUserId, TYPE_REFUND));
+        wallet.put("totalMerchantIncome", safeAbsSum(targetUserId, TYPE_MERCHANT_INCOME));
+        wallet.put("totalMerchantRefund", safeAbsSum(targetUserId, TYPE_MERCHANT_REFUND));
         wallet.put("recentTransactions", walletTransactionMapper.list(targetUserId, null, 10));
         return wallet;
     }
@@ -187,8 +220,10 @@ public class WalletServiceImpl implements WalletService {
         if ("ALL".equals(normalized)) {
             return null;
         }
-        if (!TYPE_RECHARGE.equals(normalized) && !TYPE_PAY.equals(normalized) && !TYPE_REFUND.equals(normalized) && !"ADJUST".equals(normalized)) {
-            throw new IllegalArgumentException("Invalid wallet transaction type. Allowed values: RECHARGE, PAY, REFUND.");
+        if (!TYPE_RECHARGE.equals(normalized) && !TYPE_PAY.equals(normalized) && !TYPE_REFUND.equals(normalized)
+                && !TYPE_MERCHANT_INCOME.equals(normalized) && !TYPE_MERCHANT_REFUND.equals(normalized)
+                && !"ADJUST".equals(normalized)) {
+            throw new IllegalArgumentException("Invalid wallet transaction type.");
         }
         return normalized;
     }

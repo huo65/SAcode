@@ -118,6 +118,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             if (affected <= 0) throw new IllegalArgumentException("订单库存不足: " + order.getId());
         }
         walletService.payOrder(currentUser, (int) total, String.join(",", new LinkedHashSet<>(orderIdList)));
+        creditMerchantsForOrders(currentUser, rows);
         String now = String.valueOf(LocalDateTime.now());
         for (String orderId : new HashSet<>(orderIdList)) {
             orderInfoMapper.updateOrderState(orderId, 0, now, null, now, null, null, null);
@@ -145,6 +146,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 throw new IllegalArgumentException("订单库存不足: " + order.getId());
             }
         }
+        creditMerchantsForOrders(currentUser, rows);
         String updateTime = payTime == null || payTime.trim().isEmpty()
                 ? String.valueOf(LocalDateTime.now())
                 : payTime;
@@ -346,15 +348,37 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     }
 
     private void refundAndRestoreOrder(CurrentUser currentUser, String orderId, List<OrderInfo> rows, OrderInfo first, String refundReason) {
+        Integer refundAmount = orderInfoMapper.getOrderAccount(orderId);
+        if (first.getMer() != null) {
+            walletService.reverseMerchantOrderIncome(currentUser, first.getMer(), refundAmount, orderId, refundReason);
+        }
         if (first.getCus() != null) {
-            walletService.refundOrder(currentUser, first.getCus(), orderInfoMapper.getOrderAccount(orderId), orderId, refundReason);
+            walletService.refundOrder(currentUser, first.getCus(), refundAmount, orderId, refundReason);
         }
         // Restore stock for all items in this order
         for (OrderInfo orderItem : rows) {
             productMapper.incrementStock(orderItem.getProd(), orderItem.getProdNum());
         }
         operationsService.recordAudit(currentUser, "WALLET_REFUND", "order", orderId, orderId,
-                "订单退款回滚，金额 " + orderInfoMapper.getOrderAccount(orderId), "SUCCESS");
+                "订单退款回滚，金额 " + refundAmount, "SUCCESS");
+    }
+
+    private void creditMerchantsForOrders(CurrentUser currentUser, List<OrderInfo> rows) {
+        Map<String, Integer> amountByMerchantOrder = new LinkedHashMap<>();
+        Map<String, String> merchantByKey = new HashMap<>();
+        Map<String, String> orderIdByKey = new HashMap<>();
+        for (OrderInfo order : rows) {
+            if (order.getMer() == null || order.getMer().trim().isEmpty()) {
+                throw new IllegalArgumentException("Order merchant is required: " + order.getId());
+            }
+            String key = order.getMer() + "::" + order.getId();
+            amountByMerchantOrder.put(key, amountByMerchantOrder.getOrDefault(key, 0) + order.getAccount());
+            merchantByKey.put(key, order.getMer());
+            orderIdByKey.put(key, order.getId());
+        }
+        for (Map.Entry<String, Integer> entry : amountByMerchantOrder.entrySet()) {
+            walletService.creditMerchantOrder(currentUser, merchantByKey.get(entry.getKey()), entry.getValue(), orderIdByKey.get(entry.getKey()));
+        }
     }
 
     @Override

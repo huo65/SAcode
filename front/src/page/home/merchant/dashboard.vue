@@ -143,7 +143,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { userInfo } from '@/store';
-import { Ops, Order as OrderApi, AfterSale } from '@/api/apis';
+import { Ops, Order as OrderApi, AfterSale, User } from '@/api/apis';
 import fetch from '@/api/fetch';
 
 const router = useRouter();
@@ -170,6 +170,8 @@ const pendingOrderCount = ref(0);
 const pendingTicketCount = ref(0);
 const todayGmv = ref(0);
 const totalGoods = ref(0);
+const walletBalance = ref(0);
+const walletIncome = ref(0);
 
 const statCards = computed(() => [
   {
@@ -208,6 +210,15 @@ const statCards = computed(() => [
     trend: '持续更新',
     trendUp: true,
   },
+  {
+    label: 'Wallet balance',
+    value: `¥${walletBalance.value || 0}`,
+    icon: 'fas fa-wallet',
+    tone: 'orange',
+    sub: `Order income ¥${walletIncome.value || 0}`,
+    trend: 'Updated from payment ledger',
+    trendUp: true,
+  },
 ]);
 
 const trendRange = ref(7);
@@ -220,6 +231,7 @@ const quickActions = [
   { label: '订单处理', icon: 'fas fa-clipboard-list', tone: 'blue', path: '/home/merchant/orders', hint: '接单 / 出餐' },
   { label: '售后工单', icon: 'fas fa-headset', tone: 'red', path: '/home/merchant/after-sale', hint: '处理客诉' },
   { label: '门店设置', icon: 'fas fa-store', tone: 'amber', path: '/home/merchant/store', hint: '编辑信息' },
+  { label: 'Merchant Wallet', icon: 'fas fa-wallet', tone: 'green', path: '/home/merchant/wallet', hint: 'Income / refunds' },
 ];
 
 const todoList = ref([]);
@@ -290,12 +302,24 @@ const loadPending = () => {
   });
 };
 
+const loadWallet = () => {
+  fetch(User.wallet).then((data) => {
+    const wallet = data?.data || data || {};
+    walletBalance.value = Number(wallet.balance || 0);
+    walletIncome.value = Number(wallet.totalMerchantIncome || 0);
+  }).catch(() => {
+    walletBalance.value = 0;
+    walletIncome.value = 0;
+  });
+};
+
 onMounted(() => {
   updateTime();
   timer = setInterval(updateTime, 60000);
   loadDashboard();
   loadPending();
   loadRecent();
+  loadWallet();
 });
 
 onBeforeUnmount(() => {
@@ -357,7 +381,7 @@ onBeforeUnmount(() => {
 /* ===== Stats Grid ===== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 18px;
   margin-bottom: 28px;
 }

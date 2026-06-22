@@ -7,6 +7,7 @@ import AfterSaleBoard from "@/components/after-sale/index.vue";
 import MerchantOps from "@/components/operation/merchant-ops.vue";
 import MerchantReply from "@/components/review/merchant-reply.vue";
 import MerchantDashboard from "@/page/home/merchant/dashboard.vue";
+import MerchantWallet from "@/page/home/merchant/wallet.vue";
 
 const merchantRoutes = [
   {
@@ -49,6 +50,12 @@ const merchantRoutes = [
         name: "MerchantOps",
         component: MerchantOps,
         meta: { title: "经营分析", sidebarKey: "ops" },
+      },
+      {
+        path: "wallet",
+        name: "MerchantWallet",
+        component: MerchantWallet,
+        meta: { title: "Merchant Wallet", sidebarKey: "wallet" },
       },
       {
         path: "review",

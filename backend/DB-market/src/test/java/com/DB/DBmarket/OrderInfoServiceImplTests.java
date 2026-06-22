@@ -76,6 +76,7 @@ class OrderInfoServiceImplTests {
 
         verify(productMapper).decrementStock("prod001", 2);
         verify(walletService).payOrder(customer, 60, "order-1");
+        verify(walletService).creditMerchantOrder(customer, "mer001", 60, "order-1");
         verify(orderInfoMapper).updateOrderState(eq("order-1"), eq(0), anyString(), isNull(), anyString(), isNull(), isNull(), isNull());
     }
 
@@ -306,6 +307,7 @@ class OrderInfoServiceImplTests {
         assertNotNull(result);
         assertEquals(Integer.valueOf(-3), result.getState());
         verify(walletService).refundOrder(merchant, "cus001", 100, "order-1", "bad food");
+        verify(walletService).reverseMerchantOrderIncome(merchant, "mer001", 100, "order-1", "bad food");
         verify(productMapper).incrementStock("prod001", 2);
         verify(productMapper).incrementStock("prod002", 1);
     }
@@ -329,6 +331,7 @@ class OrderInfoServiceImplTests {
         assertNotNull(result);
         assertEquals(Integer.valueOf(-3), result.getState());
         verify(walletService).refundOrder(merchant, "cus001", 100, "order-1", "merchant rejected");
+        verify(walletService).reverseMerchantOrderIncome(merchant, "mer001", 100, "order-1", "merchant rejected");
         verify(productMapper).incrementStock("prod001", 2);
         verify(productMapper).incrementStock("prod002", 1);
     }
@@ -352,6 +355,7 @@ class OrderInfoServiceImplTests {
         assertNotNull(result);
         assertEquals(Integer.valueOf(-3), result.getState());
         verify(walletService).refundOrder(merchant, "cus001", 100, "order-1", "kitchen issue");
+        verify(walletService).reverseMerchantOrderIncome(merchant, "mer001", 100, "order-1", "kitchen issue");
         verify(productMapper).incrementStock("prod001", 2);
         verify(productMapper).incrementStock("prod002", 1);
     }
@@ -536,6 +540,7 @@ class OrderInfoServiceImplTests {
 
         verify(productMapper).decrementStock("prod001", 1);
         verify(walletService).payOrder(customer, 30, "order-1");
+        verify(walletService).creditMerchantOrder(customer, "mer001", 30, "order-1");
         ArgumentCaptor<String> orderIdCaptor = ArgumentCaptor.forClass(String.class);
         verify(orderInfoMapper).updateOrderState(orderIdCaptor.capture(), eq(0), anyString(), isNull(), anyString(), isNull(), isNull(), isNull());
         assertEquals("order-1", orderIdCaptor.getValue());

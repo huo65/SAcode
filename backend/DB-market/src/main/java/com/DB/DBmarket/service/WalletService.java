@@ -11,6 +11,12 @@ public interface WalletService {
 
     WalletTransaction payOrder(CurrentUser currentUser, Integer amount, String orderId);
 
+    /** Credits the merchant who fulfilled a paid order. */
+    WalletTransaction creditMerchantOrder(CurrentUser currentUser, String merchantId, Integer amount, String orderId);
+
+    /** Reverses a merchant order credit before refunding the customer. */
+    WalletTransaction reverseMerchantOrderIncome(CurrentUser currentUser, String merchantId, Integer amount, String orderId, String remark);
+
     WalletTransaction refundOrder(CurrentUser currentUser, String userId, Integer amount, String orderId, String remark);
 
     Map<String, Object> getWallet(CurrentUser currentUser, String userId);

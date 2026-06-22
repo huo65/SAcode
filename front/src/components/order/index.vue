@@ -464,7 +464,7 @@ const searchKeyword = ref("");
 const route = useRoute();
 const orderCondition = reactive({
   state: null,
-  timeOrder: 0,
+  timeOrder: 1,
 });
 
 const stateEnum = {
