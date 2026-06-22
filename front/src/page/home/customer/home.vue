@@ -569,4 +569,78 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 }
+
+/* The customer app is also previewed in a fixed phone frame on desktop. */
+.phone-screen .customer-home {
+  padding-bottom: 18px;
+}
+
+.phone-screen .customer-home .home-hero {
+  display: block;
+  padding: 12px 16px 14px;
+}
+
+.phone-screen .customer-home .eyebrow {
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: .14em;
+}
+
+.phone-screen .customer-home .home-hero h2 {
+  font-size: 25px;
+  line-height: 1.2;
+  font-family: inherit;
+  font-weight: 800;
+}
+
+.phone-screen .customer-home .hero-desc {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.phone-screen .customer-home .hero-right {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 13px;
+}
+
+.phone-screen .customer-home .hero-search {
+  min-width: 0;
+  width: 100%;
+  gap: 6px;
+}
+
+.phone-screen .customer-home .hero-search > i {
+  display: none;
+}
+
+.phone-screen .customer-home .hero-time {
+  padding: 8px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.phone-screen .customer-home .home-banner {
+  height: 118px;
+  margin: 0 16px 20px;
+  padding: 0 18px;
+  border-radius: 14px;
+}
+
+.phone-screen .customer-home .banner-title { font-size: 19px; }
+.phone-screen .customer-home .banner-sub { font-size: 11px; }
+.phone-screen .customer-home .banner-btn { margin-top: 8px; }
+
+.phone-screen .customer-home .category-grid {
+  padding: 0 16px;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.phone-screen .customer-home .section-head { margin: 0 16px 12px; padding: 0; }
+.phone-screen .customer-home .restaurant-grid { margin: 0 16px; }
 </style>
